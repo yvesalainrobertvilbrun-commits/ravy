@@ -4,9 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RAVY</title>
+  <style>
+    body {
+      background: black;
+      color: #00aaff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    button {
+      background: #00aaff;
+      color: black;
+      border: none;
+      padding: 15px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <h1>RAVY activo</h1>
-  <p>GitHub Pages está funcionando correctamente.</p>
+
+  <h1>RAVY</h1>
+  <p>Presiona para escucharme</p>
+
+  <button onclick="hablar()">Hablar</button>
+
+  <script>
+    function hablar() {
+      const texto = "Aquí RAVY. Estoy activo, atento y contigo.";
+      const voz = new SpeechSynthesisUtterance(texto);
+      voz.lang = "es-ES";
+      speechSynthesis.speak(voz);
+    }
+  </script>
+
 </body>
 </html>
