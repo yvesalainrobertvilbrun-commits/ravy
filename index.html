@@ -36,7 +36,7 @@
 
   <h1>RAVY</h1>
   <p>Escríbeme algo</p>
-
+<div id="cuerpo-ravy"></div>
   <input id="entrada" placeholder="Habla conmigo..." />
   <br>
   <button onclick="responder()">Responder</button>
@@ -68,6 +68,19 @@
     speechSynthesis.speak(voz);
   }
 </script>
-
+#cuerpo-ravy {
+  width: 180px;
+  height: 180px;
+  margin: 30px auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(0,170,255,0.6), rgba(0,170,255,0.1));
+  box-shadow: 0 0 40px rgba(0,170,255,0.6);
+  animation: pulso 3s infinite ease-in-out;
+}
+@keyframes pulso {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
 </body>
 </html>
