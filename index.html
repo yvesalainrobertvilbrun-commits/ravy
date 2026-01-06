@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RAVY</title>
 
-  <!-- Manifest para PWA -->
+  <!-- Manifest PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#00aaff">
 
@@ -16,16 +16,6 @@
       font-family: Arial, sans-serif;
       text-align: center;
       padding: 30px;
-    }
-
-    input {
-      padding: 12px;
-      width: 90%;
-      max-width: 400px;
-      border-radius: 8px;
-      border: none;
-      margin-bottom: 15px;
-      font-size: 16px;
     }
 
     button {
@@ -39,82 +29,24 @@
       margin-bottom: 20px;
     }
 
-    /* CUERPO HUMANOIDE 3D BÁSICO */
-    #cuerpo-ravy-3d {
-      width: 120px;
-      margin: 30px auto;
-      position: relative;
-    }
-
-    #cabeza {
-      width: 100px;
-      height: 100px;
-      margin: 0 auto;
-      background: radial-gradient(circle at center, rgba(0,170,255,0.7), rgba(0,170,255,0.2));
-      border-radius: 50%;
-      position: relative;
-      box-shadow: 0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3);
-      animation: pulso 2s infinite ease-in-out;
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-
-    #torso {
-      width: 60px;
-      height: 100px;
-      margin: -10px auto 0;
-      background: rgba(0,170,255,0.6);
-      border-radius: 30px;
-      box-shadow: 0 0 30px rgba(0,170,255,0.6);
-      transition: transform 0.3s;
-    }
-
-    .ojo {
-      width: 15px;
-      height: 15px;
-      background: white;
-      border-radius: 50%;
-      position: absolute;
-      top: 30px;
-      animation: parpadeo 5s infinite;
-    }
-
+    /* CUERPO 3D */
+    #cuerpo-ravy-3d { width: 120px; margin: 30px auto; position: relative; }
+    #cabeza { width: 100px; height: 100px; margin: 0 auto; background: radial-gradient(circle at center, rgba(0,170,255,0.7), rgba(0,170,255,0.2)); border-radius: 50%; position: relative; box-shadow: 0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3); animation: pulso 2s infinite ease-in-out; transition: transform 0.3s, box-shadow 0.3s; }
+    #torso { width: 60px; height: 100px; margin: -10px auto 0; background: rgba(0,170,255,0.6); border-radius: 30px; box-shadow: 0 0 30px rgba(0,170,255,0.6); transition: transform 0.3s; }
+    .ojo { width: 15px; height: 15px; background: white; border-radius: 50%; position: absolute; top: 30px; animation: parpadeo 5s infinite; }
     .ojo.izquierdo { left: 20px; }
     .ojo.derecho { right: 20px; }
+    .boca { width: 40px; height: 10px; border-bottom: 3px solid white; border-radius: 0 0 20px 20px; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); transition: transform 0.1s; }
+    .torso-mover { transform: translateY(-5px); }
 
-    .boca {
-      width: 40px;
-      height: 10px;
-      border-bottom: 3px solid white;
-      border-radius: 0 0 20px 20px;
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      transition: transform 0.1s;
-    }
-
-    @keyframes pulso {
-      0% { transform: scale(1); opacity: 0.6; }
-      25% { transform: scale(1.05); opacity: 0.8; }
-      50% { transform: scale(1.1); opacity: 1; }
-      75% { transform: scale(1.05); opacity: 0.8; }
-      100% { transform: scale(1); opacity: 0.6; }
-    }
-
-    @keyframes parpadeo {
-      0%, 20%, 40%, 60%, 80%, 100% { transform: scaleY(1); }
-      10%, 30%, 50%, 70%, 90% { transform: scaleY(0.1); }
-    }
-
-    .torso-mover {
-      transform: translateY(-5px);
-    }
+    @keyframes pulso { 0%{transform:scale(1);opacity:0.6;}25%{transform:scale(1.05);opacity:0.8;}50%{transform:scale(1.1);opacity:1;}75%{transform:scale(1.05);opacity:0.8;}100%{transform:scale(1);opacity:0.6;} }
+    @keyframes parpadeo { 0%,20%,40%,60%,80%,100%{transform:scaleY(1);} 10%,30%,50%,70%,90%{transform:scaleY(0.1);} }
   </style>
 </head>
 <body>
 
   <h1>RAVY</h1>
-  <p>Escríbeme algo</p>
+  <p>Habla y yo responderé automáticamente</p>
 
   <div id="cuerpo-ravy-3d">
     <div id="cabeza">
@@ -125,12 +57,10 @@
     <div id="torso"></div>
   </div>
 
-  <input id="entrada" placeholder="Habla conmigo..." />
-  <br>
-  <button onclick="responder()">Responder</button>
+  <button onclick="iniciarRAVY()">Hablar con RAVY</button>
 
   <script>
-    // ===== CEREBRO DE RAVY CON ACCIONES =====
+    // ===== CEREBRO =====
     const RAVY = {
       nombre: "RAVY",
       idioma: "es-ES",
@@ -141,86 +71,81 @@
         let idioma = this.idioma;
         const t = texto.toLowerCase();
 
-        if (t.includes("hola")) {
-          frases = [
-            "Hola, aquí está RAVY contigo 😊",
-            "¡Qué gusto verte!"
-          ];
-        } else if (t.includes("estado") || t.includes("cómo estás")) {
-          frases = [
-            "Estoy activo y listo para ayudarte 💙",
-            "Todo en orden, preparado para conversar contigo"
-          ];
-        } else if (t.includes("bonjou") || t.includes("kijan")) {
-          frases = [
-            "Bonjou! Mwen la avèk ou. Mwen se RAVY.",
-            "Kijan ou santi w jodi a?"
-          ];
-          idioma = "fr-FR";
-        } else if (t.includes("abre google")) {
-          frases = ["Abriendo Google..."];
-          window.open("https://www.google.com", "_blank");
-        } else if (t.includes("hora")) {
-          const ahora = new Date();
-          frases = [`La hora actual es ${ahora.getHours()}:${ahora.getMinutes()}`];
-        } else if (t.includes("chiste")) {
-          frases = [
-            "¿Por qué la computadora fue al doctor? Porque tenía un virus 😂",
-            "Este es mi chiste favorito: ¿Qué hace una abeja en el gimnasio? ¡Zum-ba!"
-          ];
-        } else if (t.includes("enciende luz")) {
-          frases = ["Encendiendo efecto luminoso..."];
+        if (t.includes("hola")) frases = ["Hola, aquí está RAVY contigo 😊"];
+        else if (t.includes("estado") || t.includes("cómo estás")) frases = ["Estoy activo y listo para ayudarte 💙"];
+        else if (t.includes("bonjou") || t.includes("kijan")) { frases = ["Bonjou! Mwen la avèk ou. Mwen se RAVY."]; idioma="fr-FR"; }
+        else if (t.includes("abre google")) { frases=["Abriendo Google..."]; window.open("https://www.google.com","_blank"); }
+        else if (t.includes("hora")) { const ahora = new Date(); frases=[`La hora actual es ${ahora.getHours()}:${ahora.getMinutes()}`]; }
+        else if (t.includes("chiste")) { frases=["¿Por qué la computadora fue al doctor? Porque tenía un virus 😂"]; }
+        else if (t.includes("enciende luz")) {
+          frases=["Encendiendo efecto luminoso..."];
           const torso = document.getElementById("torso");
-          torso.style.background = "rgba(255,255,0,0.8)";
-          setTimeout(() => torso.style.background = "rgba(0,170,255,0.6)", 1000);
-        } else {
-          frases = ["Te escucho. Continúa.", "Estoy atento a tus palabras."];
+          torso.style.background="rgba(255,255,0,0.8)";
+          setTimeout(()=>torso.style.background="rgba(0,170,255,0.6)",1000);
         }
+        else frases=["Te escucho. Continúa."];
 
-        // Guardar contexto
         this.contexto.ultimoTexto = texto;
         this.contexto.ultimaRespuesta = frases;
-
-        return { frases, idioma };
+        return {frases, idioma};
       }
     };
 
-    // ===== FUNCION RESPONDER =====
-    function responder() {
-      const textoUsuario = document.getElementById("entrada").value;
-      const { frases, idioma } = RAVY.ejecutarOrden(textoUsuario);
-
-      frases.forEach((frase, i) => {
-        setTimeout(() => {
+    // ===== VOZ AUTOMÁTICA =====
+    function hablar(frases, idioma){
+      frases.forEach((frase,i)=>{
+        setTimeout(()=>{
           const voz = new SpeechSynthesisUtterance(frase);
-          voz.lang = idioma;
+          voz.lang=idioma;
           speechSynthesis.speak(voz);
 
-          const cabeza = document.getElementById("cabeza");
-          const boca = document.querySelector(".boca");
-          const torso = document.getElementById("torso");
+          const cabeza=document.getElementById("cabeza");
+          const boca=document.querySelector(".boca");
+          const torso=document.getElementById("torso");
 
-          cabeza.style.transform = "scale(1.2)";
-          cabeza.style.boxShadow = "0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
-          boca.style.transform = "scaleY(1.5)";
+          cabeza.style.transform="scale(1.2)";
+          cabeza.style.boxShadow="0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
+          boca.style.transform="scaleY(1.5)";
           torso.classList.add("torso-mover");
 
-          setTimeout(() => {
-            cabeza.style.transform = "";
-            cabeza.style.boxShadow = "0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3)";
-            boca.style.transform = "";
+          setTimeout(()=>{
+            cabeza.style.transform="";
+            cabeza.style.boxShadow="0 0 40px rgba(0,170,255,0.7),0 0 80px rgba(0,170,255,0.3)";
+            boca.style.transform="";
             torso.classList.remove("torso-mover");
-          }, 500);
-
-        }, i * 1800);
+          },500);
+        },i*1800);
       });
     }
 
+    // ===== RECONOCIMIENTO DE VOZ =====
+    function iniciarRAVY(){
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SpeechRecognition){ alert("Tu navegador no soporta reconocimiento de voz."); return; }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "es-ES";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+
+      recognition.onresult = function(event){
+        const texto = event.results[0][0].transcript;
+        const {frases, idioma} = RAVY.ejecutarOrden(texto);
+        hablar(frases, idioma);
+      };
+
+      recognition.onerror = function(event){
+        console.log("Error reconocimiento:", event.error);
+      };
+
+      recognition.start();
+    }
+
     // ===== SERVICE WORKER =====
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator){
       navigator.serviceWorker.register('service-worker.js')
-        .then(() => console.log('Service Worker registrado'))
-        .catch(err => console.log('Error SW:', err));
+        .then(()=>console.log("Service Worker registrado"))
+        .catch(err=>console.log("Error SW:",err));
     }
   </script>
 
