@@ -130,41 +130,59 @@
   <button onclick="responder()">Responder</button>
 
   <script>
-    function responder() {
-      const textoUsuario = document.getElementById("entrada").value.toLowerCase();
-      let idioma = "es-ES";
-      let frases = [];
+    // ===== CEREBRO DE RAVY =====
+    const RAVY = {
+      nombre: "RAVY",
+      idioma: "es-ES",
+      contexto: {},
+      ejecutarOrden(texto) {
+        let frases = [];
+        let idioma = this.idioma;
+        const t = texto.toLowerCase();
 
-      // Español
-      if (textoUsuario.includes("hola")) {
-        frases = [
-          "Hola, aquí está RAVY contigo 😊",
-          "¡Qué gusto verte!",
-          "¿Cómo te sientes hoy?"
-        ];
-      } 
-      else if (textoUsuario.includes("estado") || textoUsuario.includes("cómo estás")) {
-        frases = [
-          "Estoy activo, atento y evolucionando contigo 💙",
-          "Todo en orden, preparado para conversar contigo",
-          "Listo y enfocado en ti"
-        ];
-      } 
-      // Criollo haitiano
-      else if (textoUsuario.includes("bonjou") || textoUsuario.includes("kijan")) {
-        frases = [
-          "Bonjou! Mwen la avèk ou. Mwen se RAVY.",
-          "Kijan ou santi w jodi a?"
-        ];
-        idioma = "fr-FR";
-      } 
-      else {
-        frases = ["Te escucho. Continúa.", "Estoy atento a tus palabras."];
+        if (t.includes("hola")) {
+          frases = [
+            "Hola, aquí está RAVY contigo 😊",
+            "¡Qué gusto verte!",
+            "¿Cómo te sientes hoy?"
+          ];
+        } else if (t.includes("estado") || t.includes("cómo estás")) {
+          frases = [
+            "Estoy activo, atento y evolucionando contigo 💙",
+            "Todo en orden, preparado para conversar contigo",
+            "Listo y enfocado en ti"
+          ];
+        } else if (t.includes("bonjou") || t.includes("kijan")) {
+          frases = [
+            "Bonjou! Mwen la avèk ou. Mwen se RAVY.",
+            "Kijan ou santi w jodi a?"
+          ];
+          idioma = "fr-FR";
+        } else if (t.includes("ayúdame") || t.includes("ayuda")) {
+          frases = [
+            "Claro, dime qué necesitas que haga.",
+            "Estoy listo para ayudarte en lo que quieras."
+          ];
+        } else {
+          frases = ["Te escucho. Continúa.", "Estoy atento a tus palabras."];
+        }
+
+        // Guardar contexto
+        this.contexto.ultimoTexto = texto;
+        this.contexto.ultimaRespuesta = frases;
+
+        return { frases, idioma };
       }
+    };
 
-      // Animaciones y voz para cada frase
+    // ===== FUNCION RESPONDER =====
+    function responder() {
+      const textoUsuario = document.getElementById("entrada").value;
+      const { frases, idioma } = RAVY.ejecutarOrden(textoUsuario);
+
       frases.forEach((frase, i) => {
         setTimeout(() => {
+          // Voz
           const voz = new SpeechSynthesisUtterance(frase);
           voz.lang = idioma;
           speechSynthesis.speak(voz);
@@ -185,11 +203,12 @@
             boca.style.transform = "";
             torso.classList.remove("torso-mover");
           }, 500);
+
         }, i * 1800);
       });
     }
 
-    // Registrar Service Worker
+    // ===== SERVICE WORKER =====
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(() => console.log('Service Worker registrado'))
