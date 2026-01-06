@@ -32,16 +32,60 @@
       margin-bottom: 20px;
     }
 
-    /* CUERPO VISUAL MEJORADO DE RAVY */
-    #cuerpo-ravy {
-      width: 200px;
-      height: 200px;
-      margin: 20px auto;
-      border-radius: 50%;
+    /* CUERPO HUMANOIDE 3D BÁSICO */
+    #cuerpo-ravy-3d {
+      width: 120px;
+      margin: 30px auto;
+      position: relative;
+    }
+
+    #cabeza {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto;
       background: radial-gradient(circle at center, rgba(0,170,255,0.7), rgba(0,170,255,0.2));
-      box-shadow: 0 0 60px rgba(0,170,255,0.7), 0 0 120px rgba(0,170,255,0.3);
+      border-radius: 50%;
+      position: relative;
+      box-shadow: 0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3);
       animation: pulso 2s infinite ease-in-out;
       transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    #torso {
+      width: 60px;
+      height: 100px;
+      margin: -10px auto 0;
+      background: rgba(0,170,255,0.6);
+      border-radius: 30px;
+      box-shadow: 0 0 30px rgba(0,170,255,0.6);
+    }
+
+    .ojo {
+      width: 15px;
+      height: 15px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 30px;
+    }
+
+    .ojo.izquierdo {
+      left: 20px;
+    }
+
+    .ojo.derecho {
+      right: 20px;
+    }
+
+    .boca {
+      width: 40px;
+      height: 10px;
+      border-bottom: 3px solid white;
+      border-radius: 0 0 20px 20px;
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     @keyframes pulso {
@@ -58,7 +102,14 @@
   <h1>RAVY</h1>
   <p>Escríbeme algo</p>
 
-  <div id="cuerpo-ravy"></div>
+  <div id="cuerpo-ravy-3d">
+    <div id="cabeza">
+      <div class="ojo izquierdo"></div>
+      <div class="ojo derecho"></div>
+      <div class="boca"></div>
+    </div>
+    <div id="torso"></div>
+  </div>
 
   <input id="entrada" placeholder="Habla conmigo..." />
   <br>
@@ -94,13 +145,13 @@
       voz.lang = idioma;
       speechSynthesis.speak(voz);
 
-      // Efecto visual de pulso más fuerte cuando habla
-      const cuerpo = document.getElementById("cuerpo-ravy");
-      cuerpo.style.transform = "scale(1.2)";
-      cuerpo.style.boxShadow = "0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
+      // Efecto visual: pulso más fuerte cuando habla
+      const cabeza = document.getElementById("cabeza");
+      cabeza.style.transform = "scale(1.2)";
+      cabeza.style.boxShadow = "0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
       setTimeout(() => {
-        cuerpo.style.transform = "";
-        cuerpo.style.boxShadow = "";
+        cabeza.style.transform = "";
+        cabeza.style.boxShadow = "0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3)";
       }, 500);
     }
   </script>
