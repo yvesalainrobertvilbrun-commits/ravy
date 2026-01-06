@@ -7,13 +7,12 @@
 <style>
 body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align:center; padding:30px; }
 #cuerpo-ravy-3d { width:120px; margin:30px auto; position:relative; }
-#cabeza { width:100px; height:100px; margin:0 auto; background:radial-gradient(circle at center, rgba(0,170,255,0.7), rgba(0,170,255,0.2)); border-radius:50%; position:relative; box-shadow:0 0 40px rgba(0,170,255,0.7),0 0 80px rgba(0,170,255,0.3); transition:transform 0.3s, box-shadow 0.3s; }
-#torso { width:60px; height:100px; margin:-10px auto 0; background:rgba(0,170,255,0.6); border-radius:30px; box-shadow:0 0 30px rgba(0,170,255,0.6); transition:transform 0.3s; }
+#cabeza { width:100px; height:100px; margin:0 auto; background:radial-gradient(circle at center, rgba(0,170,255,0.7), rgba(0,170,255,0.2)); border-radius:50%; position:relative; box-shadow:0 0 40px rgba(0,170,255,0.7),0 0 80px rgba(0,170,255,0.3); transition:transform 0.1s, box-shadow 0.1s; }
+#torso { width:60px; height:100px; margin:-10px auto 0; background:rgba(0,170,255,0.6); border-radius:30px; box-shadow:0 0 30px rgba(0,170,255,0.6); transition:transform 0.1s; }
 .ojo { width:15px; height:15px; background:white; border-radius:50%; position:absolute; top:30px; }
 .ojo.izquierdo { left:20px; }
 .ojo.derecho { right:20px; }
 .boca { width:40px; height:10px; border-bottom:3px solid white; border-radius:0 0 20px 20px; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); transition:transform 0.1s; }
-.torso-mover { transform: translateY(-5px); }
 button { background:#00aaff; color:black; border:none; padding:12px 20px; font-size:16px; border-radius:8px; cursor:pointer; margin-top:20px; }
 </style>
 </head>
@@ -45,7 +44,6 @@ const RAVY = {
     let idioma=this.idioma;
     const t = texto.toLowerCase();
 
-    // SOLO RESPONDE A COMANDOS
     if(t.includes("hola")) frases=["Hola, aquí estoy 😊"];
     else if(t.includes("estado") || t.includes("cómo estás")) frases=["Activo y listo para ayudarte 💙"];
     else if(t.includes("abre google") || t.includes("google")){ frases=["Abriendo Google..."]; window.open("https://www.google.com","_blank"); }
@@ -66,34 +64,20 @@ const RAVY = {
 };
 
 function hablar(frases, idioma){
-  if(frases.length===0) return; // NO HABLAR SI NO HAY RESPUESTA
+  if(frases.length===0) return;
   frases.forEach((frase,i)=>{
     setTimeout(()=>{
       const voz=new SpeechSynthesisUtterance(frase);
       voz.lang=idioma;
       speechSynthesis.speak(voz);
-
-      const cabeza=document.getElementById("cabeza");
-      const boca=document.querySelector(".boca");
-      const torso=document.getElementById("torso");
-
-      cabeza.style.transform="scale(1.2)";
-      cabeza.style.boxShadow="0 0 80px rgba(0,170,255,1),0 0 150px rgba(0,170,255,0.5)";
-      boca.style.transform="scaleY(1.5)";
-      torso.classList.add("torso-mover");
-
-      setTimeout(()=>{
-        cabeza.style.transform="";
-        cabeza.style.boxShadow="0 0 40px rgba(0,170,255,0.7),0 0 80px rgba(0,170,255,0.3)";
-        boca.style.transform="";
-        torso.classList.remove("torso-mover");
-      },500);
     },i*1800);
   });
 }
 
 // ===== RECONOCIMIENTO DE VOZ =====
 let recognition;
+let audioContext, analyser, microphone, dataArray;
+
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
@@ -102,20 +86,58 @@ if(SpeechRecognition){
   recognition.continuous=true;
 
   recognition.onresult=function(event){
-    if(!RAVY.activo) return; // solo si está activo
+    if(!RAVY.activo) return;
     const texto=event.results[event.results.length-1][0].transcript;
     const {frases, idioma}=RAVY.ejecutarOrden(texto);
     hablar(frases, idioma);
   };
-
-  recognition.onerror=function(event){ console.log("Error:", event.error); };
 }
 
 // ===== BOTÓN ACTIVAR =====
-document.getElementById("activar-ravy").addEventListener("click", ()=>{
+document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
+
+  // INICIAR VOZ
   if(recognition) recognition.start();
+
+  // INICIAR ANALIZADOR DE AUDIO PARA MOVIMIENTOS
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    microphone = audioContext.createMediaStreamSource(stream);
+    analyser = audioContext.createAnalyser();
+    microphone.connect(analyser);
+    analyser.fftSize = 256;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    requestAnimationFrame(animarCuerpo);
+  } catch(e) {
+    console.log("Micrófono no disponible:", e);
+  }
 });
+
+// ===== ANIMAR CUERPO SEGÚN VOZ =====
+function animarCuerpo(){
+  if(RAVY.activo && analyser){
+    analyser.getByteFrequencyData(dataArray);
+    let volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+    const cabeza=document.getElementById("cabeza");
+    const boca=document.querySelector(".boca");
+    const torso=document.getElementById("torso");
+
+    // Escala cabeza según volumen
+    let escalaCabeza = 1 + volumen/400;
+    cabeza.style.transform=`scale(${escalaCabeza}) rotate(${volumen/50-1}deg)`;
+
+    // Boca se mueve
+    let bocaAltura = 1 + volumen/200;
+    boca.style.transform=`scaleY(${bocaAltura})`;
+
+    // Torso se mueve
+    torso.style.transform=`translateY(${volumen/100}px)`;
+
+    requestAnimationFrame(animarCuerpo);
+  }
+}
 </script>
 
 </body>
