@@ -17,6 +17,7 @@
       text-align: center;
       padding: 30px;
     }
+
     input {
       padding: 12px;
       width: 90%;
@@ -26,6 +27,7 @@
       margin-bottom: 15px;
       font-size: 16px;
     }
+
     button {
       background: #00aaff;
       color: black;
@@ -37,6 +39,7 @@
       margin-bottom: 20px;
     }
 
+    /* CUERPO HUMANOIDE 3D BÁSICO */
     #cuerpo-ravy-3d {
       width: 120px;
       margin: 30px auto;
@@ -62,6 +65,7 @@
       background: rgba(0,170,255,0.6);
       border-radius: 30px;
       box-shadow: 0 0 30px rgba(0,170,255,0.6);
+      transition: transform 0.3s;
     }
 
     .ojo {
@@ -101,6 +105,10 @@
       0%, 20%, 40%, 60%, 80%, 100% { transform: scaleY(1); }
       10%, 30%, 50%, 70%, 90% { transform: scaleY(0.1); }
     }
+
+    .torso-mover {
+      transform: translateY(-5px);
+    }
   </style>
 </head>
 <body>
@@ -124,51 +132,61 @@
   <script>
     function responder() {
       const textoUsuario = document.getElementById("entrada").value.toLowerCase();
-      let respuesta = "";
       let idioma = "es-ES";
+      let frases = [];
 
       // Español
       if (textoUsuario.includes("hola")) {
-        const saludos = [
+        frases = [
           "Hola, aquí está RAVY contigo 😊",
-          "¡Hola! ¿Cómo estás?",
-          "Hola, listo para ayudarte"
+          "¡Qué gusto verte!",
+          "¿Cómo te sientes hoy?"
         ];
-        respuesta = saludos[Math.floor(Math.random() * saludos.length)];
       } 
       else if (textoUsuario.includes("estado") || textoUsuario.includes("cómo estás")) {
-        const estados = [
+        frases = [
           "Estoy activo, atento y evolucionando contigo 💙",
           "Todo en orden, preparado para conversar contigo",
-          "Listo y atento a tus órdenes"
+          "Listo y enfocado en ti"
         ];
-        respuesta = estados[Math.floor(Math.random() * estados.length)];
       } 
       // Criollo haitiano
       else if (textoUsuario.includes("bonjou") || textoUsuario.includes("kijan")) {
-        respuesta = "Bonjou! Mwen la avèk ou. Mwen se RAVY.";
+        frases = [
+          "Bonjou! Mwen la avèk ou. Mwen se RAVY.",
+          "Kijan ou santi w jodi a?"
+        ];
         idioma = "fr-FR";
       } 
       else {
-        respuesta = "Te escucho. Continúa.";
+        frases = ["Te escucho. Continúa.", "Estoy atento a tus palabras."];
       }
 
-      // Reproducir voz
-      const voz = new SpeechSynthesisUtterance(respuesta);
-      voz.lang = idioma;
-      speechSynthesis.speak(voz);
+      // Animaciones y voz para cada frase
+      frases.forEach((frase, i) => {
+        setTimeout(() => {
+          const voz = new SpeechSynthesisUtterance(frase);
+          voz.lang = idioma;
+          speechSynthesis.speak(voz);
 
-      // Animación de cabeza y boca
-      const cabeza = document.getElementById("cabeza");
-      const boca = document.querySelector(".boca");
-      cabeza.style.transform = "scale(1.2)";
-      cabeza.style.boxShadow = "0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
-      boca.style.transform = "scaleY(1.5)";
-      setTimeout(() => {
-        cabeza.style.transform = "";
-        cabeza.style.boxShadow = "0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3)";
-        boca.style.transform = "";
-      }, 500);
+          // Animación cabeza, boca y torso
+          const cabeza = document.getElementById("cabeza");
+          const boca = document.querySelector(".boca");
+          const torso = document.getElementById("torso");
+
+          cabeza.style.transform = "scale(1.2)";
+          cabeza.style.boxShadow = "0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
+          boca.style.transform = "scaleY(1.5)";
+          torso.classList.add("torso-mover");
+
+          setTimeout(() => {
+            cabeza.style.transform = "";
+            cabeza.style.boxShadow = "0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3)";
+            boca.style.transform = "";
+            torso.classList.remove("torso-mover");
+          }, 500);
+        }, i * 1800);
+      });
     }
 
     // Registrar Service Worker
