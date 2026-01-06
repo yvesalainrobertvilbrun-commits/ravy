@@ -3,33 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAVY App</title>
-
-  <link rel="stylesheet" href="style.css">
+  <title>RAVY</title>
 </head>
 <body>
-
-  <div class="app">
-    <h1>🤖 RAVY</h1>
-
-    <div class="chat" id="chat">
-      <p><strong>RAVY:</strong> Estoy activo. Escríbeme.</p>
-    </div>
-
-    <input
-      type="text"
-      id="input"
-      placeholder="Escribe aquí..."
-    />
-  </div>
-
-  <script src="app.js"></script>
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js")
-      .then(() => console.log("Service Worker registrado"))
-      .catch(err => console.log("Error SW:", err));
-  }
-</script>
+  <h1>RAVY activo</h1>
+  <p>GitHub Pages está funcionando correctamente.</p>
 </body>
 </html>
