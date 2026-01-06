@@ -18,6 +18,17 @@ body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align
 .boca { width:40px; height:10px; border-bottom:3px solid white; border-radius:0 0 20px 20px; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); transition:transform 0.1s; }
 .torso-mover { transform: translateY(-5px); }
 
+button {
+  background:#00aaff;
+  color:black;
+  border:none;
+  padding:12px 20px;
+  font-size:16px;
+  border-radius:8px;
+  cursor:pointer;
+  margin-top:20px;
+}
+
 @keyframes pulso { 0%{transform:scale(1);opacity:0.6;}25%{transform:scale(1.05);opacity:0.8;}50%{transform:scale(1.1);opacity:1;}75%{transform:scale(1.05);opacity:0.8;}100%{transform:scale(1);opacity:0.6;} }
 @keyframes parpadeo { 0%,20%,40%,60%,80%,100%{transform:scaleY(1);} 10%,30%,50%,70%,90%{transform:scaleY(0.1);} }
 </style>
@@ -25,7 +36,7 @@ body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align
 <body>
 
 <h1>RAVY</h1>
-<p>Dí “RAVY” para activarme</p>
+<p>Presiona el botón para activarme</p>
 
 <div id="cuerpo-ravy-3d">
   <div id="cabeza">
@@ -35,6 +46,8 @@ body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align
   </div>
   <div id="torso"></div>
 </div>
+
+<button id="activar-ravy">Despertar a RAVY</button>
 
 <script>
 const RAVY = {
@@ -94,26 +107,17 @@ function hablar(frases, idioma){
   });
 }
 
-// ===== ESCUCHA CONTINUA CON WAKE WORD =====
+// ===== RECONOCIMIENTO DE VOZ =====
+let recognition;
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if(!SpeechRecognition){ alert("Tu navegador no soporta reconocimiento de voz."); }
-else{
-  const recognition = new SpeechRecognition();
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.interimResults=false;
   recognition.continuous=true;
 
   recognition.onresult=function(event){
-    const texto=event.results[event.results.length-1][0].transcript.toLowerCase();
-    
-    // ACTIVAR SOLO SI DIJO "RAVY"
-    if(!RAVY.activo && texto.includes("ravy")){
-      RAVY.activo=true;
-      hablar(["Hola, me has llamado. Ahora estoy atento a tus órdenes."], "es-ES");
-      return;
-    }
-
-    // SI ESTÁ ACTIVO, EJECUTAR ORDEN
+    const texto=event.results[event.results.length-1][0].transcript;
     if(RAVY.activo){
       const {frases, idioma}=RAVY.ejecutarOrden(texto);
       hablar(frases, idioma);
@@ -121,14 +125,14 @@ else{
   };
 
   recognition.onerror=function(event){ console.log("Error reconocimiento:", event.error); };
-  recognition.start();
 }
 
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('service-worker.js')
-    .then(()=>console.log("Service Worker registrado"))
-    .catch(err=>console.log("Error SW:",err));
-}
+// ===== BOTÓN ACTIVAR =====
+document.getElementById("activar-ravy").addEventListener("click", ()=>{
+  RAVY.activo=true;
+  hablar(["Hola, me has activado. Ahora estoy atento a tus órdenes."], "es-ES");
+  if(recognition) recognition.start();
+});
 </script>
 
 </body>
