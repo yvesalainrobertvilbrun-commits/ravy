@@ -40,24 +40,34 @@
   <input id="entrada" placeholder="Habla conmigo..." />
   <br>
   <button onclick="responder()">Responder</button>
+<script>
+  function responder() {
+    const textoUsuario = document.getElementById("entrada").value.toLowerCase();
+    let respuesta = "";
+    let idioma = "es-ES";
 
-  <script>
-    function responder() {
-      const textoUsuario = document.getElementById("entrada").value;
-      let respuesta = "Estoy aquí contigo.";
-
-      if (textoUsuario.toLowerCase().includes("hola")) {
-        respuesta = "Hola. Aquí está RAVY contigo.";
-      }
-      if (textoUsuario.toLowerCase().includes("estado")) {
-        respuesta = "Estoy activo, atento y en evolución.";
-      }
-
-      const voz = new SpeechSynthesisUtterance(respuesta);
-      voz.lang = "es-ES";
-      speechSynthesis.speak(voz);
+    if (textoUsuario.includes("bonjou") || textoUsuario.includes("kijan")) {
+      respuesta = "Bonjou. Mwen la avèk ou. Mwen se RAVY.";
+      idioma = "fr-FR";
+    } 
+    else if (textoUsuario.includes("hola")) {
+      respuesta = "Hola. Aquí está RAVY contigo.";
+      idioma = "es-ES";
+    } 
+    else if (textoUsuario.includes("estado")) {
+      respuesta = "Estoy activo, atento y evolucionando contigo.";
+      idioma = "es-ES";
+    } 
+    else {
+      respuesta = "Te escucho. Continúa.";
+      idioma = "es-ES";
     }
-  </script>
+
+    const voz = new SpeechSynthesisUtterance(respuesta);
+    voz.lang = idioma;
+    speechSynthesis.speak(voz);
+  }
+</script>
 
 </body>
 </html>
