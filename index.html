@@ -29,6 +29,21 @@
       font-size: 16px;
       border-radius: 8px;
       cursor: pointer;
+      margin-bottom: 20px;
+    }
+    #cuerpo-ravy {
+      width: 180px;
+      height: 180px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(0,170,255,0.6), rgba(0,170,255,0.1));
+      box-shadow: 0 0 40px rgba(0,170,255,0.6);
+      animation: pulso 3s infinite ease-in-out;
+    }
+    @keyframes pulso {
+      0% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.1); opacity: 0.9; }
+      100% { transform: scale(1); opacity: 0.6; }
     }
   </style>
 </head>
@@ -36,51 +51,43 @@
 
   <h1>RAVY</h1>
   <p>Escríbeme algo</p>
-<div id="cuerpo-ravy"></div>
+
+  <div id="cuerpo-ravy"></div>
+
   <input id="entrada" placeholder="Habla conmigo..." />
   <br>
   <button onclick="responder()">Responder</button>
-<script>
-  function responder() {
-    const textoUsuario = document.getElementById("entrada").value.toLowerCase();
-    let respuesta = "";
-    let idioma = "es-ES";
 
-    if (textoUsuario.includes("bonjou") || textoUsuario.includes("kijan")) {
-      respuesta = "Bonjou. Mwen la avèk ou. Mwen se RAVY.";
-      idioma = "fr-FR";
-    } 
-    else if (textoUsuario.includes("hola")) {
-      respuesta = "Hola. Aquí está RAVY contigo.";
-      idioma = "es-ES";
-    } 
-    else if (textoUsuario.includes("estado")) {
-      respuesta = "Estoy activo, atento y evolucionando contigo.";
-      idioma = "es-ES";
-    } 
-    else {
-      respuesta = "Te escucho. Continúa.";
-      idioma = "es-ES";
+  <script>
+    function responder() {
+      const textoUsuario = document.getElementById("entrada").value.toLowerCase();
+      let respuesta = "";
+      let idioma = "es-ES";
+
+      // Detectar idioma criollo haitiano
+      if (textoUsuario.includes("bonjou") || textoUsuario.includes("kijan")) {
+        respuesta = "Bonjou. Mwen la avèk ou. Mwen se RAVY.";
+        idioma = "fr-FR";
+      } 
+      // Español
+      else if (textoUsuario.includes("hola")) {
+        respuesta = "Hola. Aquí está RAVY contigo.";
+        idioma = "es-ES";
+      } 
+      else if (textoUsuario.includes("estado")) {
+        respuesta = "Estoy activo, atento y evolucionando contigo.";
+        idioma = "es-ES";
+      } 
+      else {
+        respuesta = "Te escucho. Continúa.";
+        idioma = "es-ES";
+      }
+
+      const voz = new SpeechSynthesisUtterance(respuesta);
+      voz.lang = idioma;
+      speechSynthesis.speak(voz);
     }
+  </script>
 
-    const voz = new SpeechSynthesisUtterance(respuesta);
-    voz.lang = idioma;
-    speechSynthesis.speak(voz);
-  }
-</script>
-#cuerpo-ravy {
-  width: 180px;
-  height: 180px;
-  margin: 30px auto;
-  border-radius: 50%;
-  background: radial-gradient(circle at center, rgba(0,170,255,0.6), rgba(0,170,255,0.1));
-  box-shadow: 0 0 40px rgba(0,170,255,0.6);
-  animation: pulso 3s infinite ease-in-out;
-}
-@keyframes pulso {
-  0% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.1); opacity: 0.9; }
-  100% { transform: scale(1); opacity: 0.6; }
-}
 </body>
 </html>
