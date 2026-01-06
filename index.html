@@ -25,7 +25,7 @@ body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align
 <body>
 
 <h1>RAVY</h1>
-<p>Habla y yo responderé automáticamente</p>
+<p>Dí “RAVY” para activarme</p>
 
 <div id="cuerpo-ravy-3d">
   <div id="cabeza">
@@ -40,6 +40,7 @@ body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align
 const RAVY = {
   nombre:"RAVY",
   idioma:"es-ES",
+  activo:false,
   contexto:{},
 
   ejecutarOrden(texto){
@@ -47,48 +48,26 @@ const RAVY = {
     let idioma=this.idioma;
     const t = texto.toLowerCase();
 
-    // === SALUDOS ===
     if(t.includes("hola")) frases=["Hola, aquí está RAVY contigo 😊"];
     else if(t.includes("estado") || t.includes("cómo estás")) frases=["Estoy activo y listo para ayudarte 💙"];
-
-    // === IDIOMAS ===
     else if(t.includes("bonjou") || t.includes("kijan")){ frases=["Bonjou! Mwen la avèk ou. Mwen se RAVY."]; idioma="fr-FR"; }
-
-    // === ABRIR SITIO ===
-    else if(t.includes("abre google") || t.includes("google")){
-      frases=["Abriendo Google..."];
-      window.open("https://www.google.com","_blank");
-    }
-
-    // === HORA ===
-    else if(t.includes("hora") || t.includes("qué hora")){ 
-      const ahora=new Date();
-      frases=[`La hora actual es ${ahora.getHours()}:${ahora.getMinutes()}`];
-    }
-
-    // === CHISTES ===
+    else if(t.includes("abre google") || t.includes("google")){ frases=["Abriendo Google..."]; window.open("https://www.google.com","_blank"); }
+    else if(t.includes("hora") || t.includes("qué hora")){ const ahora=new Date(); frases=[`La hora actual es ${ahora.getHours()}:${ahora.getMinutes()}`]; }
     else if(t.includes("chiste")) frases=["¿Por qué la computadora fue al doctor? Porque tenía un virus 😂"];
-
-    // === EFECTO LUZ ===
-    else if(t.includes("enciende luz") || t.includes("luz")){
-      frases=["Encendiendo efecto luminoso..."];
+    else if(t.includes("enciende luz") || t.includes("luz")){ 
+      frases=["Encendiendo efecto luminoso..."]; 
       const torso=document.getElementById("torso");
       torso.style.background="rgba(255,255,0,0.8)";
       setTimeout(()=>torso.style.background="rgba(0,170,255,0.6)",1000);
     }
-
-    // === RESPUESTA GENERAL ===
     else frases=["Te escucho, continúa hablando."];
 
-    // Guardar contexto
     this.contexto.ultimoTexto=texto;
     this.contexto.ultimaRespuesta=frases;
-
     return {frases, idioma};
   }
 };
 
-// ===== FUNCION VOZ + ANIMACIONES =====
 function hablar(frases, idioma){
   frases.forEach((frase,i)=>{
     setTimeout(()=>{
@@ -115,26 +94,36 @@ function hablar(frases, idioma){
   });
 }
 
-// ===== RECONOCIMIENTO DE VOZ CONTINUA (CEREBRO ACTIVADO) =====
-const SpeechRecognition=window.SpeechRecognition || window.webkitSpeechRecognition;
+// ===== ESCUCHA CONTINUA CON WAKE WORD =====
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(!SpeechRecognition){ alert("Tu navegador no soporta reconocimiento de voz."); }
 else{
-  const recognition=new SpeechRecognition();
+  const recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.interimResults=false;
   recognition.continuous=true;
 
   recognition.onresult=function(event){
-    const texto=event.results[event.results.length-1][0].transcript;
-    const {frases, idioma}=RAVY.ejecutarOrden(texto);
-    hablar(frases, idioma);
+    const texto=event.results[event.results.length-1][0].transcript.toLowerCase();
+    
+    // ACTIVAR SOLO SI DIJO "RAVY"
+    if(!RAVY.activo && texto.includes("ravy")){
+      RAVY.activo=true;
+      hablar(["Hola, me has llamado. Ahora estoy atento a tus órdenes."], "es-ES");
+      return;
+    }
+
+    // SI ESTÁ ACTIVO, EJECUTAR ORDEN
+    if(RAVY.activo){
+      const {frases, idioma}=RAVY.ejecutarOrden(texto);
+      hablar(frases, idioma);
+    }
   };
 
-  recognition.onerror=function(event){ console.log("Error reconocimiento:",event.error); };
+  recognition.onerror=function(event){ console.log("Error reconocimiento:", event.error); };
   recognition.start();
 }
 
-// ===== SERVICE WORKER =====
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('service-worker.js')
     .then(()=>console.log("Service Worker registrado"))
