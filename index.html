@@ -3,12 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY</title>
+<title>RAVY 3D</title>
 <style>
 body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align:center; padding:30px; }
-#cuerpo-ravy-3d { width:120px; margin:30px auto; position:relative; }
+#cuerpo-ravy-3d { width:160px; margin:30px auto; position:relative; }
 #cabeza { width:100px; height:100px; margin:0 auto; background:radial-gradient(circle at center, rgba(0,170,255,0.7), rgba(0,170,255,0.2)); border-radius:50%; position:relative; box-shadow:0 0 40px rgba(0,170,255,0.7),0 0 80px rgba(0,170,255,0.3); transition:transform 0.1s, box-shadow 0.1s; }
 #torso { width:60px; height:100px; margin:-10px auto 0; background:rgba(0,170,255,0.6); border-radius:30px; box-shadow:0 0 30px rgba(0,170,255,0.6); transition:transform 0.1s; }
+.brazo { width:20px; height:80px; background:rgba(0,170,255,0.5); position:absolute; top:30px; border-radius:10px; transition:transform 0.1s; }
+#brazo-izq { left:-20px; transform-origin:top center; }
+#brazo-der { right:-20px; transform-origin:top center; }
 .ojo { width:15px; height:15px; background:white; border-radius:50%; position:absolute; top:30px; }
 .ojo.izquierdo { left:20px; }
 .ojo.derecho { right:20px; }
@@ -18,7 +21,7 @@ button { background:#00aaff; color:black; border:none; padding:12px 20px; font-s
 </head>
 <body>
 
-<h1>RAVY</h1>
+<h1>RAVY 3D</h1>
 <p>Presiona el botón para activarme y dar órdenes</p>
 
 <div id="cuerpo-ravy-3d">
@@ -28,6 +31,8 @@ button { background:#00aaff; color:black; border:none; padding:12px 20px; font-s
     <div class="boca"></div>
   </div>
   <div id="torso"></div>
+  <div id="brazo-izq" class="brazo"></div>
+  <div id="brazo-der" class="brazo"></div>
 </div>
 
 <button id="activar-ravy">Despertar a RAVY</button>
@@ -55,7 +60,7 @@ const RAVY = {
       torso.style.background="rgba(255,255,0,0.8)";
       setTimeout(()=>torso.style.background="rgba(0,170,255,0.6)",1000);
     }
-    else frases=[]; // no hablar si no hay comando
+    else frases=[];
 
     this.contexto.ultimoTexto=texto;
     this.contexto.ultimaRespuesta=frases;
@@ -74,7 +79,7 @@ function hablar(frases, idioma){
   });
 }
 
-// ===== RECONOCIMIENTO DE VOZ =====
+// ===== RECONOCIMIENTO DE VOZ Y AUDIO PARA ANIMACIONES =====
 let recognition;
 let audioContext, analyser, microphone, dataArray;
 
@@ -97,10 +102,10 @@ if(SpeechRecognition){
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
 
-  // INICIAR VOZ
+  // Iniciar reconocimiento de voz
   if(recognition) recognition.start();
 
-  // INICIAR ANALIZADOR DE AUDIO PARA MOVIMIENTOS
+  // Iniciar audio para animación 3D
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -115,25 +120,25 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   }
 });
 
-// ===== ANIMAR CUERPO SEGÚN VOZ =====
+// ===== ANIMAR CUERPO 3D SEGÚN VOZ =====
 function animarCuerpo(){
   if(RAVY.activo && analyser){
     analyser.getByteFrequencyData(dataArray);
     let volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+
     const cabeza=document.getElementById("cabeza");
     const boca=document.querySelector(".boca");
     const torso=document.getElementById("torso");
+    const brazoIzq=document.getElementById("brazo-izq");
+    const brazoDer=document.getElementById("brazo-der");
 
-    // Escala cabeza según volumen
+    // Movimiento según volumen
     let escalaCabeza = 1 + volumen/400;
     cabeza.style.transform=`scale(${escalaCabeza}) rotate(${volumen/50-1}deg)`;
-
-    // Boca se mueve
-    let bocaAltura = 1 + volumen/200;
-    boca.style.transform=`scaleY(${bocaAltura})`;
-
-    // Torso se mueve
-    torso.style.transform=`translateY(${volumen/100}px)`;
+    boca.style.transform=`scaleY(${1 + volumen/200})`;
+    torso.style.transform=`translateY(${volumen/120}px)`;
+    brazoIzq.style.transform=`rotate(${volumen/15-3}deg)`;
+    brazoDer.style.transform=`rotate(${-volumen/15+3}deg)`;
 
     requestAnimationFrame(animarCuerpo);
   }
