@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RAVY</title>
+
+  <!-- Manifest para PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00aaff">
+
   <style>
     body {
       background: black;
@@ -32,7 +37,6 @@
       margin-bottom: 20px;
     }
 
-    /* CUERPO HUMANOIDE 3D BÁSICO */
     #cuerpo-ravy-3d {
       width: 120px;
       margin: 30px auto;
@@ -67,15 +71,11 @@
       border-radius: 50%;
       position: absolute;
       top: 30px;
+      animation: parpadeo 5s infinite;
     }
 
-    .ojo.izquierdo {
-      left: 20px;
-    }
-
-    .ojo.derecho {
-      right: 20px;
-    }
+    .ojo.izquierdo { left: 20px; }
+    .ojo.derecho { right: 20px; }
 
     .boca {
       width: 40px;
@@ -86,6 +86,7 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
+      transition: transform 0.1s;
     }
 
     @keyframes pulso {
@@ -94,6 +95,11 @@
       50% { transform: scale(1.1); opacity: 1; }
       75% { transform: scale(1.05); opacity: 0.8; }
       100% { transform: scale(1); opacity: 0.6; }
+    }
+
+    @keyframes parpadeo {
+      0%, 20%, 40%, 60%, 80%, 100% { transform: scaleY(1); }
+      10%, 30%, 50%, 70%, 90% { transform: scaleY(0.1); }
     }
   </style>
 </head>
@@ -121,23 +127,30 @@
       let respuesta = "";
       let idioma = "es-ES";
 
-      // Detectar idioma criollo haitiano
-      if (textoUsuario.includes("bonjou") || textoUsuario.includes("kijan")) {
-        respuesta = "Bonjou. Mwen la avèk ou. Mwen se RAVY.";
-        idioma = "fr-FR";
-      } 
       // Español
-      else if (textoUsuario.includes("hola")) {
-        respuesta = "Hola. Aquí está RAVY contigo.";
-        idioma = "es-ES";
+      if (textoUsuario.includes("hola")) {
+        const saludos = [
+          "Hola, aquí está RAVY contigo 😊",
+          "¡Hola! ¿Cómo estás?",
+          "Hola, listo para ayudarte"
+        ];
+        respuesta = saludos[Math.floor(Math.random() * saludos.length)];
       } 
-      else if (textoUsuario.includes("estado")) {
-        respuesta = "Estoy activo, atento y evolucionando contigo.";
-        idioma = "es-ES";
+      else if (textoUsuario.includes("estado") || textoUsuario.includes("cómo estás")) {
+        const estados = [
+          "Estoy activo, atento y evolucionando contigo 💙",
+          "Todo en orden, preparado para conversar contigo",
+          "Listo y atento a tus órdenes"
+        ];
+        respuesta = estados[Math.floor(Math.random() * estados.length)];
+      } 
+      // Criollo haitiano
+      else if (textoUsuario.includes("bonjou") || textoUsuario.includes("kijan")) {
+        respuesta = "Bonjou! Mwen la avèk ou. Mwen se RAVY.";
+        idioma = "fr-FR";
       } 
       else {
         respuesta = "Te escucho. Continúa.";
-        idioma = "es-ES";
       }
 
       // Reproducir voz
@@ -145,14 +158,24 @@
       voz.lang = idioma;
       speechSynthesis.speak(voz);
 
-      // Efecto visual: pulso más fuerte cuando habla
+      // Animación de cabeza y boca
       const cabeza = document.getElementById("cabeza");
+      const boca = document.querySelector(".boca");
       cabeza.style.transform = "scale(1.2)";
       cabeza.style.boxShadow = "0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
+      boca.style.transform = "scaleY(1.5)";
       setTimeout(() => {
         cabeza.style.transform = "";
         cabeza.style.boxShadow = "0 0 40px rgba(0,170,255,0.7), 0 0 80px rgba(0,170,255,0.3)";
+        boca.style.transform = "";
       }, 500);
+    }
+
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('Service Worker registrado'))
+        .catch(err => console.log('Error SW:', err));
     }
   </script>
 
