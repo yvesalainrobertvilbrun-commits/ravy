@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RAVY</title>
 
-  <!-- Manifest PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#00aaff">
 
@@ -16,17 +15,6 @@
       font-family: Arial, sans-serif;
       text-align: center;
       padding: 30px;
-    }
-
-    button {
-      background: #00aaff;
-      color: black;
-      border: none;
-      padding: 12px 18px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-bottom: 20px;
     }
 
     /* CUERPO 3D */
@@ -57,15 +45,12 @@
     <div id="torso"></div>
   </div>
 
-  <button onclick="iniciarRAVY()">Hablar con RAVY</button>
-
   <script>
     // ===== CEREBRO =====
     const RAVY = {
       nombre: "RAVY",
       idioma: "es-ES",
       contexto: {},
-
       ejecutarOrden(texto) {
         let frases = [];
         let idioma = this.idioma;
@@ -91,7 +76,7 @@
       }
     };
 
-    // ===== VOZ AUTOMÁTICA =====
+    // ===== FUNCIÓN VOZ + ANIMACIONES =====
     function hablar(frases, idioma){
       frases.forEach((frase,i)=>{
         setTimeout(()=>{
@@ -104,7 +89,7 @@
           const torso=document.getElementById("torso");
 
           cabeza.style.transform="scale(1.2)";
-          cabeza.style.boxShadow="0 0 80px rgba(0,170,255,1), 0 0 150px rgba(0,170,255,0.5)";
+          cabeza.style.boxShadow="0 0 80px rgba(0,170,255,1),0 0 150px rgba(0,170,255,0.5)";
           boca.style.transform="scaleY(1.5)";
           torso.classList.add("torso-mover");
 
@@ -118,26 +103,22 @@
       });
     }
 
-    // ===== RECONOCIMIENTO DE VOZ =====
-    function iniciarRAVY(){
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if(!SpeechRecognition){ alert("Tu navegador no soporta reconocimiento de voz."); return; }
-
+    // ===== RECONOCIMIENTO DE VOZ CONTINUA =====
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition){ alert("Tu navegador no soporta reconocimiento de voz."); }
+    else {
       const recognition = new SpeechRecognition();
       recognition.lang = "es-ES";
       recognition.interimResults = false;
-      recognition.continuous = false;
+      recognition.continuous = true; // escucha sin parar
 
       recognition.onresult = function(event){
-        const texto = event.results[0][0].transcript;
+        const texto = event.results[event.results.length-1][0].transcript;
         const {frases, idioma} = RAVY.ejecutarOrden(texto);
         hablar(frases, idioma);
       };
 
-      recognition.onerror = function(event){
-        console.log("Error reconocimiento:", event.error);
-      };
-
+      recognition.onerror = function(event){ console.log("Error reconocimiento:", event.error); };
       recognition.start();
     }
 
