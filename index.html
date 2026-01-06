@@ -12,7 +12,7 @@ body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align
 .brazo { width:20px; height:80px; background:rgba(0,170,255,0.5); position:absolute; top:30px; border-radius:10px; transition:transform 0.1s; }
 #brazo-izq { left:-20px; transform-origin:top center; }
 #brazo-der { right:-20px; transform-origin:top center; }
-.ojo { width:15px; height:15px; background:white; border-radius:50%; position:absolute; top:30px; }
+.ojo { width:15px; height:15px; background:white; border-radius:50%; position:absolute; top:30px; transition:transform 0.1s, height 0.1s; }
 .ojo.izquierdo { left:20px; }
 .ojo.derecho { right:20px; }
 .boca { width:40px; height:10px; border-bottom:3px solid white; border-radius:0 0 20px 20px; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); transition:transform 0.1s; }
@@ -38,6 +38,7 @@ button { background:#00aaff; color:black; border:none; padding:12px 20px; font-s
 <button id="activar-ravy">Despertar a RAVY</button>
 
 <script>
+// ===== RAVY Y SU CEREBRO =====
 const RAVY = {
   nombre:"RAVY",
   idioma:"es-ES",
@@ -74,7 +75,7 @@ const RAVY = {
   }
 };
 
-// Hablar con voz
+// ===== HABLAR =====
 function hablar(frases, idioma){
   if(frases.length===0) return;
   frases.forEach((frase,i)=>{
@@ -86,7 +87,7 @@ function hablar(frases, idioma){
   });
 }
 
-// ===== RECONOCIMIENTO DE VOZ Y AUDIO PARA ANIMACIONES =====
+// ===== RECONOCIMIENTO DE VOZ =====
 let recognition;
 let audioContext, analyser, microphone, dataArray;
 
@@ -97,7 +98,6 @@ if(SpeechRecognition){
   recognition.interimResults=false;
   recognition.continuous=true;
 
-  // Escucha familiar
   recognition.onresult=function(event){
     if(!RAVY.activo) return;
     const texto=event.results[event.results.length-1][0].transcript.toLowerCase();
@@ -138,7 +138,7 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   }
 });
 
-// ===== ANIMAR CUERPO 3D SEGÚN VOZ =====
+// ===== ANIMAR CUERPO 3D =====
 function animarCuerpo(){
   if(RAVY.activo && analyser){
     analyser.getByteFrequencyData(dataArray);
@@ -149,14 +149,34 @@ function animarCuerpo(){
     const torso=document.getElementById("torso");
     const brazoIzq=document.getElementById("brazo-izq");
     const brazoDer=document.getElementById("brazo-der");
+    const ojoIzq=document.querySelector(".ojo.izquierdo");
+    const ojoDer=document.querySelector(".ojo.derecho");
 
-    // Movimiento según volumen
-    let escalaCabeza = 1 + volumen/400;
+    // Movimiento general según volumen
+    let escalaCabeza = 1 + volumen/500;
     cabeza.style.transform=`scale(${escalaCabeza}) rotate(${volumen/50-1}deg)`;
-    boca.style.transform=`scaleY(${1 + volumen/200})`;
-    torso.style.transform=`translateY(${volumen/120}px)`;
-    brazoIzq.style.transform=`rotate(${volumen/15-3}deg)`;
-    brazoDer.style.transform=`rotate(${-volumen/15+3}deg)`;
+    boca.style.transform=`scaleY(${1 + volumen/300})`;
+    torso.style.transform=`translateY(${volumen/150}px)`;
+    brazoIzq.style.transform=`rotate(${volumen/20-3}deg)`;
+    brazoDer.style.transform=`rotate(${-volumen/20+3}deg)`;
+
+    // Seguimiento de ojos (simulado)
+    let movimientoOjos = (volumen/255) * 10; // +/-10px
+    ojoIzq.style.transform=`translate(${movimientoOjos}px,0)`;
+    ojoDer.style.transform=`translate(${movimientoOjos}px,0)`;
+
+    // Parpadeo automático
+    if(!cabeza.parpadeo) cabeza.parpadeo=0;
+    cabeza.parpadeo++;
+    if(cabeza.parpadeo>180){
+      ojoIzq.style.height="2px";
+      ojoDer.style.height="2px";
+      setTimeout(()=>{
+        ojoIzq.style.height="15px";
+        ojoDer.style.height="15px";
+      },150);
+      cabeza.parpadeo=0;
+    }
 
     requestAnimationFrame(animarCuerpo);
   }
