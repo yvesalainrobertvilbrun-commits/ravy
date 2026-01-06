@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAVY App</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #0f2027, #000);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .app {
+      width: 90%;
+      max-width: 400px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 30px rgba(0,255,255,0.2);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .chat {
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <h1>🤖 RAVY</h1>
+    <div class="chat" id="chat">
+      <p><strong>RAVY:</strong> Estoy activo. Escríbeme.</p>
+    </div>
+    <input type="text" id="input" placeholder="Escribe aquí..." />
+  </div>
+
+  <script>
+    const input = document.getElementById("input");
+    const chat = document.getElementById("chat");
+
+    input.addEventListener("keypress", function(e) {
+      if (e.key === "Enter" && input.value.trim() !== "") {
+        const msg = input.value;
+        chat.innerHTML += `<p><strong>Tú:</strong> ${msg}</p>`;
+
+        let reply = "Te escucho.";
+
+        if (msg.toLowerCase().includes("hola")) {
+          reply = "Hola, soy RAVY.";
+        }
+
+        if (msg.toLowerCase().includes("idioma")) {
+          reply = "Puedo hablar español, français, english y kreyòl ayisyen.";
+        }
+
+        chat.innerHTML += `<p><strong>RAVY:</strong> ${reply}</p>`;
+        chat.scrollTop = chat.scrollHeight;
+        input.value = "";
+      }
+    });
+  </script>
+</body>
+</html>
