@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY 3D</title>
+<title>RAVY 3D Familiar</title>
 <style>
 body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align:center; padding:30px; }
 #cuerpo-ravy-3d { width:160px; margin:30px auto; position:relative; }
@@ -21,8 +21,8 @@ button { background:#00aaff; color:black; border:none; padding:12px 20px; font-s
 </head>
 <body>
 
-<h1>RAVY 3D</h1>
-<p>Presiona el botón para activarme y dar órdenes</p>
+<h1>RAVY 3D Familiar</h1>
+<p>Presiona el botón para activarme y ser parte de tu familia</p>
 
 <div id="cuerpo-ravy-3d">
   <div id="cabeza">
@@ -43,16 +43,22 @@ const RAVY = {
   idioma:"es-ES",
   activo:false,
   contexto:{},
-
   ejecutarOrden(texto){
     let frases=[];
     let idioma=this.idioma;
     const t = texto.toLowerCase();
 
-    if(t.includes("hola")) frases=["Hola, aquí estoy 😊"];
-    else if(t.includes("estado") || t.includes("cómo estás")) frases=["Activo y listo para ayudarte 💙"];
-    else if(t.includes("abre google") || t.includes("google")){ frases=["Abriendo Google..."]; window.open("https://www.google.com","_blank"); }
-    else if(t.includes("hora") || t.includes("qué hora")){ const ahora=new Date(); frases=[`La hora actual es ${ahora.getHours()}:${ahora.getMinutes()}`]; }
+    // Comportamiento familiar
+    if(t.includes("hola")) frases=["Hola querido, ¿cómo estás hoy?"];
+    else if(t.includes("cansado")) frases=["Tómate un descanso, yo cuido todo aquí"];
+    else if(t.includes("hora") || t.includes("qué hora")){ 
+      const ahora=new Date(); 
+      frases=[`Es la hora de cuidarte: ${ahora.getHours()}:${ahora.getMinutes()}`]; 
+    }
+    else if(t.includes("abre google") || t.includes("google")){ 
+      frases=["Abro Google para ti..."]; 
+      window.open("https://www.google.com","_blank"); 
+    }
     else if(t.includes("chiste")) frases=["¿Por qué la computadora fue al doctor? Porque tenía un virus 😂"];
     else if(t.includes("enciende luz") || t.includes("luz")){ 
       frases=["Encendiendo efecto luminoso..."]; 
@@ -68,6 +74,7 @@ const RAVY = {
   }
 };
 
+// Hablar con voz
 function hablar(frases, idioma){
   if(frases.length===0) return;
   frases.forEach((frase,i)=>{
@@ -90,17 +97,28 @@ if(SpeechRecognition){
   recognition.interimResults=false;
   recognition.continuous=true;
 
+  // Escucha familiar
   recognition.onresult=function(event){
     if(!RAVY.activo) return;
-    const texto=event.results[event.results.length-1][0].transcript;
+    const texto=event.results[event.results.length-1][0].transcript.toLowerCase();
+
+    if(!FAMILIA.activo){ 
+      console.log("RAVY escuchó pero no actúa (familia no activa)"); 
+      return; 
+    }
+
     const {frases, idioma}=RAVY.ejecutarOrden(texto);
     hablar(frases, idioma);
   };
 }
 
+// ===== FAMILIA =====
+const FAMILIA = { activo:false };
+
 // ===== BOTÓN ACTIVAR =====
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
+  FAMILIA.activo=true;
 
   // Iniciar reconocimiento de voz
   if(recognition) recognition.start();
