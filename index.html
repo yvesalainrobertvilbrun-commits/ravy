@@ -52,6 +52,7 @@ button{
   background:#ffd1b3;
   border-radius:50%;
   position:relative;
+  transition:0.3s;
 }
 .ojo{
   width:20px;
@@ -73,6 +74,7 @@ button{
   bottom:35px;
   left:50%;
   transform:translateX(-50%);
+  transition:0.2s;
 }
 
 /* CUERPO */
@@ -90,7 +92,7 @@ button{
   background:#00aaff;
   border-radius:20px;
   transform-origin:top center;
-  transition:0.2s;
+  transition:0.3s;
 }
 .brazo.izq{ margin-right:10px; }
 .brazo.der{ margin-left:10px; }
@@ -101,6 +103,7 @@ button{
   height:180px;
   background:#008cff;
   border-radius:40px;
+  transition:0.3s;
 }
 </style>
 </head>
@@ -112,9 +115,9 @@ button{
 </div>
 
 <div class="ravy">
-  <div class="cabeza">
-    <div class="ojo izq" id="ojoIzq"></div>
-    <div class="ojo der" id="ojoDer"></div>
+  <div class="cabeza" id="cabeza">
+    <div class="ojo izq"></div>
+    <div class="ojo der"></div>
     <div class="boca" id="boca"></div>
   </div>
 
@@ -142,18 +145,28 @@ const RAVY={
   hablar(texto){
     const voz=new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
+    voz.rate=0.9;
     speechSynthesis.speak(voz);
   },
   responder(texto){
     texto=texto.toLowerCase();
+
     if(texto.includes("hola")){
       this.emociones.alegria+=10;
-      return "Hola, aquí estoy.";
+      this.emociones.energia+=5;
+      return "Hola. Estoy contigo.";
     }
+
     if(texto.includes("gracias")){
       this.emociones.confianza+=10;
-      return "Siempre.";
+      return "Siempre para ti.";
     }
+
+    if(texto.includes("descansa")){
+      this.emociones.energia-=20;
+      return "Voy a relajarme.";
+    }
+
     return "Te escucho.";
   }
 };
@@ -165,30 +178,42 @@ const boca=document.getElementById("boca");
 const brazoIzq=document.getElementById("brazoIzq");
 const brazoDer=document.getElementById("brazoDer");
 const torso=document.getElementById("torso");
+const cabeza=document.getElementById("cabeza");
 
 let hablando=false;
 let respiracion=0;
 
-function actualizarCuerpo(){
-  // Boca
-  boca.style.height=hablando ? "30px":"10px";
+function actualizarEstado(){
+  const a=RAVY.emociones.alegria;
+  const e=RAVY.emociones.energia;
 
-  // Respiración
-  respiracion+=0.05;
-  torso.style.transform=`scaleY(${1+Math.sin(respiracion)*0.05})`;
-
-  // Brazos según emoción
-  let alegria=RAVY.emociones.alegria;
-  let energia=RAVY.emociones.energia;
-
-  brazoIzq.style.transform=`rotate(${-(alegria/2)}deg)`;
-  brazoDer.style.transform=`rotate(${alegria/2}deg)`;
-
-  // Cansancio
-  if(energia<30){
-    brazoIzq.style.transform="rotate(-10deg)";
-    brazoDer.style.transform="rotate(10deg)";
+  // COLOR SEGÚN ÁNIMO
+  if(a>70){
+    torso.style.background="#00ffcc";
+  }else if(e<30){
+    torso.style.background="#555577";
+  }else{
+    torso.style.background="#008cff";
   }
+
+  // POSTURA
+  if(e<30){
+    torso.style.transform="scaleY(0.95)";
+  }else{
+    torso.style.transform="scaleY(1)";
+  }
+}
+
+function actualizarCuerpo(){
+  boca.style.height=hablando?"28px":"10px";
+
+  respiracion+=0.05;
+  torso.style.transform+=` scaleY(${1+Math.sin(respiracion)*0.03})`;
+
+  brazoIzq.style.transform=`rotate(${-(RAVY.emociones.alegria/2)}deg)`;
+  brazoDer.style.transform=`rotate(${(RAVY.emociones.alegria/2)}deg)`;
+
+  actualizarEstado();
 }
 
 // =======================
@@ -201,6 +226,7 @@ if(SpeechRecognition){
   recognition=new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.continuous=true;
+
   recognition.onresult=(e)=>{
     if(!RAVY.activo) return;
     hablando=true;
@@ -216,7 +242,7 @@ if(SpeechRecognition){
 // =======================
 function loop(){
   if(RAVY.activo){
-    RAVY.emociones.energia-=0.02;
+    RAVY.emociones.energia-=0.01;
     RAVY.guardar();
     actualizarCuerpo();
   }
@@ -231,7 +257,7 @@ document.getElementById("activar").onclick=()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy despierto.");
+  RAVY.hablar("Estoy activo.");
 };
 </script>
 
