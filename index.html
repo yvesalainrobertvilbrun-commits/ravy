@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide Estable</title>
+<title>RAVY Humanoide PWA</title>
+<link rel="manifest" href="manifest.json">
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -34,7 +35,7 @@ let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeigh
 camera.position.set(0,1.6,6);
 
 let renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
@@ -49,41 +50,44 @@ let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
-// ===== MODELO HUMANOIDE ESTABLE =====
+// ===== CARGAR MODELO 3D HUMANOIDE REAL =====
 let cuerpo;
 const loader = new THREE.GLTFLoader();
-// Modelo humanoide estable, sin cabello
-loader.load('https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
-function(gltf){
+// Modelo 3D humanoide con cabello y rostro
+loader.load('https://models.babylonjs.com/human.glb', function(gltf){
   cuerpo = gltf.scene;
-  cuerpo.scale.set(1.5,1.5,1.5);
-  cuerpo.position.y=0;
-  cuerpo.traverse(node=>{
+  cuerpo.traverse(function(node){
     if(node.isMesh){
-      node.castShadow=true;
-      node.receiveShadow=true;
+      node.castShadow = true;
+      node.receiveShadow = true;
     }
   });
+  cuerpo.position.y=0;
   scene.add(cuerpo);
-  console.log("Humanoide estable cargado");
 }, undefined, function(error){ console.error(error); });
 
-// ===== ANIMACIÓN Y REACCIÓN =====
+// ===== ANIMACIÓN Y REACCIÓN AL SONIDO =====
 let analyser, audioContext, microphone, dataArray;
 let evolucionTiempo=0;
 
 function animar(){
   requestAnimationFrame(animar);
-  evolucionTiempo+=0.01;
+  evolucionTiempo +=0.01;
 
+  // Evolución de colores en ropa
   if(cuerpo){
-    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5; // giro suave
+    cuerpo.traverse(node=>{
+      if(node.isMesh && node.material.color){
+        node.material.color.setHSL((Math.sin(evolucionTiempo)+1)/2,0.7,0.5);
+      }
+    });
   }
 
+  // Reacción al sonido
   if(analyser && cuerpo){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; // movimiento cabeza
+    cuerpo.rotation.y=Math.sin(volumen/2000)*0.1; // mueve cabeza/brazos
   }
 
   renderer.render(scene,camera);
@@ -106,6 +110,7 @@ const RAVY={
     }
     if(texto.includes("luz")){
       respuestas.push("Simulación de luz encendida");
+      // Aquí se puede conectar con API o IoT
     }
     if(respuestas.length===0) respuestas.push("No entiendo la orden");
     return respuestas;
@@ -135,6 +140,7 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
 
+  // Audio
   audioContext=new (window.AudioContext||window.webkitAudioContext)();
   try{
     const stream = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -145,13 +151,16 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
     dataArray=new Uint8Array(analyser.frequencyBinCount);
   }catch(e){console.log(e);}
 
+  // Reconocimiento de voz
   if(recognition) recognition.start();
+
+  // Animación
   animar();
 });
 
 // ===== AJUSTES DE PANTALLA =====
 window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth,window.innerHeight);
 });
