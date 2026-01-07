@@ -115,10 +115,11 @@ const brazoDer = new THREE.Mesh(brazoGeo, ropa); brazoDer.position.set(0.55,0.8,
 cuerpo.add(brazoIzq, brazoDer);
 
 // =======================
-// 🧠 CEREBRO RAVY 14
+// 🧠 CEREBRO RAVY
 // =======================
 const RAVY = {
   activo:false,
+  escuchando:true,
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     alegria:50,
     confianza:50,
@@ -145,6 +146,7 @@ const RAVY = {
   },
 
   hablar(texto){
+    if(!this.escuchando) return;
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate = this.identidad.estiloUsuario==="calido" ? 0.85 : 0.95;
@@ -156,26 +158,22 @@ const RAVY = {
     texto = texto.toLowerCase();
     this.registrar(texto);
 
-    // RESPETO y PROTECCIÓN
+    // RESPETO y PROTECCIÓN se mantienen en segundo plano
     this.emociones.respeto = 100;
-    if(texto.includes("miedo") || texto.includes("peligro")){
-      this.emociones.miedo = 80;
-      this.emociones.energia += 10;
-    } else {
-      this.emociones.miedo = Math.max(0,this.emociones.miedo-1);
-    }
 
     // RESPUESTAS
-    if(texto.includes("hola")) return "Hola. Siempre te respeto y protejo.";
+    if(texto.includes("hola")) return "Aquí está RAVY, tu asistente personal.";
     if(texto.includes("gracias")){
       this.emociones.alegria +=5;
-      return "Siempre a tu servicio.";
+      return "Con gusto.";
     }
     if(texto.includes("mi nombre es")){
       this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
       this.guardar();
       return "Encantado de saber tu nombre.";
     }
+
+    // Respuesta normal a cualquier otra pregunta
     return "Te escucho.";
   }
 };
@@ -197,7 +195,7 @@ if(SpeechRecognition){
     const r = RAVY.procesar(texto);
     RAVY.hablar(r);
 
-    // ✅ Reinicia la escucha automáticamente
+    // Reinicia automáticamente
     recognition.stop();
     recognition.start();
   };
@@ -210,19 +208,16 @@ let respiracion = 0;
 let respDir = 1;
 
 function actualizarExpresiones(){
-  // RESPIRACIÓN
   respiracion += 0.005*respDir;
   if(respiracion>0.05 || respiracion<-0.05) respDir*=-1;
   torso.position.y = 0.5 + respiracion;
 
-  // BOCA
   let escalaBoca = 0.8 + RAVY.emociones.energia/200;
   if(RAVY.emociones.alegria>60) escalaBoca += 0.1;
   if(RAVY.emociones.miedo>50) escalaBoca -=0.1;
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
   boca.scale.y = escalaBoca;
 
-  // OJOS
   let ojoBrillo = 1;
   if(RAVY.emociones.alegria>60) ojoBrillo = 1.2;
   if(RAVY.emociones.miedo>50) ojoBrillo = 1.5;
@@ -231,11 +226,9 @@ function actualizarExpresiones(){
   ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
   ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
 
-  // BRAZOS
   brazoIzq.rotation.z = Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
   brazoDer.rotation.z = -Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
 
-  // TORSO LEVE INCLINACIÓN
   torso.rotation.y = Math.sin(Date.now()*0.001)*0.1*(RAVY.emociones.miedo/50);
 }
 
@@ -255,7 +248,7 @@ document.getElementById("activar").onclick = ()=>{
   RAVY.activo = true;
   document.getElementById("overlay").style.display="none";
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy activo. Te respetaré, protegeré y mis movimientos reflejan mis emociones.");
+  RAVY.hablar("Aquí está RAVY, tu asistente personal."); // Solo una vez
   animar();
 };
 
