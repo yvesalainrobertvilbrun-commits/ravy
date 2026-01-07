@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Vivo y Reactivo</title>
+<title>RAVY Reactivo al Sonido</title>
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -25,12 +25,8 @@ button {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
 
 <script>
-
 // ===== ESCENA, CÁMARA, RENDERER =====
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -49,7 +45,7 @@ let ambientLight = new THREE.AmbientLight(0x404040, 0.7); scene.add(ambientLight
 let floorGeo = new THREE.PlaneGeometry(50,50);
 let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
-floor.rotation.x = -Math.PI/2; floor.position.y = -0.1; floor.receiveShadow=true; scene.add(floor);
+floor.rotation.x = -Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
 // ===== RAVY HUMANOIDE =====
 let cuerpo = new THREE.Group(); scene.add(cuerpo);
@@ -81,22 +77,11 @@ let brazoDer = new THREE.Mesh(brazoGeo,torsoMat);
 brazoIzq.position.set(-0.55,0.8,0); brazoDer.position.set(0.55,0.8,0);
 brazoIzq.castShadow=true; brazoDer.castShadow=true; cuerpo.add(brazoIzq); cuerpo.add(brazoDer);
 
-// ===== ANIMACIÓN, EVOLUCIÓN, REACCIÓN =====
+// ===== ANIMACIÓN, EVOLUCIÓN, REACCIÓN AL SONIDO =====
 let analyser, audioContext, microphone, dataArray;
 let evolucionTiempo=0;
-let model, video, videoReady=false;
 
-// Inicializar cámara y modelo facial
-async function initFace(){
-  video=document.createElement("video"); video.autoplay=true; video.width=640; video.height=480;
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:true});
-    video.srcObject=stream; await video.play(); videoReady=true;
-  }catch(e){console.log(e);}
-  model = await faceLandmarksDetection.load(faceLandmarksDetection.SupportedPackages.mediapipeFacemesh);
-}
-
-async function animar(){
+function animar(){
   requestAnimationFrame(animar);
   let t = Date.now()*0.0003;
 
@@ -107,27 +92,14 @@ async function animar(){
   brazoIzq.material.color.copy(torsoMat.color);
   brazoDer.material.color.copy(torsoMat.color);
 
-  // Audio
+  // Reacción al audio
   if(analyser){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
     boca.scale.y=1+volumen/150;
     brazoIzq.rotation.z=0.2+Math.sin(volumen/200)*0.5;
     brazoDer.rotation.z=-0.2+Math.sin(volumen/200)*0.5;
-  }
-
-  // Seguimiento de rostro
-  if(videoReady && model){
-    const faces = await model.estimateFaces({input:video});
-    if(faces.length>0){
-      let face = faces[0];
-      let dx=(face.scaledMesh[168][0]-320)/320;
-      let dy=(face.scaledMesh[168][1]-240)/240;
-      cabeza.rotation.y = dx*0.5;
-      cabeza.rotation.x = dy*0.3;
-      ojoIzq.rotation.y = cabeza.rotation.y;
-      ojoDer.rotation.y = cabeza.rotation.y;
-    }
+    torso.rotation.y=Math.sin(volumen/300)*0.1;
   }
 
   renderer.render(scene,camera);
@@ -158,7 +130,6 @@ if(SpeechRecognition){
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
-  await initFace();
 
   // Audio
   audioContext=new (window.AudioContext||window.webkitAudioContext)();
@@ -171,7 +142,10 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
     dataArray=new Uint8Array(analyser.frequencyBinCount);
   }catch(e){console.log(e);}
 
+  // Reconocimiento de voz
   if(recognition) recognition.start();
+
+  // Animación
   animar();
 });
 
