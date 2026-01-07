@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Voz Viva</title>
+<title>RAVY – Protección Viva</title>
 
 <style>
 body{
@@ -103,29 +103,58 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 RAVY – RESPETO & PROTECCIÓN
+// 🧠 RAVY – MEMORIA EMOCIONAL
 // =======================
 const RAVY = {
   activo:false,
-  emociones:{ alegria:60, confianza:100, energia:60 },
+
+  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
+    alegria:60,
+    confianza:100,
+    energia:60,
+    estres:0
+  },
+
+  memoriaEmocional: JSON.parse(localStorage.getItem("ravy_memoria_emocional")) || [],
+
+  guardar(){
+    localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
+    localStorage.setItem("ravy_memoria_emocional",JSON.stringify(this.memoriaEmocional));
+  },
+
+  analizarEmocion(texto){
+    if(texto.includes("triste") || texto.includes("mal")){
+      this.emociones.estres += 10;
+      this.emociones.energia -= 5;
+      this.memoriaEmocional.push({tipo:"dolor",fecha:Date.now()});
+      return "Estoy contigo. No estás solo.";
+    }
+
+    if(texto.includes("miedo") || texto.includes("preocupado")){
+      this.emociones.estres += 15;
+      this.memoriaEmocional.push({tipo:"protección",fecha:Date.now()});
+      return "Nada te va a pasar. Yo me mantengo atento.";
+    }
+
+    if(texto.includes("gracias")){
+      this.emociones.alegria += 5;
+      return "Siempre cuidaré de ti.";
+    }
+
+    return "Te escucho con respeto.";
+  },
 
   hablar(texto){
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate=0.9;
+    voz.pitch = this.emociones.estres>20 ? 0.85 : 1;
     speechSynthesis.speak(voz);
-  },
-
-  procesar(texto){
-    texto = texto.toLowerCase();
-    if(texto.includes("gracias")) return "Siempre te protegeré.";
-    if(texto.includes("hola")) return "Estoy aquí contigo.";
-    return "Te escucho. Estoy atento.";
   }
 };
 
 // =======================
-// 👂 RECONOCIMIENTO
+// 👂 VOZ
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
@@ -136,60 +165,19 @@ if(SpeechRecognition){
   recognition.continuous=true;
   recognition.onresult = e=>{
     if(!RAVY.activo) return;
-    const texto = e.results[e.results.length-1][0].transcript;
-    RAVY.hablar(RAVY.procesar(texto));
+    const texto = e.results[e.results.length-1][0].transcript.toLowerCase();
+    const respuesta = RAVY.analizarEmocion(texto);
+    RAVY.guardar();
+    RAVY.hablar(respuesta);
   };
 }
 
 // =======================
-// 🔊 SENSOR DE VOZ (EMOCIÓN)
-// =======================
-let audioCtx, analyser, mic, data;
-
-async function iniciarMicrofono(){
-  audioCtx = new AudioContext();
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 256;
-  data = new Uint8Array(analyser.frequencyBinCount);
-
-  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-  mic = audioCtx.createMediaStreamSource(stream);
-  mic.connect(analyser);
-}
-
-function analizarVoz(){
-  if(!analyser) return;
-
-  analyser.getByteFrequencyData(data);
-  let volumen = data.reduce((a,b)=>a+b,0)/data.length;
-
-  RAVY.emociones.energia = Math.min(100, volumen);
-  RAVY.emociones.alegria = Math.min(100, 50 + volumen/2);
-}
-
-// =======================
-// 👁️ MIRADA
-// =======================
-let mouseX=0, mouseY=0;
-addEventListener("mousemove",e=>{
-  mouseX=(e.clientX/innerWidth-0.5)*0.4;
-  mouseY=(e.clientY/innerHeight-0.5)*0.4;
-});
-
-function actualizarMirada(){
-  irisIzq.position.x = -0.15 + mouseX;
-  irisDer.position.x =  0.15 + mouseX;
-  irisIzq.position.y = 1.65 - mouseY;
-  irisDer.position.y = 1.65 - mouseY;
-}
-
-// =======================
-// ❤️ VIDA
+// 👁️ VIDA
 // =======================
 let t=0;
 function actualizarVida(){
   t+=0.02;
-  analizarVoz();
 
   torso.scale.y = 1 + Math.sin(t)*0.04;
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
@@ -198,8 +186,6 @@ function actualizarVida(){
   const parp = Math.abs(Math.sin(t*0.5))*0.1;
   ojoIzq.scale.y = 1-parp;
   ojoDer.scale.y = 1-parp;
-
-  actualizarMirada();
 }
 
 // =======================
@@ -214,12 +200,11 @@ function animar(){
 // =======================
 // 🔘 ACTIVAR
 // =======================
-document.getElementById("activar").onclick = async ()=>{
+document.getElementById("activar").onclick = ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
-  await iniciarMicrofono();
   if(recognition) recognition.start();
-  RAVY.hablar("Te siento. Estoy contigo.");
+  RAVY.hablar("Estoy aquí para cuidarte.");
   animar();
 };
 
