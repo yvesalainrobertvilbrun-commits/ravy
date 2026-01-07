@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 11</title>
+<title>RAVY – Nivel 13</title>
 
 <style>
 body{
@@ -59,7 +59,6 @@ renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// Luz
 scene.add(new THREE.AmbientLight(0xffffff,0.7));
 const luz = new THREE.DirectionalLight(0xffffff,1);
 luz.position.set(5,10,7);
@@ -72,8 +71,9 @@ const cuerpo = new THREE.Group();
 scene.add(cuerpo);
 
 const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
-const ropa = new THREE.MeshStandardMaterial({color:0x00aaff});
+const ropa = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
 
+// Cabeza
 const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
 cabeza.position.y = 1.6;
 cabeza.castShadow = true;
@@ -109,23 +109,20 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO RAVY
+// 🧠 CEREBRO RAVY 13
 // =======================
 const RAVY = {
   activo:false,
-
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     alegria:50,
     confianza:50,
     energia:50,
-    respeto:100  // siempre respeto hacia ti
+    respeto:100,
+    miedo:0
   },
-
   memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
-
   identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
     nombreUsuario:null,
-    rolUsuario:"proteccion",
     estiloUsuario:"neutral"
   },
 
@@ -154,11 +151,18 @@ const RAVY = {
     this.registrar(texto);
 
     // RESPETO y PROTECCIÓN
-    if(!texto.includes("mal") && this.emociones.respeto<100) this.emociones.respeto = 100;
+    this.emociones.respeto = 100;
+    if(texto.includes("miedo") || texto.includes("peligro")){
+      this.emociones.miedo = 80;
+      this.emociones.energia += 10;
+    } else {
+      this.emociones.miedo = Math.max(0,this.emociones.miedo-1);
+    }
 
-    if(texto.includes("hola")) return "Hola. Siempre estoy aquí para protegerte y respetarte.";
+    // RESPUESTAS
+    if(texto.includes("hola")) return "Hola. Siempre te respeto y protejo.";
     if(texto.includes("gracias")){
-      this.emociones.alegria += 5;
+      this.emociones.alegria +=5;
       return "Siempre a tu servicio.";
     }
     if(texto.includes("mi nombre es")){
@@ -178,8 +182,8 @@ let recognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
-  recognition.continuous = true;
-  recognition.interimResults = false;
+  recognition.continuous=true;
+  recognition.interimResults=false;
   recognition.onresult = e=>{
     if(!RAVY.activo) return;
     const texto = e.results[e.results.length-1][0].transcript;
@@ -189,11 +193,31 @@ if(SpeechRecognition){
 }
 
 // =======================
-// 🎭 EXPRESIONES
+// 🎭 EXPRESIONES + RESPIRACIÓN + EMOCIONES VISIBLES
 // =======================
+let respiracion = 0;
+let respDir = 1;
+
 function actualizarExpresiones(){
+  // RESPIRACIÓN
+  respiracion += 0.005*respDir;
+  if(respiracion>0.05 || respiracion<-0.05) respDir*=-1;
+  torso.position.y = 0.5 + respiracion;
+
+  // BOCA
+  let escalaBoca = 0.8 + RAVY.emociones.energia/200;
+  if(RAVY.emociones.alegria>60) escalaBoca += 0.1; // sonrisa
+  if(RAVY.emociones.miedo>50) escalaBoca -=0.1; // boca tensa
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
-  boca.scale.y = 0.8 + RAVY.emociones.energia/200;
+  boca.scale.y = escalaBoca;
+
+  // OJOS
+  let ojoBrillo = 1;
+  if(RAVY.emociones.alegria>60) ojoBrillo = 1.2;
+  if(RAVY.emociones.miedo>50) ojoBrillo = 1.5;
+  ojoIzq.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
+  ojoDer.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
+
   ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
   ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
 }
@@ -212,9 +236,9 @@ function animar(){
 // =======================
 document.getElementById("activar").onclick = ()=>{
   RAVY.activo = true;
-  document.getElementById("overlay").style.display = "none";
+  document.getElementById("overlay").style.display="none";
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy activo. Te respetaré y protegeré siempre.");
+  RAVY.hablar("Estoy activo. Te respetaré, protegeré y mis emociones se mostrarán.");
   animar();
 };
 
