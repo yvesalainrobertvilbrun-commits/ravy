@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY</title>
+<title>RAVY – Nivel 9A</title>
 
 <style>
 body{
@@ -13,7 +13,6 @@ body{
   font-family:Arial, sans-serif;
 }
 
-/* BOTÓN */
 #overlay{
   position:absolute;
   top:50%;
@@ -21,6 +20,7 @@ body{
   transform:translate(-50%,-50%);
   z-index:10;
 }
+
 button{
   width:120px;
   height:120px;
@@ -33,78 +33,6 @@ button{
   box-shadow:0 0 30px #00aaff;
   cursor:pointer;
 }
-
-/* RAVY */
-.ravy{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-
-/* CABEZA */
-.cabeza{
-  width:160px;
-  height:160px;
-  background:#ffd1b3;
-  border-radius:50%;
-  position:relative;
-  transition:0.3s;
-}
-.ojo{
-  width:20px;
-  height:20px;
-  background:black;
-  border-radius:50%;
-  position:absolute;
-  top:50px;
-}
-.ojo.izq{ left:45px; }
-.ojo.der{ right:45px; }
-
-.boca{
-  width:50px;
-  height:10px;
-  background:#ff5555;
-  border-radius:0 0 40px 40px;
-  position:absolute;
-  bottom:35px;
-  left:50%;
-  transform:translateX(-50%);
-  transition:0.2s;
-}
-
-/* CUERPO */
-.cuerpo{
-  position:relative;
-  display:flex;
-  align-items:flex-start;
-  margin-top:10px;
-}
-
-/* BRAZOS */
-.brazo{
-  width:25px;
-  height:120px;
-  background:#00aaff;
-  border-radius:20px;
-  transform-origin:top center;
-  transition:0.3s;
-}
-.brazo.izq{ margin-right:10px; }
-.brazo.der{ margin-left:10px; }
-
-/* TORSO */
-.torso{
-  width:140px;
-  height:180px;
-  background:#008cff;
-  border-radius:40px;
-  transition:0.3s;
-}
 </style>
 </head>
 
@@ -114,151 +42,132 @@ button{
   <button id="activar">RAVY</button>
 </div>
 
-<div class="ravy">
-  <div class="cabeza" id="cabeza">
-    <div class="ojo izq"></div>
-    <div class="ojo der"></div>
-    <div class="boca" id="boca"></div>
-  </div>
-
-  <div class="cuerpo">
-    <div class="brazo izq" id="brazoIzq"></div>
-    <div class="torso" id="torso"></div>
-    <div class="brazo der" id="brazoDer"></div>
-  </div>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 
 <script>
 // =======================
+// 🌌 ESCENA 3D
+// =======================
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
+camera.position.z = 6;
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Luces
+scene.add(new THREE.AmbientLight(0xffffff,0.7));
+const luz = new THREE.DirectionalLight(0xffffff,1);
+luz.position.set(5,10,7);
+scene.add(luz);
+
+// =======================
+// 🧍 CUERPO DE RAVY
+// =======================
+const cuerpo = new THREE.Group();
+scene.add(cuerpo);
+
+const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
+const ropa = new THREE.MeshStandardMaterial({color:0x00aaff});
+
+const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
+cabeza.position.y = 1.6;
+cuerpo.add(cabeza);
+
+const boca = new THREE.Mesh(
+  new THREE.BoxGeometry(0.3,0.08,0.05),
+  new THREE.MeshStandardMaterial({color:0xff5555})
+);
+boca.position.set(0,1.45,0.45);
+cuerpo.add(boca);
+
+const torso = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.45,0.45,1.2,32),
+  ropa
+);
+torso.position.y = 0.5;
+cuerpo.add(torso);
+
+const brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
+const brazoIzq = new THREE.Mesh(brazoGeo,ropa);
+const brazoDer = new THREE.Mesh(brazoGeo,ropa);
+
+brazoIzq.position.set(-0.6,0.8,0);
+brazoDer.position.set(0.6,0.8,0);
+cuerpo.add(brazoIzq,brazoDer);
+
+// =======================
 // 🧠 CEREBRO
 // =======================
-const RAVY={
+const RAVY = {
   activo:false,
-  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
-    alegria:50,
-    confianza:50,
-    energia:70
-  },
-  guardar(){
-    localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-  },
+  emociones:{energia:50},
   hablar(texto){
-    const voz=new SpeechSynthesisUtterance(texto);
+    const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate=0.9;
     speechSynthesis.speak(voz);
-  },
-  responder(texto){
-    texto=texto.toLowerCase();
-
-    if(texto.includes("hola")){
-      this.emociones.alegria+=10;
-      this.emociones.energia+=5;
-      return "Hola. Estoy contigo.";
-    }
-
-    if(texto.includes("gracias")){
-      this.emociones.confianza+=10;
-      return "Siempre para ti.";
-    }
-
-    if(texto.includes("descansa")){
-      this.emociones.energia-=20;
-      return "Voy a relajarme.";
-    }
-
-    return "Te escucho.";
   }
 };
 
 // =======================
-// 🎭 CUERPO VIVO
+// 👂 AUDIO (VOZ REAL)
 // =======================
-const boca=document.getElementById("boca");
-const brazoIzq=document.getElementById("brazoIzq");
-const brazoDer=document.getElementById("brazoDer");
-const torso=document.getElementById("torso");
-const cabeza=document.getElementById("cabeza");
+let audioContext, analyser, dataArray;
 
-let hablando=false;
-let respiracion=0;
+async function activarMicrofono(){
+  audioContext = new (window.AudioContext||window.webkitAudioContext)();
+  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  const mic = audioContext.createMediaStreamSource(stream);
+  analyser = audioContext.createAnalyser();
+  analyser.fftSize = 256;
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+  mic.connect(analyser);
+}
 
-function actualizarEstado(){
-  const a=RAVY.emociones.alegria;
-  const e=RAVY.emociones.energia;
+// =======================
+// 🎭 MOVIMIENTO POR VOZ
+// =======================
+function animar(){
+  requestAnimationFrame(animar);
 
-  // COLOR SEGÚN ÁNIMO
-  if(a>70){
-    torso.style.background="#00ffcc";
-  }else if(e<30){
-    torso.style.background="#555577";
-  }else{
-    torso.style.background="#008cff";
+  let volumen = 0;
+
+  if(analyser){
+    analyser.getByteFrequencyData(dataArray);
+    volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
   }
 
-  // POSTURA
-  if(e<30){
-    torso.style.transform="scaleY(0.95)";
-  }else{
-    torso.style.transform="scaleY(1)";
-  }
-}
+  // Boca
+  boca.scale.y = 1 + volumen/120;
 
-function actualizarCuerpo(){
-  boca.style.height=hablando?"28px":"10px";
+  // Brazos
+  brazoIzq.rotation.z = 0.2 + volumen/300;
+  brazoDer.rotation.z = -0.2 - volumen/300;
 
-  respiracion+=0.05;
-  torso.style.transform+=` scaleY(${1+Math.sin(respiracion)*0.03})`;
+  // Respiración
+  torso.scale.y = 1 + Math.sin(Date.now()/600)/40;
 
-  brazoIzq.style.transform=`rotate(${-(RAVY.emociones.alegria/2)}deg)`;
-  brazoDer.style.transform=`rotate(${(RAVY.emociones.alegria/2)}deg)`;
-
-  actualizarEstado();
+  renderer.render(scene,camera);
 }
 
 // =======================
-// 🎤 OÍDO
+// 🔘 ACTIVADOR
 // =======================
-const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-let recognition;
-
-if(SpeechRecognition){
-  recognition=new SpeechRecognition();
-  recognition.lang="es-ES";
-  recognition.continuous=true;
-
-  recognition.onresult=(e)=>{
-    if(!RAVY.activo) return;
-    hablando=true;
-    const texto=e.results[e.results.length-1][0].transcript;
-    const r=RAVY.responder(texto);
-    RAVY.hablar(r);
-    setTimeout(()=>hablando=false,600);
-  };
-}
-
-// =======================
-// 🔁 VIDA
-// =======================
-function loop(){
-  if(RAVY.activo){
-    RAVY.emociones.energia-=0.01;
-    RAVY.guardar();
-    actualizarCuerpo();
-  }
-  requestAnimationFrame(loop);
-}
-loop();
-
-// =======================
-// 🔘 ACTIVAR
-// =======================
-document.getElementById("activar").onclick=()=>{
-  RAVY.activo=true;
+document.getElementById("activar").onclick = async ()=>{
   document.getElementById("overlay").style.display="none";
-  if(recognition) recognition.start();
-  RAVY.hablar("Estoy activo.");
+  RAVY.activo = true;
+  await activarMicrofono();
+  RAVY.hablar("Estoy activo. Te escucho.");
+  animar();
 };
+
+// Ajuste pantalla
+addEventListener("resize",()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
 </script>
 
 </body>
