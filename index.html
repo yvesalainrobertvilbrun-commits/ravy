@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 9A</title>
+<title>RAVY – Nivel 9B</title>
 
 <style>
 body{
@@ -46,7 +46,7 @@ button{
 
 <script>
 // =======================
-// 🌌 ESCENA 3D
+// 🌌 ESCENA
 // =======================
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
@@ -56,14 +56,13 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Luces
 scene.add(new THREE.AmbientLight(0xffffff,0.7));
 const luz = new THREE.DirectionalLight(0xffffff,1);
 luz.position.set(5,10,7);
 scene.add(luz);
 
 // =======================
-// 🧍 CUERPO DE RAVY
+// 🧍 CUERPO
 // =======================
 const cuerpo = new THREE.Group();
 scene.add(cuerpo);
@@ -92,77 +91,123 @@ cuerpo.add(torso);
 const brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
 const brazoIzq = new THREE.Mesh(brazoGeo,ropa);
 const brazoDer = new THREE.Mesh(brazoGeo,ropa);
-
 brazoIzq.position.set(-0.6,0.8,0);
 brazoDer.position.set(0.6,0.8,0);
 cuerpo.add(brazoIzq,brazoDer);
 
 // =======================
-// 🧠 CEREBRO
+// 🧠 CEREBRO + EMOCIONES
 // =======================
 const RAVY = {
   activo:false,
-  emociones:{energia:50},
+  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
+    alegria:50,
+    energia:50
+  },
+
+  guardar(){
+    localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
+  },
+
   hablar(texto){
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
+    voz.rate=0.9;
     speechSynthesis.speak(voz);
+  },
+
+  procesar(texto){
+    texto = texto.toLowerCase();
+
+    if(texto.includes("gracias") || texto.includes("te quiero")){
+      this.emociones.alegria += 5;
+      this.emociones.energia += 3;
+    }
+
+    if(texto.includes("cansado") || texto.includes("triste")){
+      this.emociones.energia -= 5;
+    }
+
+    this.emociones.alegria = Math.min(100,Math.max(0,this.emociones.alegria));
+    this.emociones.energia = Math.min(100,Math.max(0,this.emociones.energia));
+    this.guardar();
+
+    return "Te escucho.";
   }
 };
 
 // =======================
-// 👂 AUDIO (VOZ REAL)
+// 👂 VOZ
+// =======================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
+  recognition.lang="es-ES";
+  recognition.continuous=true;
+  recognition.onresult = e=>{
+    if(!RAVY.activo) return;
+    const texto = e.results[e.results.length-1][0].transcript;
+    const r = RAVY.procesar(texto);
+    RAVY.hablar(r);
+  };
+}
+
+// =======================
+// 🎭 EXPRESIONES
+// =======================
+function actualizarExpresiones(){
+  boca.scale.x = 1 + RAVY.emociones.alegria/200;
+  boca.scale.y = 0.5 + RAVY.emociones.energia/200;
+
+  torso.scale.y = 1 + RAVY.emociones.energia/300;
+}
+
+// =======================
+// 🎙️ MOVIMIENTO POR VOZ
 // =======================
 let audioContext, analyser, dataArray;
 
-async function activarMicrofono(){
+async function activarMicro(){
   audioContext = new (window.AudioContext||window.webkitAudioContext)();
   const stream = await navigator.mediaDevices.getUserMedia({audio:true});
   const mic = audioContext.createMediaStreamSource(stream);
   analyser = audioContext.createAnalyser();
-  analyser.fftSize = 256;
+  analyser.fftSize=256;
   dataArray = new Uint8Array(analyser.frequencyBinCount);
   mic.connect(analyser);
 }
 
 // =======================
-// 🎭 MOVIMIENTO POR VOZ
+// 🎬 LOOP
 // =======================
 function animar(){
   requestAnimationFrame(animar);
 
-  let volumen = 0;
-
   if(analyser){
     analyser.getByteFrequencyData(dataArray);
-    volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+    const v = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+    brazoIzq.rotation.z = 0.2 + v/300;
+    brazoDer.rotation.z = -0.2 - v/300;
   }
 
-  // Boca
-  boca.scale.y = 1 + volumen/120;
-
-  // Brazos
-  brazoIzq.rotation.z = 0.2 + volumen/300;
-  brazoDer.rotation.z = -0.2 - volumen/300;
-
-  // Respiración
-  torso.scale.y = 1 + Math.sin(Date.now()/600)/40;
-
+  actualizarExpresiones();
   renderer.render(scene,camera);
 }
 
 // =======================
-// 🔘 ACTIVADOR
+// 🔘 ACTIVAR
 // =======================
 document.getElementById("activar").onclick = async ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo = true;
-  await activarMicrofono();
-  RAVY.hablar("Estoy activo. Te escucho.");
+  await activarMicro();
+  if(recognition) recognition.start();
+  RAVY.hablar("Estoy contigo.");
   animar();
 };
 
-// Ajuste pantalla
 addEventListener("resize",()=>{
   camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
