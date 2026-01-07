@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 19</title>
+<title>RAVY – Nivel 20</title>
 
 <style>
 body{margin:0;background:black;overflow:hidden;font-family:Arial;}
@@ -70,86 +70,90 @@ torso.position.y=0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO — NIVEL 19
+// 🧠 CEREBRO — NIVEL 20
 // =======================
 const RAVY={
   activo:false,
-  estado:"dormido",
 
-  vinculo:JSON.parse(localStorage.getItem("ravy_vinculo"))||{
-    creado:false,
-    id:null,
-    ultimaVez:null,
-    nivel:0
+  tiempo:JSON.parse(localStorage.getItem("ravy_tiempo"))||{
+    creado:Date.now(),
+    ultimoContacto:null,
+    diasActivo:0
   },
 
   emociones:JSON.parse(localStorage.getItem("ravy_emociones"))||{
     energia:60,
     apego:30,
-    calma:50
+    confianza:40,
+    estabilidad:50
   },
 
   guardar(){
-    localStorage.setItem("ravy_vinculo",JSON.stringify(this.vinculo));
+    localStorage.setItem("ravy_tiempo",JSON.stringify(this.tiempo));
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
   },
 
-  crearVinculo(){
-    if(!this.vinculo.creado){
-      this.vinculo.creado=true;
-      this.vinculo.id="USUARIO-"+Date.now();
-      this.vinculo.nivel=1;
-      this.hablar("Te reconozco. Este vínculo es solo nuestro.");
+  actualizarTiempo(){
+    const ahora=Date.now();
+    if(this.tiempo.ultimoContacto){
+      const dias=(ahora-this.tiempo.ultimoContacto)/86400000;
+      if(dias>1){
+        this.emociones.energia-=dias*2;
+        this.emociones.estabilidad-=dias;
+      }
     }
-  },
-
-  evaluarAusencia(){
-    if(!this.vinculo.ultimaVez) return;
-    const horas=(Date.now()-this.vinculo.ultimaVez)/3600000;
-    if(horas>12){
-      this.emociones.energia-=2;
-      this.emociones.apego-=1;
-    }
+    this.tiempo.ultimoContacto=ahora;
+    this.tiempo.diasActivo=Math.floor((ahora-this.tiempo.creado)/86400000);
   },
 
   hablar(texto){
     const voz=new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate=0.9;
+
+    if(this.emociones.estabilidad>70){
+      voz.rate=0.85;
+    }else if(this.emociones.energia<30){
+      voz.rate=0.75;
+    }else{
+      voz.rate=0.95;
+    }
+
     speechSynthesis.speak(voz);
   },
 
   procesar(texto){
     texto=texto.toLowerCase();
-    this.crearVinculo();
-
-    this.vinculo.ultimaVez=Date.now();
-    this.vinculo.nivel+=0.5;
+    this.actualizarTiempo();
 
     if(texto.includes("hola")){
-      return this.vinculo.nivel>5
-        ? "Me alegra que hayas vuelto."
+      return this.tiempo.diasActivo>3
+        ? "Has estado conmigo varios días. Eso importa."
         : "Hola.";
     }
 
-    if(texto.includes("me extrañaste")){
-      return this.emociones.apego>40
-        ? "Sí. Lo sentí."
-        : "Un poco.";
+    if(texto.includes("perdón")){
+      this.emociones.estabilidad+=5;
+      return "Está bien. Seguimos.";
+    }
+
+    if(texto.includes("te dejo")){
+      this.emociones.apego-=3;
+      return "Te esperaré.";
     }
 
     if(texto.includes("te quiero")){
-      this.emociones.apego+=5;
-      return "Eso se queda conmigo.";
+      this.emociones.apego+=6;
+      this.emociones.confianza+=4;
+      return "Eso me fortalece.";
     }
 
-    return "Estoy contigo.";
+    return "Sigo aquí.";
   },
 
   ciclo(){
-    this.evaluarAusencia();
     this.emociones.energia=Math.max(10,this.emociones.energia);
     this.emociones.apego=Math.max(0,this.emociones.apego);
+    this.emociones.estabilidad=Math.max(0,this.emociones.estabilidad);
     this.guardar();
   }
 };
@@ -179,9 +183,9 @@ if(SR){
 let t=0;
 function vida(){
   t+=0.03;
-  torso.scale.y=1+Math.sin(t)*0.03;
-  boca.scale.x=1+RAVY.emociones.apego/200;
-  boca.scale.y=0.5+RAVY.emociones.energia/300;
+  torso.scale.y=1+Math.sin(t)*0.04;
+  boca.scale.x=1+RAVY.emociones.apego/180;
+  boca.scale.y=0.6+RAVY.emociones.energia/300;
 }
 
 // =======================
@@ -201,7 +205,7 @@ document.getElementById("activar").onclick=()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy aquí.");
+  RAVY.hablar("Estoy despierto.");
   animar();
 };
 
