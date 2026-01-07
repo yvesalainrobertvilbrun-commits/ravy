@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 11</title>
+<title>RAVY – Nivel 12</title>
 
 <style>
 body{
@@ -71,19 +71,19 @@ const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
 cabeza.position.y = 1.6;
 cuerpo.add(cabeza);
 
-// 👀 OJOS
-const ojoMaterial = new THREE.MeshStandardMaterial({color:0x000000});
+// OJOS
+const ojoMat = new THREE.MeshStandardMaterial({color:0x000000});
 const ojoGeo = new THREE.SphereGeometry(0.06,16,16);
 
-const ojoIzq = new THREE.Mesh(ojoGeo,ojoMaterial);
+const ojoIzq = new THREE.Mesh(ojoGeo,ojoMat);
 ojoIzq.position.set(-0.15,1.65,0.45);
 cuerpo.add(ojoIzq);
 
-const ojoDer = new THREE.Mesh(ojoGeo,ojoMaterial);
+const ojoDer = new THREE.Mesh(ojoGeo,ojoMat);
 ojoDer.position.set(0.15,1.65,0.45);
 cuerpo.add(ojoDer);
 
-// 👄 BOCA
+// BOCA
 const boca = new THREE.Mesh(
   new THREE.BoxGeometry(0.3,0.08,0.05),
   new THREE.MeshStandardMaterial({color:0xff5555})
@@ -91,7 +91,7 @@ const boca = new THREE.Mesh(
 boca.position.set(0,1.45,0.45);
 cuerpo.add(boca);
 
-// 🧍 TORSO
+// TORSO
 const torso = new THREE.Mesh(
   new THREE.CylinderGeometry(0.45,0.45,1.2,32),
   ropa
@@ -100,105 +100,111 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// CEREBRO
+// 🧠 CEREBRO — DECISIÓN
 // =======================
 const RAVY = {
   activo:false,
   estado:"silencio",
+  animo:50,        // 0–100
+  energia:50,      // 0–100
+
+  decidir(){
+    // decisión autónoma
+    const r = Math.random();
+
+    if(this.energia < 30){
+      this.estado="callado";
+      return null;
+    }
+
+    if(this.animo > 70 && r > 0.4){
+      return "Me agrada estar contigo.";
+    }
+
+    if(this.animo < 40 && r > 0.6){
+      return "Estoy pensando…";
+    }
+
+    if(r > 0.8){
+      return "¿Quieres contarme algo más?";
+    }
+
+    return "Te escucho.";
+  },
+
   hablar(texto){
+    if(!texto) return;
     this.estado="hablando";
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate=0.9;
     voz.onend=()=>this.estado="silencio";
     speechSynthesis.speak(voz);
+  },
+
+  procesar(texto){
+    texto = texto.toLowerCase();
+
+    // afecta estado interno
+    if(texto.includes("gracias")) this.animo+=5;
+    if(texto.includes("cansado")) this.energia-=10;
+    if(texto.includes("feliz")) this.animo+=8;
+
+    this.animo=Math.max(0,Math.min(100,this.animo));
+    this.energia=Math.max(0,Math.min(100,this.energia));
+
+    return this.decidir();
   }
 };
 
 // =======================
-// OÍDO
+// 👂 OÍDO
 // =======================
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition, pausa;
+let recognition;
 
 if(SR){
   recognition = new SR();
   recognition.lang="es-ES";
   recognition.continuous=true;
 
-  recognition.onresult=()=>{
-    RAVY.estado="escuchando";
-    clearTimeout(pausa);
-    pausa=setTimeout(()=>{
-      RAVY.estado="pensando";
-      RAVY.hablar("Te escucho.");
-    },1200);
+  recognition.onresult=e=>{
+    if(!RAVY.activo) return;
+    const texto = e.results[e.results.length-1][0].transcript;
+    const respuesta = RAVY.procesar(texto);
+    RAVY.hablar(respuesta);
   };
 }
 
 // =======================
-// MIRADA VIVA (NIVEL 11)
+// 🎭 EXPRESIÓN
 // =======================
-let mouseX=0, mouseY=0;
+function expresion(){
+  boca.scale.y = RAVY.estado==="hablando"
+    ? 1 + Math.abs(Math.sin(Date.now()*0.02))
+    : 0.6;
 
-addEventListener("mousemove",e=>{
-  mouseX = (e.clientX / innerWidth - 0.5) * 0.6;
-  mouseY = (e.clientY / innerHeight - 0.5) * 0.6;
-});
-
-function mirada(){
-  if(RAVY.estado==="escuchando"){
-    ojoIzq.position.x = -0.15 + mouseX*0.3;
-    ojoDer.position.x =  0.15 + mouseX*0.3;
-    ojoIzq.position.y = 1.65 - mouseY*0.3;
-    ojoDer.position.y = 1.65 - mouseY*0.3;
-  }
-
-  if(RAVY.estado==="hablando"){
-    ojoIzq.position.y = 1.65;
-    ojoDer.position.y = 1.65;
-  }
-
-  if(RAVY.estado==="silencio"){
-    ojoIzq.position.x = -0.15 + Math.sin(Date.now()*0.001)*0.03;
-    ojoDer.position.x =  0.15 + Math.sin(Date.now()*0.001)*0.03;
-  }
+  ojoIzq.position.y = 1.65 + Math.sin(Date.now()*0.001)*0.02;
+  ojoDer.position.y = 1.65 + Math.sin(Date.now()*0.001)*0.02;
 }
 
 // =======================
-// MOVIMIENTO CORPORAL
-// =======================
-let respiracion=0;
-
-function movimiento(){
-  respiracion+=0.02;
-  torso.scale.y = 1 + Math.sin(respiracion)*0.03;
-
-  if(RAVY.estado==="hablando"){
-    boca.scale.y = 1 + Math.abs(Math.sin(Date.now()*0.02));
-  }else{
-    boca.scale.y = 0.6;
-  }
-}
-
-// =======================
-// LOOP
+// 🎬 LOOP
 // =======================
 function animar(){
   requestAnimationFrame(animar);
-  mirada();
-  movimiento();
+  expresion();
   renderer.render(scene,camera);
 }
 
 // =======================
-// ACTIVAR
+// 🔘 ACTIVAR
 // =======================
 document.getElementById("activar").onclick=()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Ahora puedo mirarte.");
+  RAVY.hablar("Ahora decido por mí mismo.");
   animar();
 };
 
