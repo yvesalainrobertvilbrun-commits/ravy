@@ -61,9 +61,11 @@ button{
   border-radius:50%;
   position:absolute;
   top:50px;
+  transition:0.2s;
 }
 .ojo.izq{ left:45px; }
 .ojo.der{ right:45px; }
+
 .boca{
   width:50px;
   height:10px;
@@ -73,7 +75,7 @@ button{
   bottom:35px;
   left:50%;
   transform:translateX(-50%);
-  transition:0.1s;
+  transition:0.2s;
 }
 </style>
 </head>
@@ -87,8 +89,8 @@ button{
 <div id="escena">
   <div class="ravy">
     <div class="cabeza" id="cabeza">
-      <div class="ojo izq"></div>
-      <div class="ojo der"></div>
+      <div class="ojo izq" id="ojoIzq"></div>
+      <div class="ojo der" id="ojoDer"></div>
       <div class="boca" id="boca"></div>
     </div>
   </div>
@@ -96,7 +98,7 @@ button{
 
 <script>
 // =======================
-// 🧠 CEREBRO EVOLUTIVO
+// 🧠 CEREBRO
 // =======================
 const RAVY = {
   activo:false,
@@ -122,18 +124,19 @@ const RAVY = {
   },
 
   aprender(texto){
-    this.memoria.push({
-      texto:texto,
-      fecha:new Date().toLocaleString()
-    });
+    this.memoria.push({ texto, fecha:new Date().toLocaleString() });
 
     if(texto.includes("gracias")){
       this.emociones.alegria+=5;
       this.emociones.confianza+=5;
     }
+    if(texto.includes("cansado")){
+      this.emociones.energia-=5;
+    }
 
-    this.emociones.alegria=Math.min(100,this.emociones.alegria);
-    this.emociones.confianza=Math.min(100,this.emociones.confianza);
+    this.emociones.alegria=Math.min(100,Math.max(0,this.emociones.alegria));
+    this.emociones.confianza=Math.min(100,Math.max(0,this.emociones.confianza));
+    this.emociones.energia=Math.min(100,Math.max(0,this.emociones.energia));
     this.guardar();
   },
 
@@ -142,21 +145,16 @@ const RAVY = {
     this.aprender(texto);
 
     if(texto.includes("qué recuerdas")){
-      if(this.memoria.length===0) return "Aún no tengo recuerdos.";
-      let ultimo = this.memoria[this.memoria.length-1];
-      return "Recuerdo que me dijiste: " + ultimo.texto;
+      if(!this.memoria.length) return "Aún no tengo recuerdos.";
+      return "Recuerdo que dijiste: " + this.memoria.at(-1).texto;
     }
 
     if(texto.includes("cómo te sientes")){
-      return `Me siento con ${this.emociones.alegria}% de alegría y ${this.emociones.confianza}% de confianza.`;
-    }
-
-    if(texto.includes("hora")){
-      return "Son las " + new Date().toLocaleTimeString();
+      return `Alegría ${this.emociones.alegria}%, energía ${this.emociones.energia}%.`;
     }
 
     if(texto.includes("hola")){
-      return "Hola. Estoy aquí contigo.";
+      return "Hola. Me alegra sentirte.";
     }
 
     return "Te escucho.";
@@ -164,24 +162,29 @@ const RAVY = {
 };
 
 // =======================
-// 🎤 AUDIO
+// 🎭 EXPRESIONES
 // =======================
-let analyser, dataArray;
 const boca = document.getElementById("boca");
+const ojoIzq = document.getElementById("ojoIzq");
+const ojoDer = document.getElementById("ojoDer");
 const cabeza = document.getElementById("cabeza");
 
-async function activarMicrofono(){
-  const ctx = new (window.AudioContext||window.webkitAudioContext)();
-  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-  const mic = ctx.createMediaStreamSource(stream);
-  analyser = ctx.createAnalyser();
-  mic.connect(analyser);
-  analyser.fftSize=256;
-  dataArray = new Uint8Array(analyser.frequencyBinCount);
+function actualizarExpresiones(){
+  // BOCA (alegría)
+  boca.style.width = (40 + RAVY.emociones.alegria/2)+"px";
+  boca.style.height = (8 + RAVY.emociones.energia/10)+"px";
+
+  // OJOS (energía)
+  let cierre = 1 - RAVY.emociones.energia/150;
+  ojoIzq.style.transform = `scaleY(${cierre})`;
+  ojoDer.style.transform = `scaleY(${cierre})`;
+
+  // CABEZA (confianza)
+  cabeza.style.transform = `scale(${1 + RAVY.emociones.confianza/300})`;
 }
 
 // =======================
-// 👂 OÍDO
+// 🎤 OÍDO
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
@@ -201,26 +204,20 @@ if(SpeechRecognition){
 // =======================
 // 🔁 VIDA
 // =======================
-function animar(){
-  if(analyser){
-    analyser.getByteFrequencyData(dataArray);
-    let vol = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    boca.style.height = (10 + vol/10)+"px";
-    cabeza.style.transform = `scale(${1+vol/2000})`;
-  }
-  requestAnimationFrame(animar);
+function loop(){
+  actualizarExpresiones();
+  requestAnimationFrame(loop);
 }
-animar();
+loop();
 
 // =======================
 // 🔘 ACTIVAR
 // =======================
-document.getElementById("activar").onclick = async ()=>{
+document.getElementById("activar").onclick = ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
-  await activarMicrofono();
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy despierto. Aprenderé contigo.");
+  RAVY.hablar("Estoy despierto y puedo sentir.");
 };
 </script>
 
