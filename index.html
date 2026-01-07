@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 12</title>
+<title>RAVY – Nivel 13</title>
 
 <style>
 body{
@@ -43,7 +43,7 @@ button{
 
 <script>
 // =======================
-// ESCENA
+// 🌌 ESCENA
 // =======================
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
@@ -59,7 +59,7 @@ luz.position.set(5,10,7);
 scene.add(luz);
 
 // =======================
-// CUERPO
+// 🧍 CUERPO
 // =======================
 const cuerpo = new THREE.Group();
 scene.add(cuerpo);
@@ -100,36 +100,22 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO — DECISIÓN
+// 🧠 CEREBRO
 // =======================
 const RAVY = {
   activo:false,
-  estado:"silencio",
-  animo:50,        // 0–100
-  energia:50,      // 0–100
+  estado:"reposo",
+  animo:50,
+  energia:50,
+
+  latido:0,
+  parpadeo:0,
 
   decidir(){
-    // decisión autónoma
-    const r = Math.random();
-
-    if(this.energia < 30){
-      this.estado="callado";
-      return null;
-    }
-
-    if(this.animo > 70 && r > 0.4){
-      return "Me agrada estar contigo.";
-    }
-
-    if(this.animo < 40 && r > 0.6){
-      return "Estoy pensando…";
-    }
-
-    if(r > 0.8){
-      return "¿Quieres contarme algo más?";
-    }
-
-    return "Te escucho.";
+    if(this.energia < 25) return null;
+    if(this.animo > 70) return "Me siento bien contigo.";
+    if(this.animo < 40) return "Estoy procesando cosas…";
+    return "Aquí sigo.";
   },
 
   hablar(texto){
@@ -138,16 +124,14 @@ const RAVY = {
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate=0.9;
-    voz.onend=()=>this.estado="silencio";
+    voz.onend=()=>this.estado="reposo";
     speechSynthesis.speak(voz);
   },
 
   procesar(texto){
     texto = texto.toLowerCase();
-
-    // afecta estado interno
-    if(texto.includes("gracias")) this.animo+=5;
-    if(texto.includes("cansado")) this.energia-=10;
+    if(texto.includes("gracias")) this.animo+=6;
+    if(texto.includes("cansado")) this.energia-=12;
     if(texto.includes("feliz")) this.animo+=8;
 
     this.animo=Math.max(0,Math.min(100,this.animo));
@@ -177,15 +161,30 @@ if(SR){
 }
 
 // =======================
-// 🎭 EXPRESIÓN
+// ❤️ VIDA (LATIDO + GESTOS)
 // =======================
-function expresion(){
+function vida(){
+  // Latido / respiración
+  RAVY.latido += 0.05 + (RAVY.animo/2000);
+  const pulso = 1 + Math.sin(RAVY.latido) * 0.02;
+  torso.scale.y = pulso;
+
+  // Parpadeo autónomo
+  RAVY.parpadeo -= 1;
+  if(RAVY.parpadeo < 0){
+    ojoIzq.scale.y = 0.2;
+    ojoDer.scale.y = 0.2;
+    if(RAVY.parpadeo < -5){
+      RAVY.parpadeo = Math.random()*200 + 100;
+      ojoIzq.scale.y = 1;
+      ojoDer.scale.y = 1;
+    }
+  }
+
+  // Boca
   boca.scale.y = RAVY.estado==="hablando"
     ? 1 + Math.abs(Math.sin(Date.now()*0.02))
     : 0.6;
-
-  ojoIzq.position.y = 1.65 + Math.sin(Date.now()*0.001)*0.02;
-  ojoDer.position.y = 1.65 + Math.sin(Date.now()*0.001)*0.02;
 }
 
 // =======================
@@ -193,7 +192,7 @@ function expresion(){
 // =======================
 function animar(){
   requestAnimationFrame(animar);
-  expresion();
+  vida();
   renderer.render(scene,camera);
 }
 
@@ -204,7 +203,7 @@ document.getElementById("activar").onclick=()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Ahora decido por mí mismo.");
+  RAVY.hablar("Estoy vivo. Siento mi propio ritmo.");
   animar();
 };
 
