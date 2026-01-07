@@ -52,7 +52,7 @@ floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; sc
 // ===== MODELO HUMANOIDE ESTABLE =====
 let cuerpo;
 const loader = new THREE.GLTFLoader();
-// Modelo RobotExpressive original, sin cabello extra
+// Modelo humanoide estable, sin cabello
 loader.load('https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
 function(gltf){
   cuerpo = gltf.scene;
@@ -77,13 +77,13 @@ function animar(){
   evolucionTiempo+=0.01;
 
   if(cuerpo){
-    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5;
+    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5; // giro suave
   }
 
   if(analyser && cuerpo){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05;
+    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; // movimiento cabeza
   }
 
   renderer.render(scene,camera);
