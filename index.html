@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide con Cabello y Órdenes</title>
+<title>RAVY Humanoide PWA</title>
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -21,7 +21,7 @@ button {
 </head>
 <body>
 <div id="overlay">
-  <button id="activar-ravy">💙</button>
+  <button id="activar-ravy">RAVY</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
@@ -31,7 +31,7 @@ button {
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
 camera.position.z = 6;
-let renderer = new THREE.WebGLRenderer({antialias:true});
+let renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
@@ -51,7 +51,7 @@ floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; sc
 let cuerpo = new THREE.Group(); scene.add(cuerpo);
 
 // Materiales
-let pielMat = new THREE.MeshStandardMaterial({color:0xffccaa});
+let pielMat = new THREE.MeshStandardMaterial({color:0xf1c27d}); // piel media
 let ropaMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
 let cabelloMat = new THREE.MeshStandardMaterial({color:0x222222, roughness:0.7});
 
