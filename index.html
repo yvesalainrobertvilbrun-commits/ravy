@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 14</title>
+<title>RAVY – Nivel 14 + Botones</title>
 
 <style>
 body{
@@ -25,7 +25,7 @@ button{
   height:120px;
   border-radius:50%;
   border:none;
-  font-size:22px;
+  font-size:18px;
   font-weight:bold;
   color:white;
   background:linear-gradient(145deg,#00ffff,#008cff);
@@ -37,14 +37,28 @@ button:hover{
   transform:scale(1.1);
   box-shadow:0 0 50px #00ffff;
 }
+#botonesInternos{
+  display:none;
+  position:absolute;
+  bottom:30px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:10;
+}
 </style>
 </head>
 
 <body>
 
-<!-- INICIO -->
 <div id="overlay">
   <button id="activar">RAVY</button>
+</div>
+
+<!-- Botones internos de interacción -->
+<div id="botonesInternos">
+  <button id="escuchar">Escuchar</button>
+  <button id="responder">Responder</button>
+  <button id="reposo">Reposo</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
@@ -122,18 +136,11 @@ cuerpo.add(brazoIzq, brazoDer);
 // =======================
 const RAVY = {
   activo:false,
-  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
-    alegria:50,
-    confianza:50,
-    energia:50,
-    respeto:100,
-    miedo:0
-  },
+  modoEscuchar:false,
+  modoReposo:false,
+  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {alegria:50,confianza:50,energia:50,respeto:100,miedo:0},
   memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
-  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
-    nombreUsuario:null,
-    estiloUsuario:"neutral"
-  },
+  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {nombreUsuario:null, estiloUsuario:"neutral"},
   ultimaRespuesta:"",
 
   guardar(){
@@ -204,12 +211,11 @@ if(SpeechRecognition){
   recognition.continuous=true;
   recognition.interimResults=false;
   recognition.onresult = e=>{
-    if(!RAVY.activo) return;
+    if(!RAVY.activo || !RAVY.modoEscuchar) return;
     const texto = e.results[e.results.length-1][0].transcript;
     const r = RAVY.procesar(texto);
     RAVY.hablar(r);
 
-    // Reinicia escucha automáticamente
     recognition.stop();
     recognition.start();
   };
@@ -220,21 +226,17 @@ if(SpeechRecognition){
 // =======================
 let respiracion = 0;
 let respDir = 1;
-
 function actualizarExpresiones(){
-  // RESPIRACIÓN
   respiracion += 0.005*respDir;
   if(respiracion>0.05 || respiracion<-0.05) respDir*=-1;
   torso.position.y = 0.5 + respiracion;
 
-  // BOCA
   let escalaBoca = 0.8 + RAVY.emociones.energia/200;
   if(RAVY.emociones.alegria>60) escalaBoca += 0.1;
   if(RAVY.emociones.miedo>50) escalaBoca -=0.1;
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
   boca.scale.y = escalaBoca;
 
-  // OJOS
   let ojoBrillo = 1;
   if(RAVY.emociones.alegria>60) ojoBrillo = 1.2;
   if(RAVY.emociones.miedo>50) ojoBrillo = 1.5;
@@ -243,34 +245,54 @@ function actualizarExpresiones(){
   ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
   ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
 
-  // BRAZOS
   brazoIzq.rotation.z = Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
   brazoDer.rotation.z = -Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
-
-  // TORSO LEVE INCLINACIÓN
   torso.rotation.y = Math.sin(Date.now()*0.001)*0.1*(RAVY.emociones.miedo/50);
 }
 
 // =======================
 // 🎬 LOOP
 // =======================
+let animando = false;
 function animar(){
-  requestAnimationFrame(animar);
-  actualizarExpresiones();
-  renderer.render(scene,camera);
+  if(animando){
+    requestAnimationFrame(animar);
+    actualizarExpresiones();
+    renderer.render(scene,camera);
+  }
 }
 
 // =======================
-// 🔘 ACTIVAR
+// 🔘 ACTIVAR BOTÓN INICIO
 // =======================
 document.getElementById("activar").onclick = ()=>{
   RAVY.activo = true;
-  document.getElementById("activar").style.display="none";
-  if(recognition) recognition.start();
+  animando = true;
+  document.getElementById("overlay").style.display="none";
+  document.getElementById("botonesInternos").style.display="block";
   RAVY.hablar("Aquí está RAVY, tu asistente personal.");
   animar();
 };
 
+// =======================
+// 🔘 BOTONES INTERNOS
+// =======================
+document.getElementById("escuchar").onclick = ()=>{
+  RAVY.modoEscuchar = true;
+  RAVY.modoReposo = false;
+};
+
+document.getElementById("responder").onclick = ()=>{
+  RAVY.modoEscuchar = false;
+  RAVY.modoReposo = false;
+  if(RAVY.ultimaRespuesta) RAVY.hablar(RAVY.ultimaRespuesta);
+};
+
+document.getElementById("reposo").onclick = ()=>{
+  RAVY.modoEscuchar = false;
+  RAVY.modoReposo = true;
+  animando = false;
+};
 addEventListener("resize",()=>{
   camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
