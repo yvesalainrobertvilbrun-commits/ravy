@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Evolutivo y Reactivo</title>
+<title>RAVY Vivo y Reactivo</title>
 <style>
-body { margin:0; overflow:hidden; }
+body { margin:0; overflow:hidden; background:black;}
 #overlay { 
   position:absolute; top:50%; left:50%; 
   transform:translate(-50%,-50%); 
@@ -13,9 +13,9 @@ body { margin:0; overflow:hidden; }
 }
 button { 
   background:#00aaff; color:black; border:none; 
-  padding:20px; font-size:18px; border-radius:50%; 
-  cursor:pointer; width:100px; height:100px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  width:100px; height:100px;
+  font-size:24px; border-radius:50%; 
+  cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.3);
 }
 </style>
 </head>
@@ -30,7 +30,8 @@ button {
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
 
 <script>
-// ===== ESCENA, CÁMARA Y RENDERER =====
+
+// ===== ESCENA, CÁMARA, RENDERER =====
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
 camera.position.z = 5;
@@ -39,91 +40,59 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-// ===== FONDO DINÁMICO =====
-let color1 = new THREE.Color(0x001122);
-scene.background = color1;
-
 // ===== LUCES =====
 let dirLight = new THREE.DirectionalLight(0x00aaff, 1);
-dirLight.position.set(5,10,7);
-dirLight.castShadow = true;
-scene.add(dirLight);
+dirLight.position.set(5,10,7); dirLight.castShadow = true; scene.add(dirLight);
+let ambientLight = new THREE.AmbientLight(0x404040, 0.7); scene.add(ambientLight);
 
-let ambientLight = new THREE.AmbientLight(0x404040, 0.7);
-scene.add(ambientLight);
-
-// ===== SUELO VIRTUAL =====
+// ===== SUELO =====
 let floorGeo = new THREE.PlaneGeometry(50,50);
 let floorMat = new THREE.ShadowMaterial({opacity:0.3});
-let floor = new THREE.Mesh(floorGeo, floorMat);
-floor.rotation.x = -Math.PI/2;
-floor.position.y = -0.1;
-floor.receiveShadow = true;
-scene.add(floor);
+let floor = new THREE.Mesh(floorGeo,floorMat);
+floor.rotation.x = -Math.PI/2; floor.position.y = -0.1; floor.receiveShadow=true; scene.add(floor);
 
 // ===== RAVY HUMANOIDE =====
-let cuerpo = new THREE.Group();
-scene.add(cuerpo);
+let cuerpo = new THREE.Group(); scene.add(cuerpo);
+let cabezaMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
+let torsoMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.6});
 
 // Cabeza
-let cabezaGeo = new THREE.SphereGeometry(0.5,32,32);
-let cabezaMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
-let cabeza = new THREE.Mesh(cabezaGeo, cabezaMat);
-cabeza.position.y = 1.5;
-cabeza.castShadow = true;
-cuerpo.add(cabeza);
+let cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32), cabezaMat);
+cabeza.position.y=1.5; cabeza.castShadow=true; cuerpo.add(cabeza);
 
 // Ojos
 let ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshBasicMaterial({color:0xffffff}));
 let ojoDer = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshBasicMaterial({color:0xffffff}));
-ojoIzq.position.set(-0.15,1.55,0.45);
-ojoDer.position.set(0.15,1.55,0.45);
-cuerpo.add(ojoIzq);
-cuerpo.add(ojoDer);
+ojoIzq.position.set(-0.15,1.55,0.45); ojoDer.position.set(0.15,1.55,0.45);
+cuerpo.add(ojoIzq); cuerpo.add(ojoDer);
 
-// Boca
-let bocaGeo = new THREE.BoxGeometry(0.3,0.05,0.05);
-let bocaMat = new THREE.MeshBasicMaterial({color:0xffffff});
-let boca = new THREE.Mesh(bocaGeo,bocaMat);
-boca.position.set(0,1.35,0.45);
-cuerpo.add(boca);
+// Boca con expresión dinámica
+let boca = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.05,0.05), new THREE.MeshBasicMaterial({color:0xffffff}));
+boca.position.set(0,1.35,0.45); cuerpo.add(boca);
 
 // Torso
-let torsoGeo = new THREE.CylinderGeometry(0.4,0.4,1.2,32);
-let torsoMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.6});
-let torso = new THREE.Mesh(torsoGeo, torsoMat);
-torso.position.y = 0.5;
-torso.castShadow = true;
-cuerpo.add(torso);
+let torso = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,1.2,32), torsoMat);
+torso.position.y=0.5; torso.castShadow=true; cuerpo.add(torso);
 
 // Brazos
 let brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
-let brazoIzq = new THREE.Mesh(brazoGeo, torsoMat);
-let brazoDer = new THREE.Mesh(brazoGeo, torsoMat);
-brazoIzq.position.set(-0.55,0.8,0);
-brazoDer.position.set(0.55,0.8,0);
-brazoIzq.rotation.z = 0.2;
-brazoDer.rotation.z = -0.2;
-brazoIzq.castShadow = true;
-brazoDer.castShadow = true;
-cuerpo.add(brazoIzq);
-cuerpo.add(brazoDer);
+let brazoIzq = new THREE.Mesh(brazoGeo,torsoMat);
+let brazoDer = new THREE.Mesh(brazoGeo,torsoMat);
+brazoIzq.position.set(-0.55,0.8,0); brazoDer.position.set(0.55,0.8,0);
+brazoIzq.castShadow=true; brazoDer.castShadow=true; cuerpo.add(brazoIzq); cuerpo.add(brazoDer);
 
-// ===== ANIMACIÓN, EVOLUCIÓN Y SEGUIMIENTO DE CARA =====
+// ===== ANIMACIÓN, EVOLUCIÓN, REACCIÓN =====
 let analyser, audioContext, microphone, dataArray;
-let evolucionTiempo = 0;
+let evolucionTiempo=0;
 let model, video, videoReady=false;
 
+// Inicializar cámara y modelo facial
 async function initFace(){
-  video = document.createElement("video");
-  video.autoplay = true;
-  video.width = 640; video.height=480;
+  video=document.createElement("video"); video.autoplay=true; video.width=640; video.height=480;
   try{
-    const stream = await navigator.mediaDevices.getUserMedia({video:true});
-    video.srcObject = stream;
-    await video.play();
-    videoReady=true;
-  }catch(e){ console.log(e); }
+    const stream=await navigator.mediaDevices.getUserMedia({video:true});
+    video.srcObject=stream; await video.play(); videoReady=true;
+  }catch(e){console.log(e);}
   model = await faceLandmarksDetection.load(faceLandmarksDetection.SupportedPackages.mediapipeFacemesh);
 }
 
@@ -131,38 +100,29 @@ async function animar(){
   requestAnimationFrame(animar);
   let t = Date.now()*0.0003;
 
-  // Fondo dinámico
-  scene.background.r = 0.0 + Math.sin(t)*0.05;
-  scene.background.g = 0.27 + Math.cos(t)*0.05;
-  scene.background.b = 0.46 + Math.sin(t/2)*0.05;
-
-  // Evolución automática
-  evolucionTiempo += 0.01;
+  // Evolución color
+  evolucionTiempo +=0.01;
   cabezaMat.color.setHSL((Math.sin(evolucionTiempo)+1)/2,0.7,0.5);
   torsoMat.color.setHSL((Math.cos(evolucionTiempo)+1)/2,0.7,0.5);
   brazoIzq.material.color.copy(torsoMat.color);
   brazoDer.material.color.copy(torsoMat.color);
 
-  // Reacción al audio
+  // Audio
   if(analyser){
     analyser.getByteFrequencyData(dataArray);
-    let volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    boca.scale.y = 1 + volumen/150;
-    cabeza.rotation.y = Math.sin(volumen/200)*0.2;
-    ojoIzq.rotation.y = cabeza.rotation.y;
-    ojoDer.rotation.y = cabeza.rotation.y;
-    brazoIzq.rotation.z = 0.2 + Math.sin(volumen/200)*0.2;
-    brazoDer.rotation.z = -0.2 + Math.sin(volumen/200)*0.2;
-    torso.rotation.y = Math.sin(volumen/250)*0.1;
+    let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+    boca.scale.y=1+volumen/150;
+    brazoIzq.rotation.z=0.2+Math.sin(volumen/200)*0.5;
+    brazoDer.rotation.z=-0.2+Math.sin(volumen/200)*0.5;
   }
 
-  // Seguimiento de cara
+  // Seguimiento de rostro
   if(videoReady && model){
-    const faces = await model.estimateFaces({input: video});
+    const faces = await model.estimateFaces({input:video});
     if(faces.length>0){
       let face = faces[0];
-      let dx = (face.scaledMesh[168][0]-320)/320; // horizontal
-      let dy = (face.scaledMesh[168][1]-240)/240; // vertical
+      let dx=(face.scaledMesh[168][0]-320)/320;
+      let dy=(face.scaledMesh[168][1]-240)/240;
       cabeza.rotation.y = dx*0.5;
       cabeza.rotation.x = dy*0.3;
       ojoIzq.rotation.y = cabeza.rotation.y;
@@ -174,24 +134,22 @@ async function animar(){
 }
 
 // ===== VOZ =====
-const RAVY = {nombre:"RAVY", idioma:"es-ES", activo:false, ejecutarOrden(texto){ return []; } };
+const RAVY={nombre:"RAVY",idioma:"es-ES",activo:false, ejecutarOrden(texto){ return []; }};
 
 // ===== RECONOCIMIENTO DE VOZ =====
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SpeechRecognition=window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.interimResults=false;
   recognition.continuous=true;
-  recognition.onresult = function(event){
+  recognition.onresult=function(event){
     if(!RAVY.activo) return;
     const texto = event.results[event.results.length-1][0].transcript;
     const frases = RAVY.ejecutarOrden(texto);
     frases.forEach(f=>{
-      let voz=new SpeechSynthesisUtterance(f);
-      voz.lang=RAVY.idioma;
-      speechSynthesis.speak(voz);
+      let voz=new SpeechSynthesisUtterance(f); voz.lang=RAVY.idioma; speechSynthesis.speak(voz);
     });
   }
 }
@@ -199,26 +157,21 @@ if(SpeechRecognition){
 // ===== BOTÓN ACTIVAR =====
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
-  document.getElementById("overlay").style.display="none"; // ocultar botón
-
-  // Inicializar cámara y modelo de rostro
+  document.getElementById("overlay").style.display="none";
   await initFace();
 
   // Audio
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  audioContext=new (window.AudioContext||window.webkitAudioContext)();
   try{
     const stream = await navigator.mediaDevices.getUserMedia({audio:true});
     microphone = audioContext.createMediaStreamSource(stream);
-    analyser = audioContext.createAnalyser();
+    analyser=audioContext.createAnalyser();
     microphone.connect(analyser);
-    analyser.fftSize = 256;
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
-  } catch(e){ console.log(e); }
+    analyser.fftSize=256;
+    dataArray=new Uint8Array(analyser.frequencyBinCount);
+  }catch(e){console.log(e);}
 
-  // Reconocimiento de voz
   if(recognition) recognition.start();
-
-  // Animación
   animar();
 });
 
@@ -226,7 +179,7 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
 window.addEventListener('resize',()=>{
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth,window.innerHeight);
 });
 
 </script>
