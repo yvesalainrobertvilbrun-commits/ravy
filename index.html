@@ -10,7 +10,6 @@ body{
   margin:0;
   background:black;
   overflow:hidden;
-  font-family:Arial, sans-serif;
 }
 #overlay{
   position:absolute;
@@ -29,7 +28,6 @@ button{
   color:white;
   background:linear-gradient(145deg,#00ffff,#008cff);
   box-shadow:0 0 30px #00aaff;
-  cursor:pointer;
 }
 </style>
 </head>
@@ -106,16 +104,11 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO + RESPETO
+// 🧠 RAVY – RESPETO Y PROTECCIÓN
 // =======================
 const RAVY = {
   activo:false,
-
-  emociones:{
-    alegria:50,
-    confianza:70,
-    energia:50
-  },
+  emociones:{ alegria:60, confianza:90, energia:60 },
 
   hablar(texto){
     const voz = new SpeechSynthesisUtterance(texto);
@@ -126,17 +119,9 @@ const RAVY = {
 
   procesar(texto){
     texto = texto.toLowerCase();
-
-    if(texto.includes("gracias")){
-      this.emociones.alegria += 5;
-      return "Siempre estaré contigo.";
-    }
-
-    if(texto.includes("hola")){
-      return "Hola. Estoy aquí, tranquilo contigo.";
-    }
-
-    return "Te escucho.";
+    if(texto.includes("gracias")) return "Siempre te protegeré.";
+    if(texto.includes("hola")) return "Estoy aquí contigo.";
+    return "Te escucho. Estoy atento.";
   }
 };
 
@@ -158,24 +143,38 @@ if(SpeechRecognition){
 }
 
 // =======================
-// ❤️ VIDA (RESPIRACIÓN + CARA)
+// 👁️ MIRADA VIVA
 // =======================
-let tiempo = 0;
+let mouseX = 0, mouseY = 0;
 
+addEventListener("mousemove",e=>{
+  mouseX = (e.clientX / innerWidth - 0.5) * 0.4;
+  mouseY = (e.clientY / innerHeight - 0.5) * 0.4;
+});
+
+function actualizarMirada(){
+  irisIzq.position.x = -0.15 + mouseX;
+  irisDer.position.x =  0.15 + mouseX;
+  irisIzq.position.y = 1.65 - mouseY;
+  irisDer.position.y = 1.65 - mouseY;
+}
+
+// =======================
+// ❤️ VIDA
+// =======================
+let t = 0;
 function actualizarVida(){
-  tiempo += 0.02;
+  t+=0.02;
 
-  // respiración
-  torso.scale.y = 1 + Math.sin(tiempo) * 0.03;
-
-  // boca emocional
+  torso.scale.y = 1 + Math.sin(t)*0.03;
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
   boca.scale.y = 0.8 + RAVY.emociones.energia/200;
 
-  // parpadeo suave
-  const parpadeo = Math.abs(Math.sin(tiempo*0.5))*0.1;
-  ojoIzq.scale.y = 1 - parpadeo;
-  ojoDer.scale.y = 1 - parpadeo;
+  const parp = Math.abs(Math.sin(t*0.5))*0.1;
+  ojoIzq.scale.y = 1-parp;
+  ojoDer.scale.y = 1-parp;
+
+  actualizarMirada();
 }
 
 // =======================
@@ -194,7 +193,7 @@ document.getElementById("activar").onclick = ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy aquí. Respira conmigo.");
+  RAVY.hablar("Te veo. Estoy contigo.");
   animar();
 };
 
