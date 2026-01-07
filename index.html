@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 13</title>
+<title>RAVY – Nivel 14</title>
 
 <style>
 body{
@@ -108,8 +108,14 @@ const torso = new THREE.Mesh(
 torso.position.y = 0.5;
 cuerpo.add(torso);
 
+// Brazos
+const brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
+const brazoIzq = new THREE.Mesh(brazoGeo, ropa); brazoIzq.position.set(-0.55,0.8,0); brazoIzq.castShadow = true;
+const brazoDer = new THREE.Mesh(brazoGeo, ropa); brazoDer.position.set(0.55,0.8,0); brazoDer.castShadow = true;
+cuerpo.add(brazoIzq, brazoDer);
+
 // =======================
-// 🧠 CEREBRO RAVY 13
+// 🧠 CEREBRO RAVY 14
 // =======================
 const RAVY = {
   activo:false,
@@ -175,7 +181,7 @@ const RAVY = {
 };
 
 // =======================
-// 👂 OÍDO
+// 👂 OÍDO con reinicio automático
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
@@ -184,16 +190,21 @@ if(SpeechRecognition){
   recognition.lang="es-ES";
   recognition.continuous=true;
   recognition.interimResults=false;
-  recognition.onresult = e=>{
+
+  recognition.onresult = e => {
     if(!RAVY.activo) return;
     const texto = e.results[e.results.length-1][0].transcript;
     const r = RAVY.procesar(texto);
     RAVY.hablar(r);
+
+    // ✅ Reinicia la escucha automáticamente
+    recognition.stop();
+    recognition.start();
   };
 }
 
 // =======================
-// 🎭 EXPRESIONES + RESPIRACIÓN + EMOCIONES VISIBLES
+// 🎭 EXPRESIONES + MOVIMIENTO
 // =======================
 let respiracion = 0;
 let respDir = 1;
@@ -206,8 +217,8 @@ function actualizarExpresiones(){
 
   // BOCA
   let escalaBoca = 0.8 + RAVY.emociones.energia/200;
-  if(RAVY.emociones.alegria>60) escalaBoca += 0.1; // sonrisa
-  if(RAVY.emociones.miedo>50) escalaBoca -=0.1; // boca tensa
+  if(RAVY.emociones.alegria>60) escalaBoca += 0.1;
+  if(RAVY.emociones.miedo>50) escalaBoca -=0.1;
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
   boca.scale.y = escalaBoca;
 
@@ -217,9 +228,15 @@ function actualizarExpresiones(){
   if(RAVY.emociones.miedo>50) ojoBrillo = 1.5;
   ojoIzq.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
   ojoDer.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
-
   ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
   ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
+
+  // BRAZOS
+  brazoIzq.rotation.z = Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
+  brazoDer.rotation.z = -Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
+
+  // TORSO LEVE INCLINACIÓN
+  torso.rotation.y = Math.sin(Date.now()*0.001)*0.1*(RAVY.emociones.miedo/50);
 }
 
 // =======================
@@ -238,7 +255,7 @@ document.getElementById("activar").onclick = ()=>{
   RAVY.activo = true;
   document.getElementById("overlay").style.display="none";
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy activo. Te respetaré, protegeré y mis emociones se mostrarán.");
+  RAVY.hablar("Estoy activo. Te respetaré, protegeré y mis movimientos reflejan mis emociones.");
   animar();
 };
 
