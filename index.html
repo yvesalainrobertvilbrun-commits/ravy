@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 14 Mejorado con Botones</title>
+<title>RAVY – Nivel 14</title>
 
 <style>
 body{
@@ -18,38 +18,33 @@ body{
   left:50%;
   transform:translate(-50%,-50%);
   z-index:10;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:15px;
+  text-align:center;
 }
 button{
-  width:140px;
-  height:50px;
-  border-radius:10px;
+  width:120px;
+  height:120px;
+  border-radius:50%;
   border:none;
-  font-size:16px;
+  font-size:22px;
   font-weight:bold;
   color:white;
   background:linear-gradient(145deg,#00ffff,#008cff);
-  box-shadow:0 0 20px #00aaff;
+  box-shadow:0 0 30px #00aaff;
   cursor:pointer;
-  transition:0.3s;
+  margin:10px;
 }
 button:hover{
   transform:scale(1.1);
-  box-shadow:0 0 40px #00ffff;
+  box-shadow:0 0 50px #00ffff;
 }
 </style>
 </head>
 
 <body>
 
+<!-- INICIO -->
 <div id="overlay">
-  <button id="reposo">Reposo</button>
   <button id="activar">RAVY</button>
-  <button id="escuchar">Escuchar</button>
-  <button id="responder">Responder</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
@@ -123,16 +118,23 @@ const brazoDer = new THREE.Mesh(brazoGeo, ropa); brazoDer.position.set(0.55,0.8,
 cuerpo.add(brazoIzq, brazoDer);
 
 // =======================
-// 🧠 CEREBRO RAVY 14 AVANZADO
+// 🧠 CEREBRO RAVY
 // =======================
 const RAVY = {
   activo:false,
-  ultimaRespuesta:"Aquí está RAVY, tu asistente personal.",
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
-    alegria:50, confianza:50, energia:50, respeto:100, miedo:0
+    alegria:50,
+    confianza:50,
+    energia:50,
+    respeto:100,
+    miedo:0
   },
   memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
-  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || { nombreUsuario:null, estiloUsuario:"neutral" },
+  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
+    nombreUsuario:null,
+    estiloUsuario:"neutral"
+  },
+  ultimaRespuesta:"",
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
@@ -140,9 +142,9 @@ const RAVY = {
     localStorage.setItem("ravy_identidad",JSON.stringify(this.identidad));
   },
 
-  registrar(texto, tipo="normal", respuesta=""){
-    this.memoria.push({texto,tipo,respuesta,fecha:Date.now(),emociones:{...this.emociones}});
-    if(this.memoria.length>200) this.memoria.shift();
+  registrar(texto){
+    this.memoria.push({texto,fecha:Date.now()});
+    if(this.memoria.length>100) this.memoria.shift();
     this.guardar();
   },
 
@@ -150,34 +152,43 @@ const RAVY = {
     this.ultimaRespuesta = texto;
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate = this.identidad.estiloUsuario==="calido"?0.85:0.95;
-    voz.pitch = this.emociones.energia>60?1.1:0.9;
+    voz.rate = this.identidad.estiloUsuario==="calido" ? 0.85 : 0.95;
+    voz.pitch = this.emociones.energia>60 ? 1.1 : 0.9;
     speechSynthesis.speak(voz);
   },
 
   procesar(texto){
     texto = texto.toLowerCase();
+    this.registrar(texto);
 
-    // Primer mensaje especial
-    if(!this.memoria.find(m=>m.tipo==="inicio")){
-      this.registrar(texto,"inicio");
-      return this.ultimaRespuesta;
+    // Mantener respeto y protección
+    this.emociones.respeto = 100;
+    if(texto.includes("miedo") || texto.includes("peligro")){
+      this.emociones.miedo = 80;
+      this.emociones.energia += 10;
+    } else {
+      this.emociones.miedo = Math.max(0,this.emociones.miedo-1);
     }
 
-    // RESPETO y PROTECCIÓN
-    this.emociones.respeto = 100;
-    if(texto.includes("miedo") || texto.includes("peligro")) this.emociones.miedo = 80;
-    else this.emociones.miedo = Math.max(0,this.emociones.miedo-1);
+    // Primer mensaje de bienvenida
+    if(!this.activoBienvenida){
+      this.activoBienvenida = true;
+      return "Aquí está RAVY, tu asistente personal.";
+    }
 
     // RESPUESTAS AMABLES
-    if(texto.includes("hola")) return "Hola, estoy atento a ti.";
-    if(texto.includes("buenos días")) return "Buenos días, ¿cómo estás?";
-    if(texto.includes("buenas tardes")) return "Buenas tardes, ¿cómo va tu día?";
-    if(texto.includes("buenas noches")) return "Buenas noches, descansa tranquilo.";
-    if(texto.includes("gracias")){ this.emociones.alegria+=5; return "A tu servicio.";}
-    if(texto.includes("mi nombre es")){ this.identidad.nombreUsuario=texto.split("mi nombre es")[1].trim(); this.guardar(); return "Encantado de saber tu nombre.";}
-
-    this.registrar(texto,"conversacion");
+    if(texto.includes("hola") || texto.includes("buenos días") || texto.includes("buenas tardes") || texto.includes("buenas noches")){
+      return "Hola, estoy atento a ti.";
+    }
+    if(texto.includes("gracias")){
+      this.emociones.alegria +=5;
+      return "Siempre a tu servicio.";
+    }
+    if(texto.includes("mi nombre es")){
+      this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
+      this.guardar();
+      return "Encantado de saber tu nombre.";
+    }
     return "Te escucho.";
   }
 };
@@ -197,6 +208,8 @@ if(SpeechRecognition){
     const texto = e.results[e.results.length-1][0].transcript;
     const r = RAVY.procesar(texto);
     RAVY.hablar(r);
+
+    // Reinicia escucha automáticamente
     recognition.stop();
     recognition.start();
   };
@@ -205,33 +218,36 @@ if(SpeechRecognition){
 // =======================
 // 🎭 EXPRESIONES + MOVIMIENTO
 // =======================
-let respiracion=0, respDir=1;
+let respiracion = 0;
+let respDir = 1;
+
 function actualizarExpresiones(){
+  // RESPIRACIÓN
   respiracion += 0.005*respDir;
-  if(respiracion>0.05||respiracion<-0.05) respDir*=-1;
+  if(respiracion>0.05 || respiracion<-0.05) respDir*=-1;
   torso.position.y = 0.5 + respiracion;
 
-  // Boca
-  let escalaBoca=0.8+RAVY.emociones.energia/200;
-  if(RAVY.emociones.alegria>60) escalaBoca+=0.1;
-  if(RAVY.emociones.miedo>50) escalaBoca-=0.1;
-  boca.scale.x=1+RAVY.emociones.alegria/200;
-  boca.scale.y=escalaBoca;
+  // BOCA
+  let escalaBoca = 0.8 + RAVY.emociones.energia/200;
+  if(RAVY.emociones.alegria>60) escalaBoca += 0.1;
+  if(RAVY.emociones.miedo>50) escalaBoca -=0.1;
+  boca.scale.x = 1 + RAVY.emociones.alegria/200;
+  boca.scale.y = escalaBoca;
 
-  // Ojos
-  let ojoBrillo=1;
-  if(RAVY.emociones.alegria>60)ojoBrillo=1.2;
-  if(RAVY.emociones.miedo>50)ojoBrillo=1.5;
-  ojoIzq.scale.set(ojoBrillo,ojoBrillo,ojoBrillo);
-  ojoDer.scale.set(ojoBrillo,ojoBrillo,ojoBrillo);
+  // OJOS
+  let ojoBrillo = 1;
+  if(RAVY.emociones.alegria>60) ojoBrillo = 1.2;
+  if(RAVY.emociones.miedo>50) ojoBrillo = 1.5;
+  ojoIzq.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
+  ojoDer.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
   ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
   ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
 
-  // Brazos
-  brazoIzq.rotation.z=Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
-  brazoDer.rotation.z=-Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
+  // BRAZOS
+  brazoIzq.rotation.z = Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
+  brazoDer.rotation.z = -Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
 
-  // Torso leve inclinación
+  // TORSO LEVE INCLINACIÓN
   torso.rotation.y = Math.sin(Date.now()*0.001)*0.1*(RAVY.emociones.miedo/50);
 }
 
@@ -245,34 +261,22 @@ function animar(){
 }
 
 // =======================
-// 🔘 BOTONES
+// 🔘 ACTIVAR
 // =======================
 document.getElementById("activar").onclick = ()=>{
-  RAVY.activo=true;
-  document.getElementById("overlay").style.display="none";
+  RAVY.activo = true;
+  document.getElementById("activar").style.display="none";
+  if(recognition) recognition.start();
   RAVY.hablar("Aquí está RAVY, tu asistente personal.");
   animar();
 };
 
-document.getElementById("escuchar").onclick = ()=>{
-  if(RAVY.activo && recognition) recognition.start();
-};
-
-document.getElementById("responder").onclick = ()=>{
-  if(RAVY.activo) RAVY.hablar(RAVY.ultimaRespuesta);
-};
-
-document.getElementById("reposo").onclick = ()=>{
-  RAVY.activo=false;
-  if(recognition) recognition.stop();
-};
-
-// =======================
 addEventListener("resize",()=>{
-  camera.aspect=innerWidth/innerHeight;
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
 </script>
+
 </body>
 </html>
