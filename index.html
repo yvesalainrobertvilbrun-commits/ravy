@@ -34,12 +34,14 @@ button{
   cursor:pointer;
 }
 
-/* RAVY */
+/* ESCENA */
 #escena{
   position:absolute;
   width:100%;
   height:100%;
 }
+
+/* RAVY */
 .ravy{
   position:absolute;
   top:50%;
@@ -61,7 +63,7 @@ button{
   border-radius:50%;
   position:absolute;
   top:50px;
-  transition:0.2s;
+  transition:0.15s;
 }
 .ojo.izq{ left:45px; }
 .ojo.der{ right:45px; }
@@ -106,7 +108,7 @@ const RAVY = {
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     alegria:50,
     confianza:50,
-    energia:50
+    energia:70
   },
 
   memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || [],
@@ -131,80 +133,100 @@ const RAVY = {
       this.emociones.confianza+=5;
     }
     if(texto.includes("cansado")){
-      this.emociones.energia-=5;
+      this.emociones.energia-=10;
     }
 
-    this.emociones.alegria=Math.min(100,Math.max(0,this.emociones.alegria));
-    this.emociones.confianza=Math.min(100,Math.max(0,this.emociones.confianza));
-    this.emociones.energia=Math.min(100,Math.max(0,this.emociones.energia));
+    limitar();
     this.guardar();
   },
 
   responder(texto){
-    texto = texto.toLowerCase();
+    texto=texto.toLowerCase();
     this.aprender(texto);
 
-    if(texto.includes("qué recuerdas")){
-      if(!this.memoria.length) return "Aún no tengo recuerdos.";
-      return "Recuerdo que dijiste: " + this.memoria.at(-1).texto;
-    }
-
+    if(texto.includes("hola")) return "Aquí estoy.";
     if(texto.includes("cómo te sientes")){
-      return `Alegría ${this.emociones.alegria}%, energía ${this.emociones.energia}%.`;
+      return `Me siento vivo. Energía ${this.emociones.energia}%.`;
     }
-
-    if(texto.includes("hola")){
-      return "Hola. Me alegra sentirte.";
-    }
-
     return "Te escucho.";
   }
 };
 
+function limitar(){
+  RAVY.emociones.alegria=Math.min(100,Math.max(0,RAVY.emociones.alegria));
+  RAVY.emociones.confianza=Math.min(100,Math.max(0,RAVY.emociones.confianza));
+  RAVY.emociones.energia=Math.min(100,Math.max(0,RAVY.emociones.energia));
+}
+
 // =======================
 // 🎭 EXPRESIONES
 // =======================
-const boca = document.getElementById("boca");
-const ojoIzq = document.getElementById("ojoIzq");
-const ojoDer = document.getElementById("ojoDer");
-const cabeza = document.getElementById("cabeza");
+const boca=document.getElementById("boca");
+const ojoIzq=document.getElementById("ojoIzq");
+const ojoDer=document.getElementById("ojoDer");
+const cabeza=document.getElementById("cabeza");
+
+let parpadeo=1;
+let tiempoParpadeo=0;
 
 function actualizarExpresiones(){
-  // BOCA (alegría)
-  boca.style.width = (40 + RAVY.emociones.alegria/2)+"px";
-  boca.style.height = (8 + RAVY.emociones.energia/10)+"px";
+  boca.style.width=(40+RAVY.emociones.alegria/2)+"px";
+  boca.style.height=(8+RAVY.emociones.energia/15)+"px";
 
-  // OJOS (energía)
-  let cierre = 1 - RAVY.emociones.energia/150;
-  ojoIzq.style.transform = `scaleY(${cierre})`;
-  ojoDer.style.transform = `scaleY(${cierre})`;
+  ojoIzq.style.transform=`scaleY(${parpadeo})`;
+  ojoDer.style.transform=`scaleY(${parpadeo})`;
 
-  // CABEZA (confianza)
-  cabeza.style.transform = `scale(${1 + RAVY.emociones.confianza/300})`;
+  cabeza.style.transform=`scale(${1+RAVY.emociones.confianza/300})`;
+}
+
+// =======================
+// 👁️ PARPADEO AUTOMÁTICO
+// =======================
+function actualizarParpadeo(){
+  tiempoParpadeo++;
+  if(tiempoParpadeo>200){
+    parpadeo=0.1;
+    setTimeout(()=>parpadeo=1,150);
+    tiempoParpadeo=0;
+  }
+}
+
+// =======================
+// 🔋 VIDA PASIVA
+// =======================
+function metabolismo(){
+  if(!RAVY.activo) return;
+  RAVY.emociones.energia-=0.02;
+  if(RAVY.emociones.energia<30){
+    RAVY.emociones.alegria-=0.02;
+  }
+  limitar();
 }
 
 // =======================
 // 🎤 OÍDO
 // =======================
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recognition;
 
 if(SpeechRecognition){
-  recognition = new SpeechRecognition();
+  recognition=new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.continuous=true;
-  recognition.onresult = (e)=>{
+  recognition.onresult=(e)=>{
     if(!RAVY.activo) return;
-    const texto = e.results[e.results.length-1][0].transcript;
-    const r = RAVY.responder(texto);
+    const texto=e.results[e.results.length-1][0].transcript;
+    const r=RAVY.responder(texto);
     RAVY.hablar(r);
   };
 }
 
 // =======================
-// 🔁 VIDA
+// 🔁 LOOP DE VIDA
 // =======================
 function loop(){
+  actualizarParpadeo();
+  metabolismo();
   actualizarExpresiones();
   requestAnimationFrame(loop);
 }
@@ -213,11 +235,11 @@ loop();
 // =======================
 // 🔘 ACTIVAR
 // =======================
-document.getElementById("activar").onclick = ()=>{
+document.getElementById("activar").onclick=()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy despierto y puedo sentir.");
+  RAVY.hablar("Estoy despierto.");
 };
 </script>
 
