@@ -3,194 +3,173 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide PWA</title>
+<title>RAVY IA</title>
+
 <style>
-body { 
-  margin:0; overflow:hidden; background:black;
+body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+  font-family: Arial, sans-serif;
 }
-#overlay { 
-  position:absolute; top:50%; left:50%; 
-  transform:translate(-50%,-50%); 
-  z-index:10; text-align:center; 
+
+#overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  z-index: 10;
 }
-button { 
-  background: linear-gradient(145deg,#00d4ff,#0099ff);
-  color:white; 
-  border:none; 
-  width:120px; height:120px;
-  font-size:24px; font-weight:bold;
-  border-radius:50%; 
-  cursor:pointer; 
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
+
+button {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: none;
+  font-size: 22px;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(145deg,#00e5ff,#008cff);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  cursor: pointer;
 }
-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.5), inset 0 -3px 5px rgba(0,0,0,0.3);
-  background: linear-gradient(145deg,#00ffff,#00aaff);
-}
+button:hover { transform: scale(1.1); }
 </style>
 </head>
+
 <body>
 
 <div id="overlay">
-  <button id="activar-ravy">RAVY</button>
+  <button id="activar">RAVY</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 
 <script>
-// ===== ESCENA, CÁMARA, RENDERER =====
-let scene = new THREE.Scene();
-let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+// ================= ESCENA =================
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 100);
 camera.position.z = 6;
-let renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// ===== LUCES =====
-let dirLight = new THREE.DirectionalLight(0xffffff, 1);
-dirLight.position.set(5,10,7); dirLight.castShadow = true; scene.add(dirLight);
-let ambientLight = new THREE.AmbientLight(0x404040, 0.8); scene.add(ambientLight);
+// ================= LUCES =================
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5,10,5);
+scene.add(light);
 
-// ===== SUELO =====
-let floorGeo = new THREE.PlaneGeometry(50,50);
-let floorMat = new THREE.ShadowMaterial({opacity:0.3});
-let floor = new THREE.Mesh(floorGeo,floorMat);
-floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
+// ================= RAVY CUERPO =================
+const ravy = new THREE.Group();
+scene.add(ravy);
 
-// ===== RAVY HUMANOIDE =====
-let cuerpo = new THREE.Group(); scene.add(cuerpo);
-
-// Materiales
-let pielMat = new THREE.MeshStandardMaterial({color:0xffd1b3}); // tono piel claro
-let ropaMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
-let cabelloMat = new THREE.MeshStandardMaterial({color:0x222222, roughness:0.7});
+const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
+const ropa = new THREE.MeshStandardMaterial({color:0x00aaff});
 
 // Cabeza
-let cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32), pielMat);
-cabeza.position.y=1.6; cabeza.castShadow=true; cuerpo.add(cabeza);
-
-// Cabello simple
-let cabello = new THREE.Mesh(new THREE.SphereGeometry(0.52,32,32), cabelloMat);
-cabello.position.y=1.62; cuerpo.add(cabello);
+const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32), piel);
+cabeza.position.y = 1.6;
+ravy.add(cabeza);
 
 // Ojos
-let ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshStandardMaterial({color:0xffffff}));
-let irisIzq = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshStandardMaterial({color:0x000000}));
-let ojoDer = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshStandardMaterial({color:0xffffff}));
-let irisDer = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshStandardMaterial({color:0x000000}));
-ojoIzq.position.set(-0.15,1.65,0.45); irisIzq.position.set(-0.15,1.65,0.52);
-ojoDer.position.set(0.15,1.65,0.45); irisDer.position.set(0.15,1.65,0.52);
-cuerpo.add(ojoIzq, irisIzq, ojoDer, irisDer);
-
-// Nariz
-let nariz = new THREE.Mesh(new THREE.ConeGeometry(0.05,0.2,16), pielMat);
-nariz.position.set(0,1.55,0.5); nariz.rotation.x=Math.PI/2; cuerpo.add(nariz);
+function ojo(x){
+  const blanco = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08,16,16),
+    new THREE.MeshStandardMaterial({color:0xffffff})
+  );
+  blanco.position.set(x,1.65,0.45);
+  const iris = new THREE.Mesh(
+    new THREE.SphereGeometry(0.04,16,16),
+    new THREE.MeshStandardMaterial({color:0x000000})
+  );
+  iris.position.set(x,1.65,0.52);
+  ravy.add(blanco, iris);
+}
+ojo(-0.15); ojo(0.15);
 
 // Boca
-let boca = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.05,0.05), new THREE.MeshStandardMaterial({color:0xff5555}));
-boca.position.set(0,1.45,0.45); cuerpo.add(boca);
+const boca = new THREE.Mesh(
+  new THREE.BoxGeometry(0.25,0.05,0.05),
+  new THREE.MeshStandardMaterial({color:0xff5555})
+);
+boca.position.set(0,1.45,0.45);
+ravy.add(boca);
 
 // Torso
-let torso = new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,1.2,32), ropaMat);
-torso.position.y=0.5; torso.castShadow=true; cuerpo.add(torso);
+const torso = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.45,0.45,1.2,32),
+  ropa
+);
+torso.position.y = 0.5;
+ravy.add(torso);
 
-// Brazos
-let brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
-let brazoIzq = new THREE.Mesh(brazoGeo, ropaMat); brazoIzq.position.set(-0.55,0.8,0); brazoIzq.castShadow=true;
-let brazoDer = new THREE.Mesh(brazoGeo, ropaMat); brazoDer.position.set(0.55,0.8,0); brazoDer.castShadow=true;
-cuerpo.add(brazoIzq, brazoDer);
+// ================= CEREBRO RAVY =================
+const RAVY = {
+  activo: false,
 
-// ===== ANIMACIÓN =====
-let analyser, audioContext, microphone, dataArray;
-let evolucionTiempo=0;
+  escuchar(texto){
+    texto = texto.toLowerCase();
+    if (!texto.startsWith("ravy")) return;
 
-function animar(){
-  requestAnimationFrame(animar);
-  evolucionTiempo +=0.01;
-
-  ropaMat.color.setHSL((Math.sin(evolucionTiempo)+1)/2,0.7,0.5);
-
-  if(analyser){
-    analyser.getByteFrequencyData(dataArray);
-    let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    boca.scale.y=1+volumen/150;
-    brazoIzq.rotation.z=0.2+Math.sin(volumen/200)*0.5;
-    brazoDer.rotation.z=-0.2+Math.sin(volumen/200)*0.5;
-    torso.rotation.y=Math.sin(volumen/300)*0.1;
-  }
-
-  renderer.render(scene,camera);
-}
-
-// ===== CEREBRO IA =====
-const RAVY={
-  nombre:"RAVY",
-  idioma:"es-ES",
-  activo:false,
-  ejecutarOrden: async function(texto){
-    try{
-      const resp = await fetch("http://localhost:3000/pensar", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({texto})
-      });
-      const data = await resp.json();
-      return [data.respuesta];
-    }catch(e){
-      console.log(e);
-      return ["No puedo conectarme al cerebro."];
+    if (texto.includes("hora")){
+      this.hablar("Son las " + new Date().toLocaleTimeString());
+      return;
     }
+
+    if (texto.includes("google")){
+      window.open("https://google.com","_blank");
+      this.hablar("Abriendo Google");
+      return;
+    }
+
+    if (texto.includes("silencio")){
+      this.hablar("Entrando en silencio");
+      this.activo = false;
+      return;
+    }
+
+    this.hablar("Orden no permitida");
+  },
+
+  hablar(texto){
+    const voz = new SpeechSynthesisUtterance(texto);
+    voz.lang = "es-ES";
+    speechSynthesis.speak(voz);
   }
 };
 
-// ===== RECONOCIMIENTO DE VOZ =====
-const SpeechRecognition=window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition;
-if(SpeechRecognition){
-  recognition = new SpeechRecognition();
-  recognition.lang="es-ES";
-  recognition.interimResults=false;
-  recognition.continuous=true;
-  recognition.onresult = async function(event){
-    if(!RAVY.activo) return;
-    const texto = event.results[event.results.length-1][0].transcript;
-    const frases = await RAVY.ejecutarOrden(texto);
-    frases.forEach(f=>{
-      let voz = new SpeechSynthesisUtterance(f);
-      voz.lang = RAVY.idioma;
-      speechSynthesis.speak(voz);
-    });
-  }
+// ================= VOZ =================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const rec = new SpeechRecognition();
+rec.lang = "es-ES";
+rec.continuous = true;
+rec.onresult = e => {
+  const texto = e.results[e.results.length-1][0].transcript;
+  RAVY.escuchar(texto);
+};
+
+// ================= BOTÓN =================
+document.getElementById("activar").onclick = async () => {
+  document.getElementById("overlay").style.display = "none";
+  RAVY.activo = true;
+  rec.start();
+  animar();
+};
+
+// ================= ANIMACIÓN =================
+function animar(){
+  requestAnimationFrame(animar);
+  boca.scale.y = 1 + Math.sin(Date.now()*0.005)*0.3;
+  renderer.render(scene,camera);
 }
 
-// ===== BOTÓN ACTIVAR =====
-document.getElementById("activar-ravy").addEventListener("click", async ()=>{
-  RAVY.activo=true;
-  document.getElementById("overlay").style.display="none";
-
-  audioContext = new (window.AudioContext||window.webkitAudioContext)();
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    microphone = audioContext.createMediaStreamSource(stream);
-    analyser = audioContext.createAnalyser();
-    microphone.connect(analyser);
-    analyser.fftSize = 256;
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
-  }catch(e){console.log(e);}
-
-  if(recognition) recognition.start();
-  animar();
-});
-
-// ===== AJUSTES PANTALLA =====
-window.addEventListener('resize',()=>{
-  camera.aspect = window.innerWidth/window.innerHeight;
+window.onresize = () => {
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-});
+  renderer.setSize(innerWidth,innerHeight);
+};
 </script>
 
 </body>
