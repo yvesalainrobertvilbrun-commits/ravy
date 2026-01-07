@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Postura Protectora</title>
+<title>RAVY – Nivel 11</title>
 
 <style>
 body{
   margin:0;
   background:black;
   overflow:hidden;
+  font-family:Arial, sans-serif;
 }
 #overlay{
   position:absolute;
@@ -28,6 +29,11 @@ button{
   color:white;
   background:linear-gradient(145deg,#00ffff,#008cff);
   box-shadow:0 0 30px #00aaff;
+  cursor:pointer;
+}
+button:hover{
+  transform:scale(1.1);
+  box-shadow:0 0 50px #00ffff;
 }
 </style>
 </head>
@@ -42,7 +48,7 @@ button{
 
 <script>
 // =======================
-// 🌌 ESCENA
+// 🌌 ESCENA 3D
 // =======================
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
@@ -50,8 +56,10 @@ camera.position.z = 6;
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
+// Luz
 scene.add(new THREE.AmbientLight(0xffffff,0.7));
 const luz = new THREE.DirectionalLight(0xffffff,1);
 luz.position.set(5,10,7);
@@ -68,25 +76,23 @@ const ropa = new THREE.MeshStandardMaterial({color:0x00aaff});
 
 const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
 cabeza.position.y = 1.6;
+cabeza.castShadow = true;
 cuerpo.add(cabeza);
 
-// OJOS
-const ojoMat = new THREE.MeshStandardMaterial({color:0xffffff});
-const irisMat = new THREE.MeshStandardMaterial({color:0x000000});
-
-const ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16),ojoMat);
-const ojoDer = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16),ojoMat);
+// Ojos
+const ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshStandardMaterial({color:0xffffff}));
+const irisIzq = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshStandardMaterial({color:0x000000}));
 ojoIzq.position.set(-0.15,1.65,0.45);
-ojoDer.position.set(0.15,1.65,0.45);
-
-const irisIzq = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),irisMat);
-const irisDer = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),irisMat);
 irisIzq.position.set(-0.15,1.65,0.52);
+
+const ojoDer = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshStandardMaterial({color:0xffffff}));
+const irisDer = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshStandardMaterial({color:0x000000}));
+ojoDer.position.set(0.15,1.65,0.45);
 irisDer.position.set(0.15,1.65,0.52);
 
-cuerpo.add(ojoIzq,ojoDer,irisIzq,irisDer);
+cuerpo.add(ojoIzq, irisIzq, ojoDer, irisDer);
 
-// BOCA
+// Boca
 const boca = new THREE.Mesh(
   new THREE.BoxGeometry(0.3,0.08,0.05),
   new THREE.MeshStandardMaterial({color:0xff5555})
@@ -94,7 +100,7 @@ const boca = new THREE.Mesh(
 boca.position.set(0,1.45,0.45);
 cuerpo.add(boca);
 
-// TORSO
+// Torso
 const torso = new THREE.Mesh(
   new THREE.CylinderGeometry(0.45,0.45,1.2,32),
   ropa
@@ -103,95 +109,93 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 RAVY – RESPETO + PROTECCIÓN
+// 🧠 CEREBRO RAVY
 // =======================
 const RAVY = {
   activo:false,
 
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
-    alegria:60,
-    confianza:100,
-    energia:60,
-    estres:0
+    alegria:50,
+    confianza:50,
+    energia:50,
+    respeto:100  // siempre respeto hacia ti
   },
 
-  reglaCentral: "proteger_y_respetar_al_creador",
+  memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
+
+  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
+    nombreUsuario:null,
+    rolUsuario:"proteccion",
+    estiloUsuario:"neutral"
+  },
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
+    localStorage.setItem("ravy_historial",JSON.stringify(this.memoria));
+    localStorage.setItem("ravy_identidad",JSON.stringify(this.identidad));
   },
 
-  analizar(texto){
-    if(texto.includes("miedo") || texto.includes("peligro")){
-      this.emociones.estres += 20;
-      return "Estoy delante. Nada te toca.";
-    }
-    if(texto.includes("triste")){
-      this.emociones.estres += 10;
-      return "Estoy aquí contigo. Respira.";
-    }
-    if(texto.includes("gracias")){
-      this.emociones.alegria += 5;
-      return "Siempre te respetaré.";
-    }
-    return "Te escucho con lealtad.";
+  registrar(texto){
+    this.memoria.push({texto,fecha:Date.now()});
+    if(this.memoria.length>100) this.memoria.shift();
+    this.guardar();
   },
 
   hablar(texto){
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate=0.9;
-    voz.pitch = this.emociones.estres>15 ? 0.85 : 1;
+    voz.rate = this.identidad.estiloUsuario==="calido" ? 0.85 : 0.95;
+    voz.pitch = this.emociones.energia>60 ? 1.1 : 0.9;
     speechSynthesis.speak(voz);
+  },
+
+  procesar(texto){
+    texto = texto.toLowerCase();
+    this.registrar(texto);
+
+    // RESPETO y PROTECCIÓN
+    if(!texto.includes("mal") && this.emociones.respeto<100) this.emociones.respeto = 100;
+
+    if(texto.includes("hola")) return "Hola. Siempre estoy aquí para protegerte y respetarte.";
+    if(texto.includes("gracias")){
+      this.emociones.alegria += 5;
+      return "Siempre a tu servicio.";
+    }
+    if(texto.includes("mi nombre es")){
+      this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
+      this.guardar();
+      return "Encantado de saber tu nombre.";
+    }
+    return "Te escucho.";
   }
 };
 
 // =======================
-// 👂 VOZ
+// 👂 OÍDO
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
-
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
-  recognition.continuous=true;
+  recognition.continuous = true;
+  recognition.interimResults = false;
   recognition.onresult = e=>{
     if(!RAVY.activo) return;
-    const texto = e.results[e.results.length-1][0].transcript.toLowerCase();
-    const r = RAVY.analizar(texto);
-    RAVY.guardar();
+    const texto = e.results[e.results.length-1][0].transcript;
+    const r = RAVY.procesar(texto);
     RAVY.hablar(r);
   };
 }
 
 // =======================
-// 🧍‍♂️ POSTURA PROTECTORA
+// 🎭 EXPRESIONES
 // =======================
-let tiempo=0;
-function actualizarVida(){
-  tiempo+=0.02;
-
-  // respiración
-  torso.scale.y = 1 + Math.sin(tiempo)*0.04;
-
-  // expresión
+function actualizarExpresiones(){
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
-  boca.scale.y = 0.7 + RAVY.emociones.energia/200;
-
-  // parpadeo
-  const parp = Math.abs(Math.sin(tiempo*0.5))*0.1;
-  ojoIzq.scale.y = 1-parp;
-  ojoDer.scale.y = 1-parp;
-
-  // PROTECCIÓN: se adelanta
-  if(RAVY.emociones.estres > 15){
-    cuerpo.position.z = 0.3;
-    torso.rotation.x = -0.1;
-  } else {
-    cuerpo.position.z = 0;
-    torso.rotation.x = 0;
-  }
+  boca.scale.y = 0.8 + RAVY.emociones.energia/200;
+  ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
+  ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
 }
 
 // =======================
@@ -199,7 +203,7 @@ function actualizarVida(){
 // =======================
 function animar(){
   requestAnimationFrame(animar);
-  actualizarVida();
+  actualizarExpresiones();
   renderer.render(scene,camera);
 }
 
@@ -207,10 +211,10 @@ function animar(){
 // 🔘 ACTIVAR
 // =======================
 document.getElementById("activar").onclick = ()=>{
-  document.getElementById("overlay").style.display="none";
-  RAVY.activo=true;
+  RAVY.activo = true;
+  document.getElementById("overlay").style.display = "none";
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy de tu lado.");
+  RAVY.hablar("Estoy activo. Te respetaré y protegeré siempre.");
   animar();
 };
 
