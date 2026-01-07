@@ -3,19 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY 3D Humanoide</title>
+<title>RAVY</title>
 <style>
 body { margin:0; background:black; overflow:hidden; }
-#overlay { position:absolute; top:10px; width:100%; text-align:center; color:#00aaff; font-family:Arial,sans-serif; z-index:10; }
+#overlay { position:absolute; top:50%; width:100%; text-align:center; z-index:10; transform:translateY(-50%); }
 button { background:#00aaff; color:black; border:none; padding:12px 20px; font-size:16px; border-radius:8px; cursor:pointer; }
 </style>
 </head>
 <body>
 <div id="overlay">
-  <h1>RAVY 3D Humanoide</h1>
-  <p>Presiona el botón para activarme y ser parte de tu familia</p>
   <button id="activar-ravy">Despertar a RAVY</button>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 <script>
 
@@ -110,24 +109,8 @@ const RAVY = {
   nombre:"RAVY",
   idioma:"es-ES",
   activo:false,
-  ejecutarOrden(texto){
-    const t=texto.toLowerCase();
-    let frases=[];
-    if(t.includes("hola")) frases=["Hola querido, estoy contigo."];
-    else if(t.includes("hora")){ let h=new Date(); frases=[`Son las ${h.getHours()}:${h.getMinutes()}`]; }
-    else if(t.includes("google")){ frases=["Abro Google para ti..."]; window.open("https://www.google.com","_blank"); }
-    else if(t.includes("chiste")) frases=["¿Por qué la computadora fue al doctor? Porque tenía un virus 😂"];
-    return frases;
-  }
+  ejecutarOrden(texto){ return []; } // Aquí se puede agregar futuro cerebro y comandos
 };
-
-function hablar(frases){
-  frases.forEach(f=>{
-    let voz=new SpeechSynthesisUtterance(f);
-    voz.lang=RAVY.idioma;
-    speechSynthesis.speak(voz);
-  });
-}
 
 // ===== RECONOCIMIENTO DE VOZ =====
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -141,13 +124,18 @@ if(SpeechRecognition){
     if(!RAVY.activo) return;
     const texto = event.results[event.results.length-1][0].transcript;
     const frases = RAVY.ejecutarOrden(texto);
-    hablar(frases);
+    frases.forEach(f=>{
+      let voz=new SpeechSynthesisUtterance(f);
+      voz.lang=RAVY.idioma;
+      speechSynthesis.speak(voz);
+    });
   }
 }
 
 // ===== BOTÓN ACTIVAR =====
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
+  document.getElementById("overlay").style.display="none"; // ocultar botón
 
   // Audio
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
