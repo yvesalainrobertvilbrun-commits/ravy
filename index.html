@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide Funcional</title>
+<title>RAVY Humanoide Realista</title>
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -25,6 +25,7 @@ button {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
 // ===== ESCENA, CÁMARA, RENDERER =====
@@ -33,7 +34,7 @@ let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeigh
 camera.position.set(0,1.6,6);
 
 let renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
@@ -48,15 +49,24 @@ let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
-// ===== CUERPO TEMPORAL (CUBO HUMANOIDE) =====
+// ===== CARGAR MODELO HUMANOIDE REAL =====
 let cuerpo;
-let geometry = new THREE.BoxGeometry(1,2,0.5);
-let material = new THREE.MeshStandardMaterial({color:0x00aaff});
-cuerpo = new THREE.Mesh(geometry, material);
-cuerpo.position.y=1;
-cuerpo.castShadow=true;
-cuerpo.receiveShadow=true;
-scene.add(cuerpo);
+const loader = new THREE.GLTFLoader();
+// Modelo humanoide real con rostro y cabello
+loader.load('https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
+function(gltf){
+  cuerpo = gltf.scene;
+  cuerpo.scale.set(1.5,1.5,1.5);
+  cuerpo.position.y=0;
+  cuerpo.traverse(node=>{
+    if(node.isMesh){
+      node.castShadow=true;
+      node.receiveShadow=true;
+    }
+  });
+  scene.add(cuerpo);
+  console.log("Modelo humanoide cargado");
+}, undefined, function(error){ console.error(error); });
 
 // ===== ANIMACIÓN Y REACCIÓN =====
 let analyser, audioContext, microphone, dataArray;
@@ -67,13 +77,13 @@ function animar(){
   evolucionTiempo+=0.01;
 
   if(cuerpo){
-    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5;
+    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5; // movimiento suave
   }
 
   if(analyser && cuerpo){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05;
+    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; // cabeceo pequeño
   }
 
   renderer.render(scene,camera);
