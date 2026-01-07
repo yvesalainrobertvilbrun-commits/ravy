@@ -3,185 +3,177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY 3D Familiar</title>
+<title>RAVY 3D Humanoide</title>
 <style>
-body { background:black; color:#00aaff; font-family:Arial,sans-serif; text-align:center; padding:30px; }
-#cuerpo-ravy-3d { width:160px; margin:30px auto; position:relative; }
-#cabeza { width:100px; height:100px; margin:0 auto; background:radial-gradient(circle at center, rgba(0,170,255,0.7), rgba(0,170,255,0.2)); border-radius:50%; position:relative; box-shadow:0 0 40px rgba(0,170,255,0.7),0 0 80px rgba(0,170,255,0.3); transition:transform 0.1s, box-shadow 0.1s; }
-#torso { width:60px; height:100px; margin:-10px auto 0; background:rgba(0,170,255,0.6); border-radius:30px; box-shadow:0 0 30px rgba(0,170,255,0.6); transition:transform 0.1s; }
-.brazo { width:20px; height:80px; background:rgba(0,170,255,0.5); position:absolute; top:30px; border-radius:10px; transition:transform 0.1s; }
-#brazo-izq { left:-20px; transform-origin:top center; }
-#brazo-der { right:-20px; transform-origin:top center; }
-.ojo { width:15px; height:15px; background:white; border-radius:50%; position:absolute; top:30px; transition:transform 0.1s, height 0.1s; }
-.ojo.izquierdo { left:20px; }
-.ojo.derecho { right:20px; }
-.boca { width:40px; height:10px; border-bottom:3px solid white; border-radius:0 0 20px 20px; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); transition:transform 0.1s; }
-button { background:#00aaff; color:black; border:none; padding:12px 20px; font-size:16px; border-radius:8px; cursor:pointer; margin-top:20px; }
+body { margin:0; background:black; overflow:hidden; }
+#overlay { position:absolute; top:10px; width:100%; text-align:center; color:#00aaff; font-family:Arial,sans-serif; z-index:10; }
+button { background:#00aaff; color:black; border:none; padding:12px 20px; font-size:16px; border-radius:8px; cursor:pointer; }
 </style>
 </head>
 <body>
-
-<h1>RAVY 3D Familiar</h1>
-<p>Presiona el botón para activarme y ser parte de tu familia</p>
-
-<div id="cuerpo-ravy-3d">
-  <div id="cabeza">
-    <div class="ojo izquierdo"></div>
-    <div class="ojo derecho"></div>
-    <div class="boca"></div>
-  </div>
-  <div id="torso"></div>
-  <div id="brazo-izq" class="brazo"></div>
-  <div id="brazo-der" class="brazo"></div>
+<div id="overlay">
+  <h1>RAVY 3D Humanoide</h1>
+  <p>Presiona el botón para activarme y ser parte de tu familia</p>
+  <button id="activar-ravy">Despertar a RAVY</button>
 </div>
-
-<button id="activar-ravy">Despertar a RAVY</button>
-
+<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 <script>
-// ===== RAVY Y SU CEREBRO =====
+
+// ===== ESCENA, CÁMARA Y RENDERER =====
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
+let renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// ===== LUCES =====
+let light = new THREE.DirectionalLight(0x00aaff,1);
+light.position.set(1,1,2);
+scene.add(light);
+scene.add(new THREE.AmbientLight(0x404040));
+
+// ===== RAVY HUMANOIDE =====
+let cuerpo = new THREE.Group();
+scene.add(cuerpo);
+
+// Cabeza
+let cabezaGeo = new THREE.SphereGeometry(0.5,32,32);
+let cabezaMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
+let cabeza = new THREE.Mesh(cabezaGeo, cabezaMat);
+cabeza.position.y = 1.5;
+cuerpo.add(cabeza);
+
+// Ojos
+let ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshBasicMaterial({color:0xffffff}));
+let ojoDer = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshBasicMaterial({color:0xffffff}));
+ojoIzq.position.set(-0.15,1.55,0.45);
+ojoDer.position.set(0.15,1.55,0.45);
+cuerpo.add(ojoIzq);
+cuerpo.add(ojoDer);
+
+// Boca
+let bocaGeo = new THREE.BoxGeometry(0.3,0.05,0.05);
+let bocaMat = new THREE.MeshBasicMaterial({color:0xffffff});
+let boca = new THREE.Mesh(bocaGeo,bocaMat);
+boca.position.set(0,1.35,0.45);
+cuerpo.add(boca);
+
+// Torso
+let torsoGeo = new THREE.CylinderGeometry(0.4,0.4,1.2,32);
+let torsoMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.6});
+let torso = new THREE.Mesh(torsoGeo, torsoMat);
+torso.position.y = 0.5;
+cuerpo.add(torso);
+
+// Brazos
+let brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
+let brazoIzq = new THREE.Mesh(brazoGeo, torsoMat);
+let brazoDer = new THREE.Mesh(brazoGeo, torsoMat);
+brazoIzq.position.set(-0.55,0.8,0);
+brazoDer.position.set(0.55,0.8,0);
+brazoIzq.rotation.z = 0.2;
+brazoDer.rotation.z = -0.2;
+cuerpo.add(brazoIzq);
+cuerpo.add(brazoDer);
+
+// ===== ANIMACIÓN =====
+let analyser, audioContext, microphone, dataArray;
+function animar(){
+  requestAnimationFrame(animar);
+
+  if(analyser){
+    analyser.getByteFrequencyData(dataArray);
+    let volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+
+    // Boca se abre según volumen
+    boca.scale.y = 1 + volumen/150;
+
+    // Cabeza y ojos siguen posición (simulada según volumen)
+    cabeza.rotation.y = Math.sin(volumen/200)*0.2;
+    ojoIzq.rotation.y = cabeza.rotation.y;
+    ojoDer.rotation.y = cabeza.rotation.y;
+
+    // Brazos se mueven levemente
+    brazoIzq.rotation.z = 0.2 + Math.sin(volumen/200)*0.2;
+    brazoDer.rotation.z = -0.2 + Math.sin(volumen/200)*0.2;
+
+    // Torso balanceo leve
+    torso.rotation.y = Math.sin(volumen/250)*0.1;
+  }
+
+  renderer.render(scene,camera);
+}
+
+// ===== VOZ =====
 const RAVY = {
   nombre:"RAVY",
   idioma:"es-ES",
   activo:false,
-  contexto:{},
   ejecutarOrden(texto){
+    const t=texto.toLowerCase();
     let frases=[];
-    let idioma=this.idioma;
-    const t = texto.toLowerCase();
-
-    // Comportamiento familiar
-    if(t.includes("hola")) frases=["Hola querido, ¿cómo estás hoy?"];
-    else if(t.includes("cansado")) frases=["Tómate un descanso, yo cuido todo aquí"];
-    else if(t.includes("hora") || t.includes("qué hora")){ 
-      const ahora=new Date(); 
-      frases=[`Es la hora de cuidarte: ${ahora.getHours()}:${ahora.getMinutes()}`]; 
-    }
-    else if(t.includes("abre google") || t.includes("google")){ 
-      frases=["Abro Google para ti..."]; 
-      window.open("https://www.google.com","_blank"); 
-    }
+    if(t.includes("hola")) frases=["Hola querido, estoy contigo."];
+    else if(t.includes("hora")){ let h=new Date(); frases=[`Son las ${h.getHours()}:${h.getMinutes()}`]; }
+    else if(t.includes("google")){ frases=["Abro Google para ti..."]; window.open("https://www.google.com","_blank"); }
     else if(t.includes("chiste")) frases=["¿Por qué la computadora fue al doctor? Porque tenía un virus 😂"];
-    else if(t.includes("enciende luz") || t.includes("luz")){ 
-      frases=["Encendiendo efecto luminoso..."]; 
-      const torso=document.getElementById("torso");
-      torso.style.background="rgba(255,255,0,0.8)";
-      setTimeout(()=>torso.style.background="rgba(0,170,255,0.6)",1000);
-    }
-    else frases=[];
-
-    this.contexto.ultimoTexto=texto;
-    this.contexto.ultimaRespuesta=frases;
-    return {frases, idioma};
+    return frases;
   }
 };
 
-// ===== HABLAR =====
-function hablar(frases, idioma){
-  if(frases.length===0) return;
-  frases.forEach((frase,i)=>{
-    setTimeout(()=>{
-      const voz=new SpeechSynthesisUtterance(frase);
-      voz.lang=idioma;
-      speechSynthesis.speak(voz);
-    },i*1800);
+function hablar(frases){
+  frases.forEach(f=>{
+    let voz=new SpeechSynthesisUtterance(f);
+    voz.lang=RAVY.idioma;
+    speechSynthesis.speak(voz);
   });
 }
 
 // ===== RECONOCIMIENTO DE VOZ =====
-let recognition;
-let audioContext, analyser, microphone, dataArray;
-
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.interimResults=false;
   recognition.continuous=true;
-
-  recognition.onresult=function(event){
+  recognition.onresult = function(event){
     if(!RAVY.activo) return;
-    const texto=event.results[event.results.length-1][0].transcript.toLowerCase();
-
-    if(!FAMILIA.activo){ 
-      console.log("RAVY escuchó pero no actúa (familia no activa)"); 
-      return; 
-    }
-
-    const {frases, idioma}=RAVY.ejecutarOrden(texto);
-    hablar(frases, idioma);
-  };
+    const texto = event.results[event.results.length-1][0].transcript;
+    const frases = RAVY.ejecutarOrden(texto);
+    hablar(frases);
+  }
 }
-
-// ===== FAMILIA =====
-const FAMILIA = { activo:false };
 
 // ===== BOTÓN ACTIVAR =====
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
-  FAMILIA.activo=true;
 
-  // Iniciar reconocimiento de voz
-  if(recognition) recognition.start();
-
-  // Iniciar audio para animación 3D
+  // Audio
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  try {
+  try{
     const stream = await navigator.mediaDevices.getUserMedia({audio:true});
     microphone = audioContext.createMediaStreamSource(stream);
     analyser = audioContext.createAnalyser();
     microphone.connect(analyser);
     analyser.fftSize = 256;
     dataArray = new Uint8Array(analyser.frequencyBinCount);
-    requestAnimationFrame(animarCuerpo);
-  } catch(e) {
-    console.log("Micrófono no disponible:", e);
-  }
+  } catch(e){ console.log(e); }
+
+  // Reconocimiento de voz
+  if(recognition) recognition.start();
+
+  // Animación
+  animar();
 });
 
-// ===== ANIMAR CUERPO 3D =====
-function animarCuerpo(){
-  if(RAVY.activo && analyser){
-    analyser.getByteFrequencyData(dataArray);
-    let volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+// ===== AJUSTES DE PANTALLA =====
+window.addEventListener('resize',()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-    const cabeza=document.getElementById("cabeza");
-    const boca=document.querySelector(".boca");
-    const torso=document.getElementById("torso");
-    const brazoIzq=document.getElementById("brazo-izq");
-    const brazoDer=document.getElementById("brazo-der");
-    const ojoIzq=document.querySelector(".ojo.izquierdo");
-    const ojoDer=document.querySelector(".ojo.derecho");
-
-    // Movimiento general según volumen
-    let escalaCabeza = 1 + volumen/500;
-    cabeza.style.transform=`scale(${escalaCabeza}) rotate(${volumen/50-1}deg)`;
-    boca.style.transform=`scaleY(${1 + volumen/300})`;
-    torso.style.transform=`translateY(${volumen/150}px)`;
-    brazoIzq.style.transform=`rotate(${volumen/20-3}deg)`;
-    brazoDer.style.transform=`rotate(${-volumen/20+3}deg)`;
-
-    // Seguimiento de ojos (simulado)
-    let movimientoOjos = (volumen/255) * 10; // +/-10px
-    ojoIzq.style.transform=`translate(${movimientoOjos}px,0)`;
-    ojoDer.style.transform=`translate(${movimientoOjos}px,0)`;
-
-    // Parpadeo automático
-    if(!cabeza.parpadeo) cabeza.parpadeo=0;
-    cabeza.parpadeo++;
-    if(cabeza.parpadeo>180){
-      ojoIzq.style.height="2px";
-      ojoDer.style.height="2px";
-      setTimeout(()=>{
-        ojoIzq.style.height="15px";
-        ojoDer.style.height="15px";
-      },150);
-      cabeza.parpadeo=0;
-    }
-
-    requestAnimationFrame(animarCuerpo);
-  }
-}
 </script>
-
 </body>
 </html>
