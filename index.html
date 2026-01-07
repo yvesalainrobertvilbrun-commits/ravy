@@ -49,11 +49,11 @@ let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
-// ===== CARGAR MODELO 3D HUMANOIDE ESTABLE =====
+// ===== CARGAR MODELO 3D HUMANOIDE =====
 let cuerpo;
 const loader = new THREE.GLTFLoader();
 loader.load(
-  'https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
+  'https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
   function(gltf){
     cuerpo = gltf.scene;
     cuerpo.scale.set(1.5,1.5,1.5);
@@ -68,7 +68,7 @@ loader.load(
     console.log("Humanoide RAVY cargado");
   },
   undefined,
-  function(error){ console.error(error); }
+  function(error){ console.error("Error cargando RAVY:", error); }
 );
 
 // ===== ANIMACIÓN Y REACCIÓN =====
@@ -80,13 +80,13 @@ function animar(){
   evolucionTiempo+=0.01;
 
   if(cuerpo){
-    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5; // giro suave
+    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5;
   }
 
   if(analyser && cuerpo){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; // movimiento cabeza
+    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05;
   }
 
   renderer.render(scene,camera);
@@ -133,9 +133,9 @@ if(SpeechRecognition){
   }
 }
 
-// ===== BOTÓN ACTIVAR / REINICIAR =====
+// ===== BOTÓN ACTIVAR =====
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
-  if(RAVY.activo) return; // ya está activo
+  if(RAVY.activo) return;
 
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
