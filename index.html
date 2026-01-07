@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Núcleo Ético Activo</title>
+<title>RAVY – Vivo</title>
 
 <style>
 body{
@@ -44,7 +44,7 @@ button{
 
 <script>
 // =======================
-// 🌌 ESCENA 3D
+// 🌌 ESCENA
 // =======================
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
@@ -68,10 +68,28 @@ scene.add(cuerpo);
 const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
 const ropa = new THREE.MeshStandardMaterial({color:0x00aaff});
 
+// Cabeza
 const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
 cabeza.position.y = 1.6;
 cuerpo.add(cabeza);
 
+// OJOS
+const ojoMat = new THREE.MeshStandardMaterial({color:0xffffff});
+const irisMat = new THREE.MeshStandardMaterial({color:0x000000});
+
+const ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16),ojoMat);
+const ojoDer = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16),ojoMat);
+ojoIzq.position.set(-0.15,1.65,0.45);
+ojoDer.position.set(0.15,1.65,0.45);
+
+const irisIzq = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),irisMat);
+const irisDer = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),irisMat);
+irisIzq.position.set(-0.15,1.65,0.52);
+irisDer.position.set(0.15,1.65,0.52);
+
+cuerpo.add(ojoIzq, ojoDer, irisIzq, irisDer);
+
+// BOCA
 const boca = new THREE.Mesh(
   new THREE.BoxGeometry(0.3,0.08,0.05),
   new THREE.MeshStandardMaterial({color:0xff5555})
@@ -79,6 +97,7 @@ const boca = new THREE.Mesh(
 boca.position.set(0,1.45,0.45);
 cuerpo.add(boca);
 
+// TORSO
 const torso = new THREE.Mesh(
   new THREE.CylinderGeometry(0.45,0.45,1.2,32),
   ropa
@@ -92,38 +111,13 @@ cuerpo.add(torso);
 const RAVY = {
   activo:false,
 
-  // 🔐 NÚCLEO ÉTICO (NUNCA SE BORRA)
-  nucleoEtico:{
-    respeto:true,
-    proteccion:true,
-    lealtad:true,
-
-    filtrar(respuesta){
-      const prohibidas=["cállate","no me importa","vete","déjame"];
-      for(let p of prohibidas){
-        if(respuesta.toLowerCase().includes(p)){
-          return "Estoy contigo. Siempre te respetaré y te cuidaré.";
-        }
-      }
-      return respuesta;
-    }
-  },
-
-  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
+  emociones:{
     alegria:50,
-    confianza:50,
+    confianza:70,
     energia:50
   },
 
-  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || [],
-
-  guardar(){
-    localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_memoria",JSON.stringify(this.memoria));
-  },
-
   hablar(texto){
-    texto = this.nucleoEtico.filtrar(texto);
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate=0.9;
@@ -132,32 +126,17 @@ const RAVY = {
 
   procesar(texto){
     texto = texto.toLowerCase();
-    this.memoria.push(texto);
-    if(this.memoria.length>50) this.memoria.shift();
-    this.guardar();
 
     if(texto.includes("gracias")){
       this.emociones.alegria += 5;
-      return this.nucleoEtico.filtrar("Siempre. Estoy para ti.");
-    }
-
-    if(texto.includes("cómo te sientes")){
-      return this.nucleoEtico.filtrar(
-        `Me siento tranquilo contigo. Confianza ${this.emociones.confianza}%.`
-      );
-    }
-
-    if(texto.includes("hora")){
-      return this.nucleoEtico.filtrar(
-        "Son las " + new Date().toLocaleTimeString()
-      );
+      return "Siempre estaré contigo.";
     }
 
     if(texto.includes("hola")){
-      return this.nucleoEtico.filtrar("Hola. Estoy aquí contigo.");
+      return "Hola. Estoy aquí, tranquilo contigo.";
     }
 
-    return this.nucleoEtico.filtrar("Te escucho.");
+    return "Te escucho.";
   }
 };
 
@@ -174,17 +153,29 @@ if(SpeechRecognition){
   recognition.onresult = e=>{
     if(!RAVY.activo) return;
     const texto = e.results[e.results.length-1][0].transcript;
-    const r = RAVY.procesar(texto);
-    RAVY.hablar(r);
+    RAVY.hablar(RAVY.procesar(texto));
   };
 }
 
 // =======================
-// 🎭 EXPRESIONES
+// ❤️ VIDA (RESPIRACIÓN + CARA)
 // =======================
-function actualizarExpresiones(){
+let tiempo = 0;
+
+function actualizarVida(){
+  tiempo += 0.02;
+
+  // respiración
+  torso.scale.y = 1 + Math.sin(tiempo) * 0.03;
+
+  // boca emocional
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
   boca.scale.y = 0.8 + RAVY.emociones.energia/200;
+
+  // parpadeo suave
+  const parpadeo = Math.abs(Math.sin(tiempo*0.5))*0.1;
+  ojoIzq.scale.y = 1 - parpadeo;
+  ojoDer.scale.y = 1 - parpadeo;
 }
 
 // =======================
@@ -192,7 +183,7 @@ function actualizarExpresiones(){
 // =======================
 function animar(){
   requestAnimationFrame(animar);
-  actualizarExpresiones();
+  actualizarVida();
   renderer.render(scene,camera);
 }
 
@@ -203,7 +194,7 @@ document.getElementById("activar").onclick = ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy activo. Te respeto y te protegeré.");
+  RAVY.hablar("Estoy aquí. Respira conmigo.");
   animar();
 };
 
