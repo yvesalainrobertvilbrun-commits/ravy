@@ -13,6 +13,7 @@ body{
   font-family:Arial, sans-serif;
 }
 
+/* ===== BOTÓN ===== */
 #overlay{
   position:absolute;
   top:50%;
@@ -39,13 +40,69 @@ button:hover{
   transform:scale(1.1);
   box-shadow:0 0 50px #00ffff;
 }
+
+/* ===== CUERPO DE RAVY ===== */
+#ravy-cuerpo{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  animation: respirar 4s ease-in-out infinite;
+}
+
+.cabeza{
+  width:120px;
+  height:120px;
+  background:#f2d6c1;
+  border-radius:50%;
+  position:relative;
+}
+
+.ojo{
+  width:15px;
+  height:15px;
+  background:black;
+  border-radius:50%;
+  position:absolute;
+  top:40px;
+}
+
+.ojo.izq{ left:35px; }
+.ojo.der{ right:35px; }
+
+.torso{
+  width:160px;
+  height:200px;
+  background:linear-gradient(180deg,#1e90ff,#0050aa);
+  margin-top:10px;
+  border-radius:20px;
+}
+
+/* ===== ANIMACIÓN ===== */
+@keyframes respirar{
+  0%,100%{ transform:translate(-50%,-50%) scale(1); }
+  50%{ transform:translate(-50%,-50%) scale(1.03); }
+}
 </style>
 </head>
 
 <body>
 
+<!-- BOTÓN -->
 <div id="overlay">
   <button id="activar">RAVY</button>
+</div>
+
+<!-- CUERPO -->
+<div id="ravy-cuerpo">
+  <div class="cabeza">
+    <div class="ojo izq"></div>
+    <div class="ojo der"></div>
+  </div>
+  <div class="torso"></div>
 </div>
 
 <script>
@@ -142,7 +199,6 @@ if(SpeechRecognition){
 
   recognition.onresult = (event)=>{
     if(!RAVY.activo) return;
-
     const texto = event.results[event.results.length-1][0].transcript;
     const respuesta = RAVY.responder(texto);
     RAVY.hablar(respuesta);
@@ -150,16 +206,14 @@ if(SpeechRecognition){
 }
 
 // =======================
-// 🔘 BOTÓN ACTIVADOR
+// 🔘 ACTIVAR
 // =======================
 document.getElementById("activar").onclick = ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
+  RAVY.hablar("Estoy activo. Te escucho.");
 
-  if(recognition){
-    recognition.start();
-    RAVY.hablar("Estoy activo. Te escucho.");
-  }
+  if(recognition) recognition.start();
 };
 </script>
 
