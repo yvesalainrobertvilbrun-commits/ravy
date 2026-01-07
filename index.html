@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Memoria Inteligente</title>
+<title>RAVY – Nivel 14 Avanzado</title>
 
 <style>
 body{
@@ -73,11 +73,13 @@ scene.add(cuerpo);
 const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
 const ropa = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
 
+// Cabeza
 const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
 cabeza.position.y = 1.6;
 cabeza.castShadow = true;
 cuerpo.add(cabeza);
 
+// Ojos
 const ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshStandardMaterial({color:0xffffff}));
 const irisIzq = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshStandardMaterial({color:0x000000}));
 ojoIzq.position.set(-0.15,1.65,0.45);
@@ -90,6 +92,7 @@ irisDer.position.set(0.15,1.65,0.52);
 
 cuerpo.add(ojoIzq, irisIzq, ojoDer, irisDer);
 
+// Boca
 const boca = new THREE.Mesh(
   new THREE.BoxGeometry(0.3,0.08,0.05),
   new THREE.MeshStandardMaterial({color:0xff5555})
@@ -97,6 +100,7 @@ const boca = new THREE.Mesh(
 boca.position.set(0,1.45,0.45);
 cuerpo.add(boca);
 
+// Torso
 const torso = new THREE.Mesh(
   new THREE.CylinderGeometry(0.45,0.45,1.2,32),
   ropa
@@ -104,60 +108,60 @@ const torso = new THREE.Mesh(
 torso.position.y = 0.5;
 cuerpo.add(torso);
 
+// Brazos
 const brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
 const brazoIzq = new THREE.Mesh(brazoGeo, ropa); brazoIzq.position.set(-0.55,0.8,0); brazoIzq.castShadow = true;
 const brazoDer = new THREE.Mesh(brazoGeo, ropa); brazoDer.position.set(0.55,0.8,0); brazoDer.castShadow = true;
 cuerpo.add(brazoIzq, brazoDer);
 
 // =======================
-// 🧠 CEREBRO RAVY – MEMORIA INTELIGENTE
+// 🧠 CEREBRO RAVY 14 AVANZADO
 // =======================
 const RAVY = {
   activo:false,
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
-    alegria:50, confianza:50, energia:50, respeto:100, miedo:0
+    alegria:50,
+    confianza:50,
+    energia:50,
+    respeto:100,
+    miedo:0
   },
-  memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
+  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || [], // ahora con etiquetas
   identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
-    nombreUsuario:null, estiloUsuario:"neutral"
+    nombreUsuario:null,
+    estiloUsuario:"neutral"
   },
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_historial",JSON.stringify(this.memoria));
+    localStorage.setItem("ravy_memoria",JSON.stringify(this.memoria));
     localStorage.setItem("ravy_identidad",JSON.stringify(this.identidad));
   },
 
-  registrar(texto, etiquetas=[], importancia=50){
-    const nueva = {texto, fecha:Date.now(), etiquetas, importancia};
-    this.memoria.push(nueva);
-    if(this.memoria.length>200){
-      this.memoria.sort((a,b)=>a.importancia-b.importancia);
-      this.memoria.shift();
-    }
+  registrar(texto, etiquetas=[]){
+    this.memoria.push({texto, etiquetas, fecha:Date.now()});
+    if(this.memoria.length>150) this.memoria.shift(); // límite 150 entradas
     this.guardar();
   },
 
-  buscar(etiqueta){
-    return this.memoria.filter(e=>e.etiquetas.includes(etiqueta))
-                       .map(e=>e.texto)
-                       .slice(-5); // últimas 5 coincidencias
+  buscar(tag){
+    return this.memoria.filter(item=>item.etiquetas.includes(tag))
+                      .map(item=>item.texto);
   },
 
   hablar(texto){
-    if(!texto) return;
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate = this.identidad.estiloUsuario==="calido"?0.85:0.95;
-    voz.pitch = this.emociones.energia>60?1.1:0.9;
+    voz.rate = this.identidad.estiloUsuario==="calido" ? 0.85 : 0.95;
+    voz.pitch = this.emociones.energia>60 ? 1.1 : 0.9;
     speechSynthesis.speak(voz);
   },
 
   procesar(texto){
     texto = texto.toLowerCase();
-    this.registrar(texto, ["usuario"]);
+    this.registrar(texto, ["general"]); // cada frase etiquetada como "general" por defecto
 
-    // RESPETO y PROTECCIÓN activo
+    // RESPETO y PROTECCIÓN
     this.emociones.respeto = 100;
     if(texto.includes("miedo") || texto.includes("peligro")){
       this.emociones.miedo = 80;
@@ -166,30 +170,25 @@ const RAVY = {
       this.emociones.miedo = Math.max(0,this.emociones.miedo-1);
     }
 
-    // Primer mensaje fijo
-    if(!this.memoria.some(m=>m.texto==="RAVY activo")) return "Aquí está RAVY, tu asistente personal.";
-
-    // Comandos de memoria
-    if(texto.startsWith("recuerda que")){
-      const info = texto.replace("recuerda que","").trim();
-      this.registrar(info, ["dato"],70);
-      return "He registrado eso en mi memoria.";
-    }
-    if(texto.includes("qué recuerdas")){
-      const resultados = this.buscar("dato");
-      return resultados.length? "Recuerdo: " + resultados.join("; ") : "No recuerdo nada aún.";
+    // SALUDO INICIAL UNA SOLA VEZ
+    if(!this.saludado){
+      this.saludado = true;
+      return "Aquí está RAVY, tu asistente personal.";
     }
 
-    // Saludos y nombres
+    // RESPUESTAS SIMPLES
     if(texto.includes("hola")) return "Hola.";
-    if(texto.includes("gracias")) return "Siempre.";
+    if(texto.includes("gracias")){
+      this.emociones.alegria +=5;
+      return "De nada.";
+    }
     if(texto.includes("mi nombre es")){
       this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
       this.guardar();
       return "Encantado de saber tu nombre.";
     }
 
-    return "";
+    return null; // si no hay respuesta, no dice nada
   }
 };
 
@@ -203,13 +202,14 @@ if(SpeechRecognition){
   recognition.lang="es-ES";
   recognition.continuous=true;
   recognition.interimResults=false;
-  recognition.onresult = e => {
+  recognition.onresult = e=>{
     if(!RAVY.activo) return;
+
     const texto = e.results[e.results.length-1][0].transcript;
     const r = RAVY.procesar(texto);
     if(r) RAVY.hablar(r);
 
-    // Reinicia la escucha
+    // ✅ Reinicia escucha automáticamente
     recognition.stop();
     recognition.start();
   };
@@ -220,17 +220,20 @@ if(SpeechRecognition){
 // =======================
 let respiracion = 0;
 let respDir = 1;
+
 function actualizarExpresiones(){
   respiracion += 0.005*respDir;
   if(respiracion>0.05 || respiracion<-0.05) respDir*=-1;
   torso.position.y = 0.5 + respiracion;
 
+  // BOCA
   let escalaBoca = 0.8 + RAVY.emociones.energia/200;
   if(RAVY.emociones.alegria>60) escalaBoca += 0.1;
   if(RAVY.emociones.miedo>50) escalaBoca -=0.1;
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
   boca.scale.y = escalaBoca;
 
+  // OJOS
   let ojoBrillo = 1;
   if(RAVY.emociones.alegria>60) ojoBrillo = 1.2;
   if(RAVY.emociones.miedo>50) ojoBrillo = 1.5;
@@ -239,9 +242,11 @@ function actualizarExpresiones(){
   ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
   ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
 
+  // BRAZOS
   brazoIzq.rotation.z = Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
   brazoDer.rotation.z = -Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
 
+  // TORSO LEVE INCLINACIÓN
   torso.rotation.y = Math.sin(Date.now()*0.001)*0.1*(RAVY.emociones.miedo/50);
 }
 
@@ -260,9 +265,6 @@ function animar(){
 document.getElementById("activar").onclick = ()=>{
   RAVY.activo = true;
   document.getElementById("overlay").style.display="none";
-
-  RAVY.registrar("RAVY activo", ["inicio"],100);
-
   if(recognition) recognition.start();
   RAVY.hablar("Aquí está RAVY, tu asistente personal.");
   animar();
