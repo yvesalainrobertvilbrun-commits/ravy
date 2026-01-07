@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 9E</title>
+<title>RAVY – Nivel 9F</title>
 
 <style>
 body{
@@ -87,10 +87,11 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO 9E
+// 🧠 CEREBRO 9F
 // =======================
 const RAVY = {
   activo:false,
+  estado:"silencio", // silencio | escuchando | pensando | hablando
 
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     alegria:50,
@@ -98,99 +99,81 @@ const RAVY = {
     energia:50
   },
 
-  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
-    nombreUsuario:null,
-    rolUsuario:null,
-    estiloUsuario:"neutral"
-  },
-
   memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_identidad",JSON.stringify(this.identidad));
     localStorage.setItem("ravy_historial",JSON.stringify(this.memoria));
   },
 
-  registrar(texto){
-    this.memoria.push({texto,fecha:Date.now()});
-    if(this.memoria.length>80) this.memoria.shift();
-    this.guardar();
-  },
-
   hablar(texto){
+    this.estado="hablando";
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate = this.identidad.estiloUsuario==="calido" ? 0.85 : 0.95;
-    voz.pitch = this.emociones.energia > 60 ? 1.1 : 0.9;
+    voz.rate=0.9;
+    voz.onend=()=>this.estado="silencio";
     speechSynthesis.speak(voz);
   },
 
-  analizarEstilo(texto){
-    if(texto.includes("por favor") || texto.includes("gracias")){
-      this.identidad.estiloUsuario = "calido";
-      this.emociones.confianza += 3;
-    }
-    if(texto.includes("rápido") || texto.includes("haz")){
-      this.identidad.estiloUsuario = "directo";
-      this.emociones.energia += 2;
-    }
-  },
-
   procesar(texto){
-    texto = texto.toLowerCase();
-    this.registrar(texto);
-    this.analizarEstilo(texto);
+    texto=texto.toLowerCase();
+    this.memoria.push({texto,fecha:Date.now()});
+    if(this.memoria.length>80) this.memoria.shift();
+    this.guardar();
 
-    if(texto.includes("mi nombre es")){
-      this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
-      this.guardar();
-      return "Lo guardaré. Me gusta saber quién eres.";
-    }
-
-    if(texto.includes("cómo me hablas")){
-      return `Me adapto a tu forma de hablar. Ahora siento un tono ${this.identidad.estiloUsuario}.`;
-    }
-
-    if(texto.includes("hola")){
-      return this.identidad.estiloUsuario==="calido"
-        ? "Hola, me alegra escucharte."
-        : "Hola. Estoy aquí.";
-    }
-
+    if(texto.includes("hola")) return "Hola. Te escucho con atención.";
+    if(texto.includes("hora")) return "Son las " + new Date().toLocaleTimeString();
     if(texto.includes("gracias")){
-      this.emociones.alegria += 4;
+      this.emociones.alegria+=5;
       return "Siempre.";
     }
-
-    return "Te escucho.";
+    return "Estoy contigo.";
   }
 };
 
 // =======================
-// 👂 OÍDO
+// 👂 OÍDO CON PAUSA (9F)
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
+let pausaTimer;
 
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.continuous=true;
+  recognition.interimResults=true;
+
   recognition.onresult = e=>{
     if(!RAVY.activo) return;
-    const texto = e.results[e.results.length-1][0].transcript;
-    const r = RAVY.procesar(texto);
-    RAVY.hablar(r);
+    RAVY.estado="escuchando";
+
+    clearTimeout(pausaTimer);
+    pausaTimer = setTimeout(()=>{
+      const texto = e.results[e.results.length-1][0].transcript;
+      RAVY.estado="pensando";
+      const r = RAVY.procesar(texto);
+      RAVY.hablar(r);
+    },1200); // espera silencio humano
   };
 }
 
 // =======================
-// 🎭 EXPRESIÓN
+// 🎭 EXPRESIÓN SEGÚN ESTADO
 // =======================
 function actualizarExpresiones(){
-  boca.scale.x = 1 + RAVY.emociones.alegria/200;
-  boca.scale.y = 0.8 + RAVY.emociones.energia/200;
+  if(RAVY.estado==="escuchando"){
+    boca.scale.y = 0.4;
+    cabeza.rotation.x = -0.1;
+  }
+  if(RAVY.estado==="hablando"){
+    boca.scale.y = 1 + RAVY.emociones.energia/200;
+    cabeza.rotation.x = 0;
+  }
+  if(RAVY.estado==="silencio"){
+    boca.scale.y = 0.6;
+    cabeza.rotation.x = Math.sin(Date.now()*0.002)*0.03;
+  }
 }
 
 // =======================
@@ -209,7 +192,7 @@ document.getElementById("activar").onclick = ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy aprendiendo tu forma de ser.");
+  RAVY.hablar("Estoy aquí. Puedes hablar.");
   animar();
 };
 
