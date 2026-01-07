@@ -52,20 +52,24 @@ floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; sc
 // ===== CARGAR MODELO 3D HUMANOIDE ESTABLE =====
 let cuerpo;
 const loader = new THREE.GLTFLoader();
-loader.load('https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
-function(gltf){
-  cuerpo = gltf.scene;
-  cuerpo.scale.set(1.5,1.5,1.5);
-  cuerpo.position.y=0;
-  cuerpo.traverse(node=>{
-    if(node.isMesh){
-      node.castShadow=true;
-      node.receiveShadow=true;
-    }
-  });
-  scene.add(cuerpo);
-  console.log("Humanoide RAVY cargado");
-}, undefined, function(error){ console.error(error); });
+loader.load(
+  'https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
+  function(gltf){
+    cuerpo = gltf.scene;
+    cuerpo.scale.set(1.5,1.5,1.5);
+    cuerpo.position.y=0;
+    cuerpo.traverse(node=>{
+      if(node.isMesh){
+        node.castShadow=true;
+        node.receiveShadow=true;
+      }
+    });
+    scene.add(cuerpo);
+    console.log("Humanoide RAVY cargado");
+  },
+  undefined,
+  function(error){ console.error(error); }
+);
 
 // ===== ANIMACIÓN Y REACCIÓN =====
 let analyser, audioContext, microphone, dataArray;
@@ -129,8 +133,10 @@ if(SpeechRecognition){
   }
 }
 
-// ===== BOTÓN ACTIVAR =====
+// ===== BOTÓN ACTIVAR / REINICIAR =====
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
+  if(RAVY.activo) return; // ya está activo
+
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
 
