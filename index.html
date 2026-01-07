@@ -11,6 +11,7 @@ body{
   background:black;
   overflow:hidden;
   font-family:Arial, sans-serif;
+  color:white;
 }
 
 /* ===== BOTÓN ===== */
@@ -22,7 +23,7 @@ body{
   z-index:10;
 }
 
-button{
+#activar{
   width:120px;
   height:120px;
   border-radius:50%;
@@ -35,74 +36,89 @@ button{
   cursor:pointer;
   transition:0.3s;
 }
-
-button:hover{
+#activar:hover{
   transform:scale(1.1);
   box-shadow:0 0 50px #00ffff;
 }
 
-/* ===== CUERPO DE RAVY ===== */
-#ravy-cuerpo{
+/* ===== CUERPO RAVY ===== */
+#ravy{
   position:absolute;
-  top:50%;
+  bottom:40px;
   left:50%;
-  transform:translate(-50%,-50%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  animation: respirar 4s ease-in-out infinite;
+  transform:translateX(-50%);
+  text-align:center;
 }
 
-.cabeza{
-  width:120px;
-  height:120px;
-  background:#f2d6c1;
+#cara{
+  width:160px;
+  height:160px;
   border-radius:50%;
+  background:#ffd1b3;
   position:relative;
+  box-shadow:0 0 20px rgba(255,255,255,0.2);
 }
 
+/* OJOS */
 .ojo{
-  width:15px;
-  height:15px;
+  width:20px;
+  height:20px;
   background:black;
   border-radius:50%;
   position:absolute;
-  top:40px;
+  top:55px;
+}
+#ojo-izq{ left:45px; }
+#ojo-der{ right:45px; }
+
+/* BOCA */
+#boca{
+  width:50px;
+  height:8px;
+  background:#c0392b;
+  border-radius:10px;
+  position:absolute;
+  bottom:40px;
+  left:50%;
+  transform:translateX(-50%);
+  transition:0.2s;
 }
 
-.ojo.izq{ left:35px; }
-.ojo.der{ right:35px; }
+/* ESTADOS */
+.hablando #boca{
+  height:25px;
+}
+.feliz .ojo{
+  transform:scale(1.2);
+}
+.triste .ojo{
+  transform:scaleY(0.6);
+}
+.pensando{
+  box-shadow:0 0 40px #00ffff;
+}
 
-.torso{
-  width:160px;
-  height:200px;
-  background:linear-gradient(180deg,#1e90ff,#0050aa);
+#estado{
   margin-top:10px;
-  border-radius:20px;
-}
-
-/* ===== ANIMACIÓN ===== */
-@keyframes respirar{
-  0%,100%{ transform:translate(-50%,-50%) scale(1); }
-  50%{ transform:translate(-50%,-50%) scale(1.03); }
+  font-size:14px;
+  opacity:0.8;
 }
 </style>
 </head>
 
 <body>
 
-<!-- BOTÓN -->
 <div id="overlay">
   <button id="activar">RAVY</button>
 </div>
 
-<!-- CUERPO -->
-<div id="ravy-cuerpo">
-  <div class="cabeza">
-    <div class="ojo izq"></div>
-    <div class="ojo der"></div>
+<div id="ravy">
+  <div id="cara">
+    <div class="ojo" id="ojo-izq"></div>
+    <div class="ojo" id="ojo-der"></div>
+    <div id="boca"></div>
   </div>
-  <div class="torso"></div>
+  <div id="estado">Inactivo</div>
 </div>
 
 <script>
@@ -112,69 +128,78 @@ button:hover{
 const RAVY = {
   activo:false,
 
-  personalidad:{
-    nombre:"RAVY",
-    rol:"familia",
-    formaHablar:"calma"
-  },
-
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     alegria:50,
     confianza:50,
     energia:50
   },
 
-  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || {},
+  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || [],
 
   guardar(){
-    localStorage.setItem("ravy_memoria",JSON.stringify(this.memoria));
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
+    localStorage.setItem("ravy_memoria",JSON.stringify(this.memoria));
+  },
+
+  estado(texto){
+    document.getElementById("estado").innerText = texto;
+  },
+
+  expresion(){
+    const cara = document.getElementById("cara");
+    cara.className = "";
+    if(this.emociones.alegria > 70) cara.classList.add("feliz");
+    if(this.emociones.energia < 30) cara.classList.add("triste");
   },
 
   hablar(texto){
+    const boca = document.getElementById("cara");
+    boca.classList.add("hablando");
+    this.estado("Hablando");
+
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate=0.9;
+    voz.onend = ()=>{
+      boca.classList.remove("hablando");
+      this.estado("Escuchando");
+    };
     speechSynthesis.speak(voz);
   },
 
   pensar(texto){
+    this.estado("Pensando");
     if(texto.includes("gracias")){
-      this.emociones.alegria+=5;
-      this.emociones.confianza+=5;
+      this.emociones.alegria += 5;
+      this.emociones.confianza += 5;
     }
-    if(texto.includes("enojo")){
-      this.emociones.energia-=5;
+    if(texto.includes("triste")){
+      this.emociones.energia -= 5;
     }
-
     this.emociones.alegria=Math.min(100,Math.max(0,this.emociones.alegria));
-    this.emociones.confianza=Math.min(100,Math.max(0,this.emociones.confianza));
     this.emociones.energia=Math.min(100,Math.max(0,this.emociones.energia));
     this.guardar();
+    this.expresion();
   },
 
   responder(texto){
-    texto=texto.toLowerCase();
+    texto = texto.toLowerCase();
     this.pensar(texto);
 
-    if(texto.includes("recuerda que")){
-      this.memoria.recuerdo=texto.replace("ravy recuerda que","").trim();
+    if(texto.includes("recuerda")){
+      this.memoria.push(texto);
       this.guardar();
-      return "Lo recordaré.";
+      return "Lo he guardado en mi memoria.";
     }
 
     if(texto.includes("qué recuerdas")){
-      return this.memoria.recuerdo
-        ? "Recuerdo que " + this.memoria.recuerdo
+      return this.memoria.length
+        ? "Recuerdo " + this.memoria.slice(-1)[0]
         : "Aún no tengo recuerdos.";
     }
 
     if(texto.includes("cómo te sientes")){
-      return `Me siento con ${this.emociones.alegria}% de alegría y ${this.emociones.confianza}% de confianza.`;
-    }
-
-    if(texto.includes("hora")){
-      return "Son las " + new Date().toLocaleTimeString();
+      return `Me siento con ${this.emociones.alegria}% de alegría.`;
     }
 
     if(texto.includes("hola")){
@@ -186,7 +211,7 @@ const RAVY = {
 };
 
 // =======================
-// 👂 OÍDO (VOZ)
+// 👂 OÍDO
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
@@ -195,11 +220,9 @@ if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.continuous=true;
-  recognition.interimResults=false;
-
-  recognition.onresult = (event)=>{
+  recognition.onresult = e=>{
     if(!RAVY.activo) return;
-    const texto = event.results[event.results.length-1][0].transcript;
+    const texto = e.results[e.results.length-1][0].transcript;
     const respuesta = RAVY.responder(texto);
     RAVY.hablar(respuesta);
   };
@@ -211,9 +234,9 @@ if(SpeechRecognition){
 document.getElementById("activar").onclick = ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
-  RAVY.hablar("Estoy activo. Te escucho.");
-
+  RAVY.estado("Escuchando");
   if(recognition) recognition.start();
+  RAVY.hablar("Estoy activo. Te escucho.");
 };
 </script>
 
