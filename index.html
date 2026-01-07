@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY</title>
+<title>RAVY Evolutivo</title>
 <style>
 body { margin:0; overflow:hidden; }
 #overlay { position:absolute; top:50%; width:100%; text-align:center; z-index:10; transform:translateY(-50%); }
@@ -30,7 +30,6 @@ document.body.appendChild(renderer.domElement);
 
 // ===== FONDO DINÁMICO =====
 let color1 = new THREE.Color(0x001122);
-let color2 = new THREE.Color(0x004477);
 scene.background = color1;
 
 // ===== LUCES =====
@@ -99,16 +98,25 @@ brazoDer.castShadow = true;
 cuerpo.add(brazoIzq);
 cuerpo.add(brazoDer);
 
-// ===== ANIMACIÓN =====
+// ===== ANIMACIÓN Y EVOLUCIÓN =====
 let analyser, audioContext, microphone, dataArray;
+let evolucionTiempo = 0;
+
 function animar(){
   requestAnimationFrame(animar);
+  let t = Date.now()*0.0003;
 
   // Fondo dinámico
-  let t = Date.now()*0.0003;
   scene.background.r = 0.0 + Math.sin(t)*0.05;
   scene.background.g = 0.27 + Math.cos(t)*0.05;
   scene.background.b = 0.46 + Math.sin(t/2)*0.05;
+
+  // Evolución automática
+  evolucionTiempo += 0.01;
+  cabezaMat.color.setHSL((Math.sin(evolucionTiempo)+1)/2,0.7,0.5);
+  torsoMat.color.setHSL((Math.cos(evolucionTiempo)+1)/2,0.7,0.5);
+  brazoIzq.material.color.copy(torsoMat.color);
+  brazoDer.material.color.copy(torsoMat.color);
 
   if(analyser){
     analyser.getByteFrequencyData(dataArray);
