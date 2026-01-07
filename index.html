@@ -60,6 +60,7 @@ button:hover{
   border-radius:50%;
   position:relative;
   margin:auto;
+  transition:0.2s;
 }
 .ojo{
   width:20px;
@@ -74,14 +75,14 @@ button:hover{
 
 .boca{
   width:50px;
-  height:20px;
+  height:10px;
   background:#ff5555;
   border-radius:0 0 40px 40px;
   position:absolute;
   bottom:35px;
   left:50%;
   transform:translateX(-50%);
-  transition:0.3s;
+  transition:0.1s;
 }
 </style>
 </head>
@@ -93,8 +94,8 @@ button:hover{
 </div>
 
 <div id="escena">
-  <div class="ravy">
-    <div class="cabeza">
+  <div class="ravy" id="ravy">
+    <div class="cabeza" id="cabeza">
       <div class="ojo izq"></div>
       <div class="ojo der"></div>
       <div class="boca" id="boca"></div>
@@ -148,47 +149,38 @@ const RAVY = {
     texto=texto.toLowerCase();
     this.pensar(texto);
 
-    if(texto.includes("recuerda que")){
-      this.memoria.recuerdo = texto.replace("ravy recuerda que","").trim();
-      this.guardar();
-      return "Lo recordaré.";
-    }
-
-    if(texto.includes("qué recuerdas")){
-      return this.memoria.recuerdo
-        ? "Recuerdo que " + this.memoria.recuerdo
-        : "Aún no tengo recuerdos.";
-    }
-
+    if(texto.includes("hola")) return "Hola. Te escucho.";
+    if(texto.includes("hora")) return "Son las " + new Date().toLocaleTimeString();
     if(texto.includes("cómo te sientes")){
       return `Tengo ${this.emociones.alegria}% de alegría.`;
     }
-
-    if(texto.includes("hora")){
-      return "Son las " + new Date().toLocaleTimeString();
-    }
-
-    if(texto.includes("hola")){
-      return "Hola. Estoy aquí contigo.";
-    }
-
-    return "Te escucho.";
+    return "Estoy contigo.";
   }
 };
 
 // =======================
-// 😊 EXPRESIONES FACIALES
+// 😊 CUERPO
 // =======================
 const boca = document.getElementById("boca");
+const cabeza = document.getElementById("cabeza");
 
-function actualizarExpresiones(){
-  if(!boca) return;
-  boca.style.width = (40 + RAVY.emociones.alegria/2) + "px";
-  boca.style.height = (10 + RAVY.emociones.energia/4) + "px";
+// =======================
+// 🎤 AUDIO (MOVIMIENTO POR VOZ)
+// =======================
+let audioContext, analyser, dataArray;
+
+async function activarMicrofono(){
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  const mic = audioContext.createMediaStreamSource(stream);
+  analyser = audioContext.createAnalyser();
+  mic.connect(analyser);
+  analyser.fftSize = 256;
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
 }
 
 // =======================
-// 👂 OÍDO (VOZ)
+// 👂 RECONOCIMIENTO DE VOZ
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
@@ -206,10 +198,19 @@ if(SpeechRecognition){
 }
 
 // =======================
-// 🔁 LOOP VIVO
+// 🔁 ANIMACIÓN VIVA
 // =======================
 function animar(){
-  actualizarExpresiones();
+  if(analyser){
+    analyser.getByteFrequencyData(dataArray);
+    let volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
+
+    // boca
+    boca.style.height = (10 + volumen/10) + "px";
+
+    // cabeza (respira)
+    cabeza.style.transform = `scale(${1 + volumen/2000})`;
+  }
   requestAnimationFrame(animar);
 }
 animar();
@@ -217,13 +218,12 @@ animar();
 // =======================
 // 🔘 BOTÓN
 // =======================
-document.getElementById("activar").onclick = ()=>{
+document.getElementById("activar").onclick = async ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
-  if(recognition){
-    recognition.start();
-    RAVY.hablar("Estoy activo. Te escucho.");
-  }
+  await activarMicrofono();
+  if(recognition) recognition.start();
+  RAVY.hablar("Estoy activo. Te escucho.");
 };
 </script>
 
