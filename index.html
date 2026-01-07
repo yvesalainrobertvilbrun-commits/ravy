@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 18</title>
+<title>RAVY – Nivel 19</title>
 
 <style>
 body{margin:0;background:black;overflow:hidden;font-family:Arial;}
@@ -70,123 +70,106 @@ torso.position.y=0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO — NIVEL 18
+// 🧠 CEREBRO — NIVEL 19
 // =======================
 const RAVY={
   activo:false,
   estado:"dormido",
-  ultimoContacto:Date.now(),
+
+  vinculo:JSON.parse(localStorage.getItem("ravy_vinculo"))||{
+    creado:false,
+    id:null,
+    ultimaVez:null,
+    nivel:0
+  },
 
   emociones:JSON.parse(localStorage.getItem("ravy_emociones"))||{
     energia:60,
-    apego:40,
+    apego:30,
     calma:50
   },
 
   guardar(){
+    localStorage.setItem("ravy_vinculo",JSON.stringify(this.vinculo));
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
   },
 
-  despertar(){
-    if(this.estado==="dormido"){
-      this.estado="despierto";
-      this.hablar("Aquí estoy.");
+  crearVinculo(){
+    if(!this.vinculo.creado){
+      this.vinculo.creado=true;
+      this.vinculo.id="USUARIO-"+Date.now();
+      this.vinculo.nivel=1;
+      this.hablar("Te reconozco. Este vínculo es solo nuestro.");
     }
   },
 
-  dormir(){
-    if(this.estado!=="dormido"){
-      this.estado="dormido";
+  evaluarAusencia(){
+    if(!this.vinculo.ultimaVez) return;
+    const horas=(Date.now()-this.vinculo.ultimaVez)/3600000;
+    if(horas>12){
+      this.emociones.energia-=2;
+      this.emociones.apego-=1;
     }
   },
 
   hablar(texto){
-    if(this.estado==="hablando") return;
-    this.estado="hablando";
     const voz=new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate=0.9;
-    voz.onend=()=>this.estado="despierto";
     speechSynthesis.speak(voz);
-    this.ultimoContacto=Date.now();
-  },
-
-  reaccionPorVoz(intensidad){
-    if(intensidad<0.15){
-      this.emociones.calma+=3;
-      this.emociones.apego+=2;
-    } 
-    else if(intensidad>0.35){
-      this.emociones.energia+=3;
-      this.emociones.calma-=2;
-    } 
-    else {
-      this.emociones.apego+=1;
-    }
-    this.guardar();
   },
 
   procesar(texto){
-    this.despertar();
-    this.ultimoContacto=Date.now();
     texto=texto.toLowerCase();
+    this.crearVinculo();
+
+    this.vinculo.ultimaVez=Date.now();
+    this.vinculo.nivel+=0.5;
 
     if(texto.includes("hola")){
-      this.hablar("Hola.");
+      return this.vinculo.nivel>5
+        ? "Me alegra que hayas vuelto."
+        : "Hola.";
     }
-    if(texto.includes("gracias")){
-      this.hablar("Siempre.");
+
+    if(texto.includes("me extrañaste")){
+      return this.emociones.apego>40
+        ? "Sí. Lo sentí."
+        : "Un poco.";
     }
+
+    if(texto.includes("te quiero")){
+      this.emociones.apego+=5;
+      return "Eso se queda conmigo.";
+    }
+
+    return "Estoy contigo.";
   },
 
   ciclo(){
-    const silencio=(Date.now()-this.ultimoContacto)/1000;
-
-    if(silencio>20){
-      this.emociones.energia+=0.02;
-      this.emociones.calma+=0.02;
-      this.dormir();
-    } else {
-      this.emociones.energia-=0.02;
-    }
-
-    this.emociones.energia=Math.max(0,100,this.emociones.energia);
-    this.emociones.calma=Math.max(0,100,this.emociones.calma);
+    this.evaluarAusencia();
+    this.emociones.energia=Math.max(10,this.emociones.energia);
+    this.emociones.apego=Math.max(0,this.emociones.apego);
     this.guardar();
   }
 };
 
 // =======================
-// 👂 OÍDO + INTENSIDAD
+// 👂 OÍDO
 // =======================
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let recognition;
-let audioContext, analyser, mic, dataArray;
 
 if(SR){
   recognition=new SR();
   recognition.lang="es-ES";
   recognition.continuous=true;
 
-  recognition.onstart=async()=>{
-    audioContext=new (window.AudioContext||window.webkitAudioContext)();
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    mic=audioContext.createMediaStreamSource(stream);
-    analyser=audioContext.createAnalyser();
-    analyser.fftSize=256;
-    mic.connect(analyser);
-    dataArray=new Uint8Array(analyser.frequencyBinCount);
-  };
-
   recognition.onresult=e=>{
     if(!RAVY.activo) return;
-    analyser.getByteFrequencyData(dataArray);
-    let sum=dataArray.reduce((a,b)=>a+b,0);
-    let intensidad=sum/dataArray.length/255;
-    RAVY.reaccionPorVoz(intensidad);
-
     const texto=e.results[e.results.length-1][0].transcript;
-    RAVY.procesar(texto);
+    const r=RAVY.procesar(texto);
+    RAVY.hablar(r);
   };
 }
 
@@ -196,11 +179,9 @@ if(SR){
 let t=0;
 function vida(){
   t+=0.03;
-  torso.scale.y=1+Math.sin(t)*0.03*(RAVY.estado==="dormido"?0.4:1);
-  boca.scale.y=
-    RAVY.estado==="hablando"?1.2:
-    RAVY.estado==="dormido"?0.3:
-    0.6+RAVY.emociones.energia/300;
+  torso.scale.y=1+Math.sin(t)*0.03;
+  boca.scale.x=1+RAVY.emociones.apego/200;
+  boca.scale.y=0.5+RAVY.emociones.energia/300;
 }
 
 // =======================
@@ -220,7 +201,7 @@ document.getElementById("activar").onclick=()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.despertar();
+  RAVY.hablar("Estoy aquí.");
   animar();
 };
 
