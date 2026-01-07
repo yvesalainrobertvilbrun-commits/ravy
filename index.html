@@ -3,21 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Evolutivo</title>
+<title>RAVY Evolutivo y Reactivo</title>
 <style>
 body { margin:0; overflow:hidden; }
-#overlay { position:absolute; top:50%; width:100%; text-align:center; z-index:10; transform:translateY(-50%); }
-button { background:#00aaff; color:black; border:none; padding:12px 20px; font-size:16px; border-radius:8px; cursor:pointer; }
+#overlay { 
+  position:absolute; top:50%; left:50%; 
+  transform:translate(-50%,-50%); 
+  z-index:10; text-align:center; 
+}
+button { 
+  background:#00aaff; color:black; border:none; 
+  padding:20px; font-size:18px; border-radius:50%; 
+  cursor:pointer; width:100px; height:100px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
 </style>
 </head>
 <body>
 <div id="overlay">
-  <button id="activar-ravy">Despertar a RAVY</button>
+  <button id="activar-ravy">💙</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
-<script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
 
+<script>
 // ===== ESCENA, CÁMARA Y RENDERER =====
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -25,7 +37,6 @@ camera.position.z = 5;
 let renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 // ===== FONDO DINÁMICO =====
@@ -98,11 +109,25 @@ brazoDer.castShadow = true;
 cuerpo.add(brazoIzq);
 cuerpo.add(brazoDer);
 
-// ===== ANIMACIÓN Y EVOLUCIÓN =====
+// ===== ANIMACIÓN, EVOLUCIÓN Y SEGUIMIENTO DE CARA =====
 let analyser, audioContext, microphone, dataArray;
 let evolucionTiempo = 0;
+let model, video, videoReady=false;
 
-function animar(){
+async function initFace(){
+  video = document.createElement("video");
+  video.autoplay = true;
+  video.width = 640; video.height=480;
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:true});
+    video.srcObject = stream;
+    await video.play();
+    videoReady=true;
+  }catch(e){ console.log(e); }
+  model = await faceLandmarksDetection.load(faceLandmarksDetection.SupportedPackages.mediapipeFacemesh);
+}
+
+async function animar(){
   requestAnimationFrame(animar);
   let t = Date.now()*0.0003;
 
@@ -118,24 +143,31 @@ function animar(){
   brazoIzq.material.color.copy(torsoMat.color);
   brazoDer.material.color.copy(torsoMat.color);
 
+  // Reacción al audio
   if(analyser){
     analyser.getByteFrequencyData(dataArray);
     let volumen = dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-
-    // Boca se abre según volumen
     boca.scale.y = 1 + volumen/150;
-
-    // Cabeza y ojos siguen posición (simulada según volumen)
     cabeza.rotation.y = Math.sin(volumen/200)*0.2;
     ojoIzq.rotation.y = cabeza.rotation.y;
     ojoDer.rotation.y = cabeza.rotation.y;
-
-    // Brazos se mueven levemente
     brazoIzq.rotation.z = 0.2 + Math.sin(volumen/200)*0.2;
     brazoDer.rotation.z = -0.2 + Math.sin(volumen/200)*0.2;
-
-    // Torso balanceo leve
     torso.rotation.y = Math.sin(volumen/250)*0.1;
+  }
+
+  // Seguimiento de cara
+  if(videoReady && model){
+    const faces = await model.estimateFaces({input: video});
+    if(faces.length>0){
+      let face = faces[0];
+      let dx = (face.scaledMesh[168][0]-320)/320; // horizontal
+      let dy = (face.scaledMesh[168][1]-240)/240; // vertical
+      cabeza.rotation.y = dx*0.5;
+      cabeza.rotation.x = dy*0.3;
+      ojoIzq.rotation.y = cabeza.rotation.y;
+      ojoDer.rotation.y = cabeza.rotation.y;
+    }
   }
 
   renderer.render(scene,camera);
@@ -168,6 +200,9 @@ if(SpeechRecognition){
 document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none"; // ocultar botón
+
+  // Inicializar cámara y modelo de rostro
+  await initFace();
 
   // Audio
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
