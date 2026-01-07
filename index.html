@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide Completo</title>
+<title>RAVY Humanoide Estable</title>
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -49,14 +49,14 @@ let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
-// ===== MODELO HUMANOIDE COMPLETO =====
+// ===== MODELO HUMANOIDE ESTABLE =====
 let cuerpo;
 const loader = new THREE.GLTFLoader();
-// Este es un modelo humanoide completo con rostro, cabello y ropa
+// Modelo RobotExpressive original, sin cabello extra
 loader.load('https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
 function(gltf){
   cuerpo = gltf.scene;
-  cuerpo.scale.set(1.8,1.8,1.8); 
+  cuerpo.scale.set(1.5,1.5,1.5);
   cuerpo.position.y=0;
   cuerpo.traverse(node=>{
     if(node.isMesh){
@@ -65,7 +65,7 @@ function(gltf){
     }
   });
   scene.add(cuerpo);
-  console.log("RAVY humanoide completo cargado");
+  console.log("Humanoide estable cargado");
 }, undefined, function(error){ console.error(error); });
 
 // ===== ANIMACIÓN Y REACCIÓN =====
