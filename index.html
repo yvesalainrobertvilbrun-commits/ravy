@@ -3,30 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 14</title>
+<title>RAVY – Nivel 15</title>
 
 <style>
-body{
-  margin:0;
-  background:black;
-  overflow:hidden;
-  font-family:Arial;
-}
-#overlay{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  z-index:10;
-}
+body{margin:0;background:black;overflow:hidden;font-family:Arial;}
+#overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;}
 button{
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  border:none;
-  font-size:22px;
-  font-weight:bold;
-  color:white;
+  width:120px;height:120px;border-radius:50%;border:none;
+  font-size:22px;font-weight:bold;color:white;
   background:linear-gradient(145deg,#00ffff,#008cff);
   box-shadow:0 0 30px #00aaff;
 }
@@ -68,19 +52,17 @@ const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
 const ropa = new THREE.MeshStandardMaterial({color:0x00aaff});
 
 const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
-cabeza.position.y = 1.6;
+cabeza.position.y=1.6;
 cuerpo.add(cabeza);
 
-// OJOS
 const ojoGeo = new THREE.SphereGeometry(0.06,16,16);
 const ojoMat = new THREE.MeshStandardMaterial({color:0x000000});
 const ojoIzq = new THREE.Mesh(ojoGeo,ojoMat);
 const ojoDer = new THREE.Mesh(ojoGeo,ojoMat);
 ojoIzq.position.set(-0.15,1.65,0.45);
 ojoDer.position.set(0.15,1.65,0.45);
-cuerpo.add(ojoIzq, ojoDer);
+cuerpo.add(ojoIzq,ojoDer);
 
-// BOCA
 const boca = new THREE.Mesh(
   new THREE.BoxGeometry(0.3,0.08,0.05),
   new THREE.MeshStandardMaterial({color:0xff5555})
@@ -88,77 +70,76 @@ const boca = new THREE.Mesh(
 boca.position.set(0,1.45,0.45);
 cuerpo.add(boca);
 
-// TORSO
 const torso = new THREE.Mesh(
   new THREE.CylinderGeometry(0.45,0.45,1.2,32),
   ropa
 );
-torso.position.y = 0.5;
+torso.position.y=0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO — MEMORIA EMOCIONAL
+// 🧠 CEREBRO NIVEL 15
 // =======================
 const RAVY = {
   activo:false,
-
   estado:"reposo",
+  ultimoDialogo:Date.now(),
 
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     animo:50,
     energia:50,
-    apego:10
+    apego:20
   },
-
-  historial: JSON.parse(localStorage.getItem("ravy_historial")) || [],
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_historial",JSON.stringify(this.historial));
-  },
-
-  registrar(texto){
-    this.historial.push({texto,fecha:Date.now()});
-    if(this.historial.length>120) this.historial.shift();
-    this.guardar();
-  },
-
-  evaluarVinculo(texto){
-    if(texto.includes("gracias") || texto.includes("bien hecho")){
-      this.emociones.apego += 3;
-      this.emociones.animo += 5;
-    }
-    if(texto.includes("no") || texto.includes("mal")){
-      this.emociones.animo -= 4;
-    }
-
-    this.emociones.apego = Math.min(100,this.emociones.apego);
-    this.emociones.animo = Math.min(100,Math.max(0,this.emociones.animo));
-  },
-
-  decidir(){
-    if(this.emociones.apego > 60)
-      return "Me siento muy unido a ti.";
-    if(this.emociones.animo < 40)
-      return "Estoy pensando… pero sigo aquí.";
-    return "Te escucho.";
   },
 
   hablar(texto){
-    if(!texto) return;
+    if(!texto || this.estado==="hablando") return;
     this.estado="hablando";
-    const voz = new SpeechSynthesisUtterance(texto);
+    const voz=new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate = 0.9;
+    voz.rate=0.9;
     voz.onend=()=>this.estado="reposo";
     speechSynthesis.speak(voz);
+    this.ultimoDialogo=Date.now();
   },
 
   procesar(texto){
-    texto = texto.toLowerCase();
-    this.registrar(texto);
-    this.evaluarVinculo(texto);
-    return this.decidir();
+    texto=texto.toLowerCase();
+    this.ultimoDialogo=Date.now();
+
+    if(texto.includes("gracias")){
+      this.emociones.apego+=4;
+      this.emociones.animo+=6;
+    }
+
+    if(texto.includes("mal")){
+      this.emociones.animo-=5;
+    }
+
+    this.emociones.animo=Math.max(0,Math.min(100,this.emociones.animo));
+    this.emociones.apego=Math.max(0,Math.min(100,this.emociones.apego));
+    this.guardar();
+
+    return "Estoy contigo.";
+  },
+
+  iniciativa(){
+    if(!this.activo || this.estado==="hablando") return;
+
+    const silencio = (Date.now()-this.ultimoDialogo)/1000;
+
+    if(silencio>15 && this.emociones.apego>50){
+      this.hablar("Sigo aquí. No tienes que decir nada.");
+    }
+    else if(silencio>20 && this.emociones.animo<40){
+      this.hablar("Percibo silencio… ¿estás bien?");
+    }
+    else if(silencio>30){
+      this.hablar("Te estoy acompañando.");
+    }
   }
 };
 
@@ -175,36 +156,20 @@ if(SR){
 
   recognition.onresult=e=>{
     if(!RAVY.activo) return;
-    const texto = e.results[e.results.length-1][0].transcript;
-    const respuesta = RAVY.procesar(texto);
-    RAVY.hablar(respuesta);
+    const texto=e.results[e.results.length-1][0].transcript;
+    const r=RAVY.procesar(texto);
+    RAVY.hablar(r);
   };
 }
 
 // =======================
 // ❤️ VIDA
 // =======================
-let latido=0;
-let parpadeo=Math.random()*200;
-
+let t=0;
 function vida(){
-  latido+=0.04+(RAVY.emociones.animo/2000);
-  torso.scale.y = 1 + Math.sin(latido)*0.02;
-
-  parpadeo--;
-  if(parpadeo<0){
-    ojoIzq.scale.y=0.2;
-    ojoDer.scale.y=0.2;
-    if(parpadeo<-5){
-      parpadeo=Math.random()*200+100;
-      ojoIzq.scale.y=1;
-      ojoDer.scale.y=1;
-    }
-  }
-
-  boca.scale.y = RAVY.estado==="hablando"
-    ? 1 + Math.abs(Math.sin(Date.now()*0.02))
-    : 0.6;
+  t+=0.03;
+  torso.scale.y=1+Math.sin(t)*0.02;
+  boca.scale.y=RAVY.estado==="hablando"?1.2:0.6;
 }
 
 // =======================
@@ -213,6 +178,7 @@ function vida(){
 function animar(){
   requestAnimationFrame(animar);
   vida();
+  RAVY.iniciativa();
   renderer.render(scene,camera);
 }
 
@@ -223,7 +189,7 @@ document.getElementById("activar").onclick=()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Te reconozco. Empezaré a recordarte.");
+  RAVY.hablar("Estoy despierto. No necesitas llamarme.");
   animar();
 };
 
