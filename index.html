@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 9F</title>
+<title>RAVY – Nivel 10</title>
 
 <style>
 body{
   margin:0;
   background:black;
   overflow:hidden;
-  font-family:Arial, sans-serif;
+  font-family:Arial;
 }
 #overlay{
   position:absolute;
@@ -29,7 +29,6 @@ button{
   color:white;
   background:linear-gradient(145deg,#00ffff,#008cff);
   box-shadow:0 0 30px #00aaff;
-  cursor:pointer;
 }
 </style>
 </head>
@@ -44,7 +43,7 @@ button{
 
 <script>
 // =======================
-// 🌌 ESCENA 3D
+// ESCENA
 // =======================
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
@@ -60,7 +59,7 @@ luz.position.set(5,10,7);
 scene.add(luz);
 
 // =======================
-// 🧍 CUERPO
+// CUERPO
 // =======================
 const cuerpo = new THREE.Group();
 scene.add(cuerpo);
@@ -87,25 +86,12 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO 9F
+// CEREBRO
 // =======================
 const RAVY = {
   activo:false,
-  estado:"silencio", // silencio | escuchando | pensando | hablando
-
-  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
-    alegria:50,
-    confianza:50,
-    energia:50
-  },
-
-  memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
-
-  guardar(){
-    localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_historial",JSON.stringify(this.memoria));
-  },
-
+  estado:"silencio",
+  emociones:{alegria:50,energia:50},
   hablar(texto){
     this.estado="hablando";
     const voz = new SpeechSynthesisUtterance(texto);
@@ -113,91 +99,86 @@ const RAVY = {
     voz.rate=0.9;
     voz.onend=()=>this.estado="silencio";
     speechSynthesis.speak(voz);
-  },
-
-  procesar(texto){
-    texto=texto.toLowerCase();
-    this.memoria.push({texto,fecha:Date.now()});
-    if(this.memoria.length>80) this.memoria.shift();
-    this.guardar();
-
-    if(texto.includes("hola")) return "Hola. Te escucho con atención.";
-    if(texto.includes("hora")) return "Son las " + new Date().toLocaleTimeString();
-    if(texto.includes("gracias")){
-      this.emociones.alegria+=5;
-      return "Siempre.";
-    }
-    return "Estoy contigo.";
   }
 };
 
 // =======================
-// 👂 OÍDO CON PAUSA (9F)
+// OIDO
 // =======================
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition;
-let pausaTimer;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition, pausa;
 
-if(SpeechRecognition){
-  recognition = new SpeechRecognition();
+if(SR){
+  recognition = new SR();
   recognition.lang="es-ES";
   recognition.continuous=true;
   recognition.interimResults=true;
 
-  recognition.onresult = e=>{
-    if(!RAVY.activo) return;
+  recognition.onresult=e=>{
     RAVY.estado="escuchando";
-
-    clearTimeout(pausaTimer);
-    pausaTimer = setTimeout(()=>{
-      const texto = e.results[e.results.length-1][0].transcript;
+    clearTimeout(pausa);
+    pausa=setTimeout(()=>{
       RAVY.estado="pensando";
-      const r = RAVY.procesar(texto);
-      RAVY.hablar(r);
-    },1200); // espera silencio humano
+      RAVY.hablar("Te escucho.");
+    },1200);
   };
 }
 
 // =======================
-// 🎭 EXPRESIÓN SEGÚN ESTADO
+// MOVIMIENTO CORPORAL (NIVEL 10)
 // =======================
-function actualizarExpresiones(){
+let respiracion = 0;
+
+function movimientoCorporal(){
+  respiracion += 0.02;
+  const respiro = Math.sin(respiracion) * 0.03;
+
+  torso.scale.y = 1 + respiro;
+
   if(RAVY.estado==="escuchando"){
-    boca.scale.y = 0.4;
-    cabeza.rotation.x = -0.1;
+    cuerpo.rotation.x = -0.05;
+    cabeza.rotation.x = -0.15;
   }
+
+  if(RAVY.estado==="pensando"){
+    cuerpo.rotation.x = Math.sin(Date.now()*0.001)*0.02;
+    cabeza.rotation.y = Math.sin(Date.now()*0.001)*0.1;
+  }
+
   if(RAVY.estado==="hablando"){
-    boca.scale.y = 1 + RAVY.emociones.energia/200;
-    cabeza.rotation.x = 0;
+    boca.scale.y = 1 + Math.abs(Math.sin(Date.now()*0.02));
+    cabeza.rotation.x = Math.sin(Date.now()*0.005)*0.05;
   }
+
   if(RAVY.estado==="silencio"){
+    cuerpo.rotation.x = 0;
     boca.scale.y = 0.6;
     cabeza.rotation.x = Math.sin(Date.now()*0.002)*0.03;
   }
 }
 
 // =======================
-// 🎬 LOOP
+// LOOP
 // =======================
 function animar(){
   requestAnimationFrame(animar);
-  actualizarExpresiones();
+  movimientoCorporal();
   renderer.render(scene,camera);
 }
 
 // =======================
-// 🔘 ACTIVAR
+// ACTIVAR
 // =======================
-document.getElementById("activar").onclick = ()=>{
+document.getElementById("activar").onclick=()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy aquí. Puedes hablar.");
+  RAVY.hablar("Estoy aquí.");
   animar();
 };
 
 addEventListener("resize",()=>{
-  camera.aspect = innerWidth/innerHeight;
+  camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
 });
