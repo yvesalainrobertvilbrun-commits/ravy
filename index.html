@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Memoria Contextual</title>
+<title>RAVY – Nivel 14 Mejorado</title>
 
 <style>
 body{
@@ -115,7 +115,7 @@ const brazoDer = new THREE.Mesh(brazoGeo, ropa); brazoDer.position.set(0.55,0.8,
 cuerpo.add(brazoIzq, brazoDer);
 
 // =======================
-// 🧠 CEREBRO RAVY – Memoria Contextual
+// 🧠 CEREBRO RAVY 14 AVANZADO
 // =======================
 const RAVY = {
   activo:false,
@@ -126,7 +126,7 @@ const RAVY = {
     respeto:100,
     miedo:0
   },
-  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || [], // memorias con etiquetas
+  memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
   identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
     nombreUsuario:null,
     estiloUsuario:"neutral"
@@ -134,20 +134,20 @@ const RAVY = {
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_memoria",JSON.stringify(this.memoria));
+    localStorage.setItem("ravy_historial",JSON.stringify(this.memoria));
     localStorage.setItem("ravy_identidad",JSON.stringify(this.identidad));
   },
 
-  registrar(texto, etiquetas=[]){
-    this.memoria.push({texto, etiquetas, fecha:Date.now()});
-    if(this.memoria.length>200) this.memoria.shift(); // límite ampliado
+  registrar(texto, tipo="normal", respuesta=""){
+    this.memoria.push({
+      texto,
+      tipo,
+      respuesta,
+      fecha:Date.now(),
+      emociones:{...this.emociones}
+    });
+    if(this.memoria.length>200) this.memoria.shift();
     this.guardar();
-  },
-
-  buscar(tag){
-    // Devuelve las memorias que contengan la etiqueta
-    return this.memoria.filter(item => item.etiquetas.includes(tag))
-                      .map(item => item.texto);
   },
 
   hablar(texto){
@@ -161,15 +161,13 @@ const RAVY = {
   procesar(texto){
     texto = texto.toLowerCase();
 
-    // Analiza etiquetas simples
-    let etiquetas = ["general"];
-    if(texto.includes("familia")) etiquetas.push("familia");
-    if(texto.includes("trabajo") || texto.includes("tarea")) etiquetas.push("trabajo");
-    if(texto.includes("amigos")) etiquetas.push("amigos");
+    // Primer mensaje especial
+    if(!this.memoria.find(m=>m.tipo==="inicio")){
+      this.registrar(texto,"inicio");
+      return "Aquí está RAVY, tu asistente personal.";
+    }
 
-    this.registrar(texto, etiquetas);
-
-    // RESPETO y PROTECCIÓN
+    // RESPETO y PROTECCIÓN automáticos
     this.emociones.respeto = 100;
     if(texto.includes("miedo") || texto.includes("peligro")){
       this.emociones.miedo = 80;
@@ -178,17 +176,14 @@ const RAVY = {
       this.emociones.miedo = Math.max(0,this.emociones.miedo-1);
     }
 
-    // SALUDO INICIAL UNA SOLA VEZ
-    if(!this.saludado){
-      this.saludado = true;
-      return "Aquí está RAVY, tu asistente personal.";
-    }
-
-    // RESPUESTAS
-    if(texto.includes("hola")) return "Hola.";
+    // RESPUESTAS AMABLES
+    if(texto.includes("hola")) return "Hola, estoy atento a ti.";
+    if(texto.includes("buenos días")) return "Buenos días, ¿cómo estás?";
+    if(texto.includes("buenas tardes")) return "Buenas tardes, ¿cómo va tu día?";
+    if(texto.includes("buenas noches")) return "Buenas noches, descansa tranquilo.";
     if(texto.includes("gracias")){
       this.emociones.alegria +=5;
-      return "De nada.";
+      return "A tu servicio.";
     }
     if(texto.includes("mi nombre es")){
       this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
@@ -196,15 +191,10 @@ const RAVY = {
       return "Encantado de saber tu nombre.";
     }
 
-    // BUSCAR MEMORIA POR ETIQUETA
-    if(texto.startsWith("ravy, qué recuerdas sobre")){
-      const tag = texto.replace("ravy, qué recuerdas sobre","").trim();
-      const resultados = this.buscar(tag);
-      if(resultados.length) return "Recuerdo: " + resultados.join(", ");
-      else return "No tengo recuerdos sobre eso.";
-    }
+    // REGISTRO de conversación
+    this.registrar(texto,"conversacion");
 
-    return null; // si no hay respuesta, permanece en silencio
+    return "Te escucho.";
   }
 };
 
@@ -223,9 +213,9 @@ if(SpeechRecognition){
 
     const texto = e.results[e.results.length-1][0].transcript;
     const r = RAVY.procesar(texto);
-    if(r) RAVY.hablar(r);
+    RAVY.hablar(r);
 
-    // Reinicia escucha automáticamente
+    // ✅ Reinicia la escucha automáticamente
     recognition.stop();
     recognition.start();
   };
@@ -238,6 +228,7 @@ let respiracion = 0;
 let respDir = 1;
 
 function actualizarExpresiones(){
+  // RESPIRACIÓN
   respiracion += 0.005*respDir;
   if(respiracion>0.05 || respiracion<-0.05) respDir*=-1;
   torso.position.y = 0.5 + respiracion;
