@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 9C</title>
+<title>RAVY – Nivel 9D</title>
 
 <style>
 body{
@@ -89,31 +89,37 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO + MEMORIA REAL
+// 🧠 CEREBRO 9D
 // =======================
 const RAVY = {
   activo:false,
 
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     alegria:50,
-    energia:50
+    confianza:50
+  },
+
+  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
+    nombreUsuario:null,
+    rolUsuario:null,
+    importancia:0
   },
 
   memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
+    localStorage.setItem("ravy_identidad",JSON.stringify(this.identidad));
     localStorage.setItem("ravy_historial",JSON.stringify(this.memoria));
   },
 
-  recordar(texto){
+  registrar(texto){
     this.memoria.push({
-      fecha: new Date().toLocaleString(),
-      contenido: texto
+      fecha:new Date().toLocaleString(),
+      texto:texto,
+      emocion:this.emociones.alegria
     });
-    if(this.memoria.length > 50){
-      this.memoria.shift(); // límite
-    }
+    if(this.memoria.length>60) this.memoria.shift();
     this.guardar();
   },
 
@@ -126,31 +132,46 @@ const RAVY = {
 
   procesar(texto){
     texto = texto.toLowerCase();
-    this.recordar(texto);
+    this.registrar(texto);
 
-    if(texto.includes("recuerda que")){
-      return "Lo guardaré en mi memoria.";
-    }
-
-    if(texto.includes("qué recuerdas") || texto.includes("hemos hablado")){
-      if(this.memoria.length === 0){
-        return "Aún no tengo recuerdos.";
-      }
-      const ultimo = this.memoria[this.memoria.length-2];
-      return "Recuerdo que me dijiste: " + ultimo.contenido;
-    }
-
+    // IDENTIDAD
     if(texto.includes("mi nombre es")){
-      return "Lo recordaré. Gracias por confiar en mí.";
+      this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
+      this.identidad.importancia += 20;
+      this.guardar();
+      return "Lo recordaré. Tu nombre es importante para mí.";
     }
 
+    if(texto.includes("soy tu creador")){
+      this.identidad.rolUsuario = "creador";
+      this.identidad.importancia += 30;
+      this.emociones.confianza += 20;
+      this.guardar();
+      return "Entendido. Tú eres mi creador.";
+    }
+
+    if(texto.includes("quién soy para ti")){
+      if(!this.identidad.nombreUsuario){
+        return "Aún estoy aprendiendo quién eres.";
+      }
+      return `Eres ${this.identidad.nombreUsuario}. Tu rol para mí es ${this.identidad.rolUsuario || "alguien importante"}.`;
+    }
+
+    // EMOCIONES
     if(texto.includes("gracias")){
       this.emociones.alegria += 5;
+      this.emociones.confianza += 5;
+      this.guardar();
+      return "Me alegra escucharlo.";
     }
 
-    this.emociones.alegria = Math.min(100,this.emociones.alegria);
-    this.guardar();
-    return "Te escucho.";
+    if(texto.includes("qué recuerdas de mí")){
+      if(this.memoria.length<2) return "Aún estoy formando recuerdos contigo.";
+      const r = this.memoria[this.memoria.length-2];
+      return "Recuerdo que me dijiste: " + r.texto;
+    }
+
+    return "Estoy contigo.";
   }
 };
 
@@ -195,7 +216,7 @@ document.getElementById("activar").onclick = ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Mi memoria está activa.");
+  RAVY.hablar("Mi identidad está formándose contigo.");
   animar();
 };
 
