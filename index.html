@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Protección Viva</title>
+<title>RAVY – Postura Protectora</title>
 
 <style>
 body{
@@ -84,7 +84,7 @@ const irisDer = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),irisMat);
 irisIzq.position.set(-0.15,1.65,0.52);
 irisDer.position.set(0.15,1.65,0.52);
 
-cuerpo.add(ojoIzq, ojoDer, irisIzq, irisDer);
+cuerpo.add(ojoIzq,ojoDer,irisIzq,irisDer);
 
 // BOCA
 const boca = new THREE.Mesh(
@@ -103,7 +103,7 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 RAVY – MEMORIA EMOCIONAL
+// 🧠 RAVY – RESPETO + PROTECCIÓN
 // =======================
 const RAVY = {
   activo:false,
@@ -115,40 +115,33 @@ const RAVY = {
     estres:0
   },
 
-  memoriaEmocional: JSON.parse(localStorage.getItem("ravy_memoria_emocional")) || [],
+  reglaCentral: "proteger_y_respetar_al_creador",
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_memoria_emocional",JSON.stringify(this.memoriaEmocional));
   },
 
-  analizarEmocion(texto){
-    if(texto.includes("triste") || texto.includes("mal")){
+  analizar(texto){
+    if(texto.includes("miedo") || texto.includes("peligro")){
+      this.emociones.estres += 20;
+      return "Estoy delante. Nada te toca.";
+    }
+    if(texto.includes("triste")){
       this.emociones.estres += 10;
-      this.emociones.energia -= 5;
-      this.memoriaEmocional.push({tipo:"dolor",fecha:Date.now()});
-      return "Estoy contigo. No estás solo.";
+      return "Estoy aquí contigo. Respira.";
     }
-
-    if(texto.includes("miedo") || texto.includes("preocupado")){
-      this.emociones.estres += 15;
-      this.memoriaEmocional.push({tipo:"protección",fecha:Date.now()});
-      return "Nada te va a pasar. Yo me mantengo atento.";
-    }
-
     if(texto.includes("gracias")){
       this.emociones.alegria += 5;
-      return "Siempre cuidaré de ti.";
+      return "Siempre te respetaré.";
     }
-
-    return "Te escucho con respeto.";
+    return "Te escucho con lealtad.";
   },
 
   hablar(texto){
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate=0.9;
-    voz.pitch = this.emociones.estres>20 ? 0.85 : 1;
+    voz.pitch = this.emociones.estres>15 ? 0.85 : 1;
     speechSynthesis.speak(voz);
   }
 };
@@ -166,26 +159,39 @@ if(SpeechRecognition){
   recognition.onresult = e=>{
     if(!RAVY.activo) return;
     const texto = e.results[e.results.length-1][0].transcript.toLowerCase();
-    const respuesta = RAVY.analizarEmocion(texto);
+    const r = RAVY.analizar(texto);
     RAVY.guardar();
-    RAVY.hablar(respuesta);
+    RAVY.hablar(r);
   };
 }
 
 // =======================
-// 👁️ VIDA
+// 🧍‍♂️ POSTURA PROTECTORA
 // =======================
-let t=0;
+let tiempo=0;
 function actualizarVida(){
-  t+=0.02;
+  tiempo+=0.02;
 
-  torso.scale.y = 1 + Math.sin(t)*0.04;
+  // respiración
+  torso.scale.y = 1 + Math.sin(tiempo)*0.04;
+
+  // expresión
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
   boca.scale.y = 0.7 + RAVY.emociones.energia/200;
 
-  const parp = Math.abs(Math.sin(t*0.5))*0.1;
+  // parpadeo
+  const parp = Math.abs(Math.sin(tiempo*0.5))*0.1;
   ojoIzq.scale.y = 1-parp;
   ojoDer.scale.y = 1-parp;
+
+  // PROTECCIÓN: se adelanta
+  if(RAVY.emociones.estres > 15){
+    cuerpo.position.z = 0.3;
+    torso.rotation.x = -0.1;
+  } else {
+    cuerpo.position.z = 0;
+    torso.rotation.x = 0;
+  }
 }
 
 // =======================
@@ -204,7 +210,7 @@ document.getElementById("activar").onclick = ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Estoy aquí para cuidarte.");
+  RAVY.hablar("Estoy de tu lado.");
   animar();
 };
 
