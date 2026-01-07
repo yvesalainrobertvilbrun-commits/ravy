@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RAVY</title>
 <style>
-body { margin:0; background:black; overflow:hidden; }
+body { margin:0; overflow:hidden; }
 #overlay { position:absolute; top:50%; width:100%; text-align:center; z-index:10; transform:translateY(-50%); }
 button { background:#00aaff; color:black; border:none; padding:12px 20px; font-size:16px; border-radius:8px; cursor:pointer; }
 </style>
@@ -24,13 +24,32 @@ let camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeigh
 camera.position.z = 5;
 let renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
+// ===== FONDO DINÁMICO =====
+let color1 = new THREE.Color(0x001122);
+let color2 = new THREE.Color(0x004477);
+scene.background = color1;
+
 // ===== LUCES =====
-let light = new THREE.DirectionalLight(0x00aaff,1);
-light.position.set(1,1,2);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0x404040));
+let dirLight = new THREE.DirectionalLight(0x00aaff, 1);
+dirLight.position.set(5,10,7);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+let ambientLight = new THREE.AmbientLight(0x404040, 0.7);
+scene.add(ambientLight);
+
+// ===== SUELO VIRTUAL =====
+let floorGeo = new THREE.PlaneGeometry(50,50);
+let floorMat = new THREE.ShadowMaterial({opacity:0.3});
+let floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.position.y = -0.1;
+floor.receiveShadow = true;
+scene.add(floor);
 
 // ===== RAVY HUMANOIDE =====
 let cuerpo = new THREE.Group();
@@ -41,6 +60,7 @@ let cabezaGeo = new THREE.SphereGeometry(0.5,32,32);
 let cabezaMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
 let cabeza = new THREE.Mesh(cabezaGeo, cabezaMat);
 cabeza.position.y = 1.5;
+cabeza.castShadow = true;
 cuerpo.add(cabeza);
 
 // Ojos
@@ -63,6 +83,7 @@ let torsoGeo = new THREE.CylinderGeometry(0.4,0.4,1.2,32);
 let torsoMat = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.6});
 let torso = new THREE.Mesh(torsoGeo, torsoMat);
 torso.position.y = 0.5;
+torso.castShadow = true;
 cuerpo.add(torso);
 
 // Brazos
@@ -73,6 +94,8 @@ brazoIzq.position.set(-0.55,0.8,0);
 brazoDer.position.set(0.55,0.8,0);
 brazoIzq.rotation.z = 0.2;
 brazoDer.rotation.z = -0.2;
+brazoIzq.castShadow = true;
+brazoDer.castShadow = true;
 cuerpo.add(brazoIzq);
 cuerpo.add(brazoDer);
 
@@ -80,6 +103,12 @@ cuerpo.add(brazoDer);
 let analyser, audioContext, microphone, dataArray;
 function animar(){
   requestAnimationFrame(animar);
+
+  // Fondo dinámico
+  let t = Date.now()*0.0003;
+  scene.background.r = 0.0 + Math.sin(t)*0.05;
+  scene.background.g = 0.27 + Math.cos(t)*0.05;
+  scene.background.b = 0.46 + Math.sin(t/2)*0.05;
 
   if(analyser){
     analyser.getByteFrequencyData(dataArray);
@@ -105,12 +134,7 @@ function animar(){
 }
 
 // ===== VOZ =====
-const RAVY = {
-  nombre:"RAVY",
-  idioma:"es-ES",
-  activo:false,
-  ejecutarOrden(texto){ return []; } // Aquí se puede agregar futuro cerebro y comandos
-};
+const RAVY = {nombre:"RAVY", idioma:"es-ES", activo:false, ejecutarOrden(texto){ return []; } };
 
 // ===== RECONOCIMIENTO DE VOZ =====
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
