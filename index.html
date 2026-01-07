@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide Realista</title>
-<link rel="manifest" href="manifest.json">
+<title>RAVY Humanoide Funcional</title>
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -26,7 +25,6 @@ button {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
 // ===== ESCENA, CÁMARA, RENDERER =====
@@ -50,24 +48,15 @@ let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
-// ===== MODELO HUMANOIDE REAL =====
+// ===== CUERPO TEMPORAL (CUBO HUMANOIDE) =====
 let cuerpo;
-const loader = new THREE.GLTFLoader();
-// Modelo humanoide realista con cabello y rostro (ajusta URL si tienes tu propio .glb)
-loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
-function(gltf){
-  cuerpo = gltf.scene;
-  cuerpo.scale.set(1.5,1.5,1.5);
-  cuerpo.position.y=0;
-  cuerpo.traverse(node=>{
-    if(node.isMesh){
-      node.castShadow=true;
-      node.receiveShadow=true;
-    }
-  });
-  scene.add(cuerpo);
-  console.log("Modelo humanoide cargado");
-}, undefined, function(error){ console.error(error); });
+let geometry = new THREE.BoxGeometry(1,2,0.5);
+let material = new THREE.MeshStandardMaterial({color:0x00aaff});
+cuerpo = new THREE.Mesh(geometry, material);
+cuerpo.position.y=1;
+cuerpo.castShadow=true;
+cuerpo.receiveShadow=true;
+scene.add(cuerpo);
 
 // ===== ANIMACIÓN Y REACCIÓN =====
 let analyser, audioContext, microphone, dataArray;
@@ -78,14 +67,13 @@ function animar(){
   evolucionTiempo+=0.01;
 
   if(cuerpo){
-    // Movimiento suave de cabeza y cuerpo
     cuerpo.rotation.y = Math.sin(evolucionTiempo)/5;
   }
 
   if(analyser && cuerpo){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; 
+    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05;
   }
 
   renderer.render(scene,camera);
