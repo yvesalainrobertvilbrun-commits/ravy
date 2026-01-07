@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide Realista</title>
+<title>RAVY Humanoide Completo</title>
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -49,14 +49,14 @@ let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
-// ===== CARGAR MODELO HUMANOIDE REAL =====
+// ===== MODELO HUMANOIDE COMPLETO =====
 let cuerpo;
 const loader = new THREE.GLTFLoader();
-// Modelo humanoide real con rostro y cabello
+// Este es un modelo humanoide completo con rostro, cabello y ropa
 loader.load('https://rawcdn.githack.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
 function(gltf){
   cuerpo = gltf.scene;
-  cuerpo.scale.set(1.5,1.5,1.5);
+  cuerpo.scale.set(1.8,1.8,1.8); 
   cuerpo.position.y=0;
   cuerpo.traverse(node=>{
     if(node.isMesh){
@@ -65,7 +65,7 @@ function(gltf){
     }
   });
   scene.add(cuerpo);
-  console.log("Modelo humanoide cargado");
+  console.log("RAVY humanoide completo cargado");
 }, undefined, function(error){ console.error(error); });
 
 // ===== ANIMACIÓN Y REACCIÓN =====
@@ -77,13 +77,13 @@ function animar(){
   evolucionTiempo+=0.01;
 
   if(cuerpo){
-    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5; // movimiento suave
+    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5;
   }
 
   if(analyser && cuerpo){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; // cabeceo pequeño
+    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05;
   }
 
   renderer.render(scene,camera);
