@@ -6,24 +6,19 @@
 <title>RAVY Humanoide PWA</title>
 <style>
 body { 
-  margin:0; 
-  overflow:hidden; 
-  background:black;
+  margin:0; overflow:hidden; background:black;
 }
 #overlay { 
-  position:absolute; 
-  top:50%; left:50%; 
+  position:absolute; top:50%; left:50%; 
   transform:translate(-50%,-50%); 
-  z-index:10; 
-  text-align:center; 
+  z-index:10; text-align:center; 
 }
 button { 
   background: linear-gradient(145deg,#00d4ff,#0099ff);
   color:white; 
   border:none; 
   width:120px; height:120px;
-  font-size:24px; 
-  font-weight:bold;
+  font-size:24px; font-weight:bold;
   border-radius:50%; 
   cursor:pointer; 
   box-shadow: 0 8px 20px rgba(0,0,0,0.4), inset 0 -3px 5px rgba(0,0,0,0.2);
@@ -108,7 +103,7 @@ let brazoIzq = new THREE.Mesh(brazoGeo, ropaMat); brazoIzq.position.set(-0.55,0.
 let brazoDer = new THREE.Mesh(brazoGeo, ropaMat); brazoDer.position.set(0.55,0.8,0); brazoDer.castShadow=true;
 cuerpo.add(brazoIzq, brazoDer);
 
-// ===== ANIMACIÓN Y EVOLUCIÓN =====
+// ===== ANIMACIÓN =====
 let analyser, audioContext, microphone, dataArray;
 let evolucionTiempo=0;
 
@@ -116,10 +111,8 @@ function animar(){
   requestAnimationFrame(animar);
   evolucionTiempo +=0.01;
 
-  // Evolución colores ropa
   ropaMat.color.setHSL((Math.sin(evolucionTiempo)+1)/2,0.7,0.5);
 
-  // Reacción al sonido
   if(analyser){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
@@ -132,26 +125,24 @@ function animar(){
   renderer.render(scene,camera);
 }
 
-// ===== VOZ Y ÓRDENES =====
+// ===== CEREBRO IA =====
 const RAVY={
   nombre:"RAVY",
   idioma:"es-ES",
   activo:false,
-  ejecutarOrden(texto){
-    let respuestas=[];
-    texto = texto.toLowerCase();
-    if(texto.includes("hora")){
-      respuestas.push("La hora actual es " + new Date().toLocaleTimeString());
+  ejecutarOrden: async function(texto){
+    try{
+      const resp = await fetch("http://localhost:3000/pensar", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({texto})
+      });
+      const data = await resp.json();
+      return [data.respuesta];
+    }catch(e){
+      console.log(e);
+      return ["No puedo conectarme al cerebro."];
     }
-    if(texto.includes("google")){
-      window.open("https://www.google.com","_blank");
-      respuestas.push("Abriendo Google");
-    }
-    if(texto.includes("luz")){
-      respuestas.push("Simulación de luz encendida");
-    }
-    if(respuestas.length===0) respuestas.push("No entiendo la orden");
-    return respuestas;
   }
 };
 
@@ -163,12 +154,14 @@ if(SpeechRecognition){
   recognition.lang="es-ES";
   recognition.interimResults=false;
   recognition.continuous=true;
-  recognition.onresult=function(event){
+  recognition.onresult = async function(event){
     if(!RAVY.activo) return;
     const texto = event.results[event.results.length-1][0].transcript;
-    const frases = RAVY.ejecutarOrden(texto);
+    const frases = await RAVY.ejecutarOrden(texto);
     frases.forEach(f=>{
-      let voz=new SpeechSynthesisUtterance(f); voz.lang=RAVY.idioma; speechSynthesis.speak(voz);
+      let voz = new SpeechSynthesisUtterance(f);
+      voz.lang = RAVY.idioma;
+      speechSynthesis.speak(voz);
     });
   }
 }
@@ -178,25 +171,21 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
 
-  // Audio
-  audioContext=new (window.AudioContext||window.webkitAudioContext)();
+  audioContext = new (window.AudioContext||window.webkitAudioContext)();
   try{
     const stream = await navigator.mediaDevices.getUserMedia({audio:true});
     microphone = audioContext.createMediaStreamSource(stream);
-    analyser=audioContext.createAnalyser();
+    analyser = audioContext.createAnalyser();
     microphone.connect(analyser);
-    analyser.fftSize=256;
-    dataArray=new Uint8Array(analyser.frequencyBinCount);
+    analyser.fftSize = 256;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
   }catch(e){console.log(e);}
 
-  // Reconocimiento de voz
   if(recognition) recognition.start();
-
-  // Animación
   animar();
 });
 
-// ===== AJUSTES DE PANTALLA =====
+// ===== AJUSTES PANTALLA =====
 window.addEventListener('resize',()=>{
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
