@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY Humanoide Funcional</title>
+<title>RAVY Humanoide Realista</title>
+<link rel="manifest" href="manifest.json">
 <style>
 body { margin:0; overflow:hidden; background:black;}
 #overlay { 
@@ -49,11 +50,11 @@ let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
 
-// ===== CARGAR MODELO 3D FUNCIONAL =====
+// ===== MODELO HUMANOIDE REAL =====
 let cuerpo;
 const loader = new THREE.GLTFLoader();
-// Modelo que siempre carga: RobotExpressive.glb de Three.js
-loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', 
+// Modelo humanoide realista con cabello y rostro (ajusta URL si tienes tu propio .glb)
+loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
 function(gltf){
   cuerpo = gltf.scene;
   cuerpo.scale.set(1.5,1.5,1.5);
@@ -65,10 +66,10 @@ function(gltf){
     }
   });
   scene.add(cuerpo);
-  console.log("Modelo cargado y visible");
+  console.log("Modelo humanoide cargado");
 }, undefined, function(error){ console.error(error); });
 
-// ===== ANIMACIÓN Y SONIDO =====
+// ===== ANIMACIÓN Y REACCIÓN =====
 let analyser, audioContext, microphone, dataArray;
 let evolucionTiempo=0;
 
@@ -77,13 +78,14 @@ function animar(){
   evolucionTiempo+=0.01;
 
   if(cuerpo){
-    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5; // movimiento suave
+    // Movimiento suave de cabeza y cuerpo
+    cuerpo.rotation.y = Math.sin(evolucionTiempo)/5;
   }
 
   if(analyser && cuerpo){
     analyser.getByteFrequencyData(dataArray);
     let volumen=dataArray.reduce((a,b)=>a+b,0)/dataArray.length;
-    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; // cabeceo pequeño
+    cuerpo.rotation.x=Math.sin(volumen/2000)*0.05; 
   }
 
   renderer.render(scene,camera);
@@ -146,7 +148,6 @@ document.getElementById("activar-ravy").addEventListener("click", async ()=>{
   }catch(e){console.log(e);}
 
   if(recognition) recognition.start();
-
   animar();
 });
 
