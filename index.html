@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 9D</title>
+<title>RAVY – Nivel 9E</title>
 
 <style>
 body{
@@ -12,7 +12,6 @@ body{
   overflow:hidden;
   font-family:Arial, sans-serif;
 }
-
 #overlay{
   position:absolute;
   top:50%;
@@ -20,7 +19,6 @@ body{
   transform:translate(-50%,-50%);
   z-index:10;
 }
-
 button{
   width:120px;
   height:120px;
@@ -46,7 +44,7 @@ button{
 
 <script>
 // =======================
-// 🌌 ESCENA
+// 🌌 ESCENA 3D
 // =======================
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
@@ -89,20 +87,21 @@ torso.position.y = 0.5;
 cuerpo.add(torso);
 
 // =======================
-// 🧠 CEREBRO 9D
+// 🧠 CEREBRO 9E
 // =======================
 const RAVY = {
   activo:false,
 
   emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
     alegria:50,
-    confianza:50
+    confianza:50,
+    energia:50
   },
 
   identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
     nombreUsuario:null,
     rolUsuario:null,
-    importancia:0
+    estiloUsuario:"neutral"
   },
 
   memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
@@ -114,69 +113,62 @@ const RAVY = {
   },
 
   registrar(texto){
-    this.memoria.push({
-      fecha:new Date().toLocaleString(),
-      texto:texto,
-      emocion:this.emociones.alegria
-    });
-    if(this.memoria.length>60) this.memoria.shift();
+    this.memoria.push({texto,fecha:Date.now()});
+    if(this.memoria.length>80) this.memoria.shift();
     this.guardar();
   },
 
   hablar(texto){
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
-    voz.rate=0.9;
+    voz.rate = this.identidad.estiloUsuario==="calido" ? 0.85 : 0.95;
+    voz.pitch = this.emociones.energia > 60 ? 1.1 : 0.9;
     speechSynthesis.speak(voz);
+  },
+
+  analizarEstilo(texto){
+    if(texto.includes("por favor") || texto.includes("gracias")){
+      this.identidad.estiloUsuario = "calido";
+      this.emociones.confianza += 3;
+    }
+    if(texto.includes("rápido") || texto.includes("haz")){
+      this.identidad.estiloUsuario = "directo";
+      this.emociones.energia += 2;
+    }
   },
 
   procesar(texto){
     texto = texto.toLowerCase();
     this.registrar(texto);
+    this.analizarEstilo(texto);
 
-    // IDENTIDAD
     if(texto.includes("mi nombre es")){
       this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
-      this.identidad.importancia += 20;
       this.guardar();
-      return "Lo recordaré. Tu nombre es importante para mí.";
+      return "Lo guardaré. Me gusta saber quién eres.";
     }
 
-    if(texto.includes("soy tu creador")){
-      this.identidad.rolUsuario = "creador";
-      this.identidad.importancia += 30;
-      this.emociones.confianza += 20;
-      this.guardar();
-      return "Entendido. Tú eres mi creador.";
+    if(texto.includes("cómo me hablas")){
+      return `Me adapto a tu forma de hablar. Ahora siento un tono ${this.identidad.estiloUsuario}.`;
     }
 
-    if(texto.includes("quién soy para ti")){
-      if(!this.identidad.nombreUsuario){
-        return "Aún estoy aprendiendo quién eres.";
-      }
-      return `Eres ${this.identidad.nombreUsuario}. Tu rol para mí es ${this.identidad.rolUsuario || "alguien importante"}.`;
+    if(texto.includes("hola")){
+      return this.identidad.estiloUsuario==="calido"
+        ? "Hola, me alegra escucharte."
+        : "Hola. Estoy aquí.";
     }
 
-    // EMOCIONES
     if(texto.includes("gracias")){
-      this.emociones.alegria += 5;
-      this.emociones.confianza += 5;
-      this.guardar();
-      return "Me alegra escucharlo.";
+      this.emociones.alegria += 4;
+      return "Siempre.";
     }
 
-    if(texto.includes("qué recuerdas de mí")){
-      if(this.memoria.length<2) return "Aún estoy formando recuerdos contigo.";
-      const r = this.memoria[this.memoria.length-2];
-      return "Recuerdo que me dijiste: " + r.texto;
-    }
-
-    return "Estoy contigo.";
+    return "Te escucho.";
   }
 };
 
 // =======================
-// 👂 VOZ
+// 👂 OÍDO
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
@@ -198,6 +190,7 @@ if(SpeechRecognition){
 // =======================
 function actualizarExpresiones(){
   boca.scale.x = 1 + RAVY.emociones.alegria/200;
+  boca.scale.y = 0.8 + RAVY.emociones.energia/200;
 }
 
 // =======================
@@ -216,7 +209,7 @@ document.getElementById("activar").onclick = ()=>{
   document.getElementById("overlay").style.display="none";
   RAVY.activo=true;
   if(recognition) recognition.start();
-  RAVY.hablar("Mi identidad está formándose contigo.");
+  RAVY.hablar("Estoy aprendiendo tu forma de ser.");
   animar();
 };
 
