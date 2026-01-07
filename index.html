@@ -5,21 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RAVY Humanoide</title>
 <style>
-body { margin:0; overflow:hidden; background:black;}
-#overlay { 
-  position:absolute; top:50%; left:50%; 
-  transform:translate(-50%,-50%); 
-  z-index:10; text-align:center; 
-}
-button { 
-  background:#00aaff; color:black; border:none; 
-  width:120px; height:50px;
-  font-size:20px; border-radius:10px; 
-  cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.3);
-}
+  body { 
+    margin:0; 
+    overflow:hidden; 
+    background:black; 
+  }
+  #overlay { 
+    position:absolute; 
+    top:50%; left:50%; 
+    transform:translate(-50%,-50%); 
+    z-index:10; 
+    text-align:center; 
+  }
+  button { 
+    background:#00aaff; 
+    color:black; 
+    border:none; 
+    width:120px; 
+    height:50px; 
+    font-size:20px; 
+    border-radius:10px; 
+    cursor:pointer; 
+    box-shadow:0 4px 15px rgba(0,0,0,0.3);
+  }
 </style>
 </head>
 <body>
+
 <div id="overlay">
   <button id="activar-ravy">RAVY</button>
 </div>
@@ -40,14 +52,20 @@ document.body.appendChild(renderer.domElement);
 
 // ===== LUCES =====
 let dirLight = new THREE.DirectionalLight(0xffffff, 1);
-dirLight.position.set(5,10,7); dirLight.castShadow = true; scene.add(dirLight);
-let ambientLight = new THREE.AmbientLight(0x404040, 0.8); scene.add(ambientLight);
+dirLight.position.set(5,10,7); 
+dirLight.castShadow = true; 
+scene.add(dirLight);
+let ambientLight = new THREE.AmbientLight(0x404040, 0.8); 
+scene.add(ambientLight);
 
 // ===== SUELO =====
 let floorGeo = new THREE.PlaneGeometry(50,50);
 let floorMat = new THREE.ShadowMaterial({opacity:0.3});
 let floor = new THREE.Mesh(floorGeo,floorMat);
-floor.rotation.x=-Math.PI/2; floor.position.y=-0.1; floor.receiveShadow=true; scene.add(floor);
+floor.rotation.x=-Math.PI/2; 
+floor.position.y=-0.1; 
+floor.receiveShadow=true; 
+scene.add(floor);
 
 // ===== CARGAR MODELO 3D HUMANOIDE =====
 let cuerpo;
@@ -128,7 +146,9 @@ if(SpeechRecognition){
     const texto = event.results[event.results.length-1][0].transcript;
     const frases = RAVY.ejecutarOrden(texto);
     frases.forEach(f=>{
-      let voz=new SpeechSynthesisUtterance(f); voz.lang=RAVY.idioma; speechSynthesis.speak(voz);
+      let voz=new SpeechSynthesisUtterance(f); 
+      voz.lang=RAVY.idioma; 
+      speechSynthesis.speak(voz);
     });
   }
 }
@@ -165,5 +185,6 @@ window.addEventListener('resize',()=>{
   renderer.setSize(window.innerWidth,window.innerHeight);
 });
 </script>
+
 </body>
 </html>
