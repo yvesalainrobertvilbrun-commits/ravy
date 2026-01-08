@@ -92,7 +92,7 @@ body{
   margin-top:20px;
   min-height:40px;
   text-align:center;
-  max-width:300px;
+  max-width:320px;
 }
 </style>
 </head>
@@ -120,13 +120,14 @@ body{
 <script>
 // ================== RAVY NÚCLEO ==================
 const RAVY = {
-  emociones:{
-    alegria:50,
-    energia:50
-  },
-  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || [],
+  emociones:{ alegria:50, energia:50 },
   despierto:false,
-  presentacion:false
+  presentacion:false,
+  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || {
+    saludos:[],
+    conversaciones:[],
+    datos_importantes:[]
+  }
 };
 
 const boca = document.getElementById("boca");
@@ -134,7 +135,7 @@ const texto = document.getElementById("texto");
 
 // ================== EXPRESIONES ==================
 function actualizarExpresiones(){
-  boca.style.transform = 
+  boca.style.transform =
     `translateX(-50%) scaleX(${1 + RAVY.emociones.alegria/200})
      scaleY(${0.5 + RAVY.emociones.energia/200})`;
 }
@@ -154,14 +155,12 @@ document.getElementById("inicio").onclick = ()=>{
 // ================== ESCUCHAR ==================
 function escuchar(){
   hablar("Te escucho.");
-  guardarMemoria("Usuario activó modo escuchar");
 }
 
 // ================== RESPONDER ==================
 function responder(){
-  let respuesta = generarRespuesta();
+  const respuesta = cerebro();
   hablar(respuesta);
-  guardarMemoria(respuesta);
 }
 
 // ================== REPOSO ==================
@@ -180,24 +179,30 @@ function hablar(mensaje){
 }
 
 // ================== MEMORIA ==================
-function guardarMemoria(dato){
-  RAVY.memoria.push({
-    texto:dato,
+function guardarMemoria(tipo, texto){
+  RAVY.memoria[tipo].push({
+    texto,
     tiempo:new Date().toLocaleString()
   });
   localStorage.setItem("ravy_memoria", JSON.stringify(RAVY.memoria));
 }
 
-// ================== CEREBRO ==================
-function generarRespuesta(){
+// ================== CEREBRO AVANZADO ==================
+function cerebro(){
   const saludos = ["hola","buenos dias","buenas tardes","buenas noches"];
-  let ultima = RAVY.memoria[RAVY.memoria.length-1]?.texto || "";
+  const ultimoSaludo = RAVY.memoria.saludos.slice(-1)[0]?.texto || "";
 
-  if(saludos.some(s => ultima.toLowerCase().includes(s))){
-    return "Hola, estoy aquí contigo.";
+  if(!ultimoSaludo){
+    guardarMemoria("saludos","primer saludo");
+    return "Hola, estoy contigo.";
   }
 
-  return "Estoy atento, dime.";
+  if(RAVY.memoria.conversaciones.length < 3){
+    guardarMemoria("conversaciones","inicio charla");
+    return "Podemos hablar, dime lo que quieras.";
+  }
+
+  return "Estoy atento, continúa.";
 }
 
 // ================== LOOP ==================
