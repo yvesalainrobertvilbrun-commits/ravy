@@ -17,95 +17,47 @@ body{
   height:100vh;
 }
 
-/* ===== VISTAS ===== */
-.vista{
-  display:none;
-  text-align:center;
-}
+.vista{ display:none; text-align:center; }
+.vista.activa{ display:block; }
 
-.vista.activa{
-  display:block;
-}
-
-/* ===== BOTÓN INICIO ===== */
 #btnInicio{
-  width:140px;
-  height:140px;
-  border-radius:50%;
-  border:none;
-  font-size:22px;
-  font-weight:bold;
+  width:140px;height:140px;border-radius:50%;
+  border:none;font-size:22px;font-weight:bold;
   color:white;
   background:linear-gradient(145deg,#00ffff,#0077ff);
   box-shadow:0 0 40px #00ffff;
 }
 
-/* ===== RAVY ===== */
 #cara{
-  width:180px;
-  height:180px;
-  background:#0a0a0a;
-  border-radius:50%;
-  box-shadow:0 0 40px #00ffff;
-  margin:auto;
-  position:relative;
+  width:180px;height:180px;background:#0a0a0a;
+  border-radius:50%;box-shadow:0 0 40px #00ffff;
+  margin:auto;position:relative;
 }
 
-.ojo{
-  width:16px;
-  height:16px;
-  background:white;
-  border-radius:50%;
-  position:absolute;
-  top:60px;
-}
-#ojo1{ left:55px; }
-#ojo2{ right:55px; }
+.ojo{width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:60px;}
+#ojo1{left:55px;} #ojo2{right:55px;}
 
 #boca{
-  width:50px;
-  height:12px;
-  background:#ff5a6e;
-  border-radius:20px;
-  position:absolute;
-  bottom:50px;
-  left:50%;
-  transform:translateX(-50%);
+  width:50px;height:12px;background:#ff5a6e;
+  border-radius:20px;position:absolute;
+  bottom:50px;left:50%;transform:translateX(-50%);
 }
 
-/* ===== BOTONES ===== */
-.botones{
-  margin-top:25px;
-}
-
-button{
-  padding:12px 20px;
-  border:none;
-  border-radius:20px;
-  font-size:15px;
-  color:white;
-  margin:5px;
-}
-
-#escuchar{ background:#00aaff; }
-#responder{ background:#00ff99; color:black; }
-#reposo{ background:#ff4444; }
-
-#estado{
-  margin-top:15px;
-  opacity:0.8;
-}
+.botones{margin-top:25px;}
+button{padding:12px 20px;border:none;border-radius:20px;font-size:15px;color:white;margin:5px;}
+#escuchar{background:#00aaff;}
+#responder{background:#00ff99;color:black;}
+#reposo{background:#ff4444;}
+#estado{margin-top:15px;opacity:0.8;}
 </style>
 </head>
 
 <body>
 
-<!-- ===== PANTALLA PRINCIPAL ===== -->
 <div id="inicio" class="vista activa">
   <button id="btnInicio">RAVY</button>
 </div>
 
-<!-- ===== RAVY ACTIVO ===== -->
 <div id="ravyApp" class="vista">
   <div id="cara">
     <div class="ojo" id="ojo1"></div>
@@ -124,10 +76,19 @@ button{
 
 <script>
 /* =====================
-   🧠 ESTADO GLOBAL
+   🧠 MEMORIA RAVY
 ===================== */
-let ultimaPregunta = "";
-const estado = document.getElementById("estado");
+const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
+  historial: [],
+  usuario: {
+    nombre: null,
+    trato: "neutral"
+  }
+};
+
+function guardarMemoria(){
+  localStorage.setItem("ravy_memoria", JSON.stringify(memoriaRavy));
+}
 
 /* =====================
    🔊 HABLAR
@@ -142,19 +103,29 @@ function hablar(texto){
 /* =====================
    🎤 ESCUCHAR
 ===================== */
+let ultimaPregunta = "";
+
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
-
 let recognition;
 
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang = "es-ES";
-  recognition.continuous = false;
-
   recognition.onresult = e=>{
     ultimaPregunta = e.results[0][0].transcript.toLowerCase();
-    estado.textContent = "Escuché: " + ultimaPregunta;
+
+    memoriaRavy.historial.push({
+      texto: ultimaPregunta,
+      fecha: Date.now()
+    });
+
+    if(memoriaRavy.historial.length > 100){
+      memoriaRavy.historial.shift();
+    }
+
+    guardarMemoria();
+    estado.textContent = "Escuché.";
   };
 }
 
@@ -163,63 +134,70 @@ if(SpeechRecognition){
 ===================== */
 function responder(){
   if(!ultimaPregunta){
-    hablar("No he escuchado nada todavía.");
+    hablar("Aún no me has dicho nada.");
     return;
   }
 
   let r = "Te escucho.";
 
-  if(ultimaPregunta.includes("hora")){
+  if(ultimaPregunta.includes("mi nombre es")){
+    memoriaRavy.usuario.nombre =
+      ultimaPregunta.split("mi nombre es")[1].trim();
+    guardarMemoria();
+    r = `Encantado de conocerte, ${memoriaRavy.usuario.nombre}.`;
+  }
+  else if(ultimaPregunta.includes("hora")){
     const d = new Date();
     r = `Son las ${d.getHours()} con ${d.getMinutes()} minutos.`;
   }
   else if(ultimaPregunta.includes("hola")){
-    r = "Hola. Estoy aquí contigo.";
-  }
-  else if(ultimaPregunta.includes("buenos días")){
-    r = "Buenos días. Espero que tengas un gran día.";
+    r = memoriaRavy.usuario.nombre
+      ? `Hola ${memoriaRavy.usuario.nombre}, aquí estoy.`
+      : "Hola, aquí estoy contigo.";
   }
 
   hablar(r);
 }
 
 /* =====================
-   🔁 CAMBIAR VISTAS
+   🔁 VISTAS
 ===================== */
+const inicio = document.getElementById("inicio");
+const ravyApp = document.getElementById("ravyApp");
+const estado = document.getElementById("estado");
+
 function mostrarInicio(){
-  document.getElementById("inicio").classList.add("activa");
-  document.getElementById("ravyApp").classList.remove("activa");
+  inicio.classList.add("activa");
+  ravyApp.classList.remove("activa");
 }
 
 function mostrarRavy(){
-  document.getElementById("inicio").classList.remove("activa");
-  document.getElementById("ravyApp").classList.add("activa");
+  inicio.classList.remove("activa");
+  ravyApp.classList.add("activa");
 }
 
 /* =====================
    🔘 BOTONES
 ===================== */
-document.getElementById("btnInicio").onclick = ()=>{
+btnInicio.onclick = ()=>{
   mostrarRavy();
   hablar("Aquí está RAVY, tu asistente personal.");
 };
 
-document.getElementById("escuchar").onclick = ()=>{
-  if(recognition){
-    ultimaPregunta = "";
-    estado.textContent = "Escuchando...";
-    recognition.start();
-  }
+escuchar.onclick = ()=>{
+  ultimaPregunta = "";
+  estado.textContent = "Escuchando...";
+  recognition && recognition.start();
 };
 
-document.getElementById("responder").onclick = ()=>{
+responder.onclick = ()=>{
   responder();
 };
 
-document.getElementById("reposo").onclick = ()=>{
+reposo.onclick = ()=>{
   speechSynthesis.cancel();
   ultimaPregunta = "";
-  mostrarInicio(); // 👈 AQUÍ ESTÁ LA CLAVE
+  mostrarInicio();
 };
 </script>
 
