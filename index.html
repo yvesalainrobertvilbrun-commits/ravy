@@ -2,211 +2,198 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>RAVY</title>
+<title>RAVY - Asistente Personal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{
-  margin:0;
-  background:#0b0b0f;
-  color:#fff;
-  font-family:Arial, sans-serif;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
+    body {
+        margin: 0;
+        background: radial-gradient(circle at top, #0a0a0f, #000);
+        font-family: Arial, sans-serif;
+        color: white;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-#inicio{
-  font-size:32px;
-  padding:30px 60px;
-  border-radius:50px;
-  border:none;
-  background:#6a00ff;
-  color:white;
-  cursor:pointer;
-}
+    /* Pantalla inicio */
+    #inicio {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-#ravy-container{
-  display:none;
-  flex-direction:column;
-  align-items:center;
-}
+    #btnInicio {
+        padding: 20px 40px;
+        font-size: 22px;
+        border-radius: 50px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(135deg, #00f2ff, #00ff99);
+        color: black;
+        font-weight: bold;
+        box-shadow: 0 0 25px rgba(0,255,255,0.5);
+    }
 
-#cara{
-  width:220px;
-  height:220px;
-  background:#111;
-  border-radius:50%;
-  position:relative;
-  animation: respirar 4s infinite ease-in-out;
-}
+    /* Pantalla RAVY */
+    #ravy {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
 
-.ojo{
-  width:30px;
-  height:30px;
-  background:white;
-  border-radius:50%;
-  position:absolute;
-  top:70px;
-}
+    .cara {
+        width: 140px;
+        height: 140px;
+        background: #0d0d0d;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 30px rgba(0,255,255,0.4);
+    }
 
-.ojo.izq{ left:60px; }
-.ojo.der{ right:60px; }
+    .ojos {
+        display: flex;
+        gap: 25px;
+    }
 
-.boca{
-  width:60px;
-  height:20px;
-  background:#ff4d6d;
-  border-radius:0 0 40px 40px;
-  position:absolute;
-  bottom:60px;
-  left:50%;
-  transform:translateX(-50%);
-}
+    .ojo {
+        width: 14px;
+        height: 14px;
+        background: white;
+        border-radius: 50%;
+    }
 
-@keyframes respirar{
-  0%{ transform:scale(1); }
-  50%{ transform:scale(1.03); }
-  100%{ transform:scale(1); }
-}
+    .boca {
+        margin-top: 18px;
+        width: 45px;
+        height: 10px;
+        background: #ff4d6d;
+        border-radius: 20px;
+    }
 
-#botones{
-  margin-top:30px;
-  display:flex;
-  gap:15px;
-}
+    .botones {
+        display: flex;
+        gap: 12px;
+    }
 
-.btn{
-  padding:12px 20px;
-  border-radius:30px;
-  border:none;
-  cursor:pointer;
-  font-size:14px;
-}
+    .botones button {
+        padding: 10px 18px;
+        border-radius: 20px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        color: white;
+        font-weight: bold;
+    }
 
-.listen{ background:#00c2ff; }
-.talk{ background:#00ff99; }
-.rest{ background:#ff4444; color:white; }
+    .escuchar { background: #00b4ff; }
+    .responder { background: #00ff99; color: black; }
+    .reposo { background: #ff4d4d; }
 
-#texto{
-  margin-top:20px;
-  min-height:40px;
-  text-align:center;
-  max-width:320px;
-}
+    #estado {
+        font-size: 14px;
+        opacity: 0.8;
+    }
 </style>
 </head>
 
 <body>
 
-<button id="inicio">RAVY</button>
+<!-- PANTALLA INICIO -->
+<div id="inicio">
+    <button id="btnInicio">RAVY</button>
+</div>
 
-<div id="ravy-container">
-  <div id="cara">
-    <div class="ojo izq"></div>
-    <div class="ojo der"></div>
-    <div class="boca" id="boca"></div>
-  </div>
+<!-- PANTALLA RAVY -->
+<div id="ravy">
+    <div class="cara">
+        <div class="ojos">
+            <div class="ojo"></div>
+            <div class="ojo"></div>
+        </div>
+        <div class="boca"></div>
+    </div>
 
-  <div id="botones">
-    <button class="btn listen" onclick="escuchar()">Escuchar</button>
-    <button class="btn talk" onclick="responder()">Responder</button>
-    <button class="btn rest" onclick="reposo()">Reposo</button>
-  </div>
+    <div class="botones">
+        <button class="escuchar" onclick="escuchar()">Escuchar</button>
+        <button class="responder" onclick="responder()">Responder</button>
+        <button class="reposo" onclick="reposo()">Reposo</button>
+    </div>
 
-  <div id="texto"></div>
+    <div id="estado">RAVY en espera...</div>
 </div>
 
 <script>
-// ================== RAVY NÚCLEO ==================
-const RAVY = {
-  emociones:{ alegria:50, energia:50 },
-  despierto:false,
-  presentacion:false,
-  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || {
-    saludos:[],
-    conversaciones:[],
-    datos_importantes:[]
-  }
-};
+    const inicio = document.getElementById("inicio");
+    const ravy = document.getElementById("ravy");
+    const estado = document.getElementById("estado");
 
-const boca = document.getElementById("boca");
-const texto = document.getElementById("texto");
+    let textoEscuchado = "";
 
-// ================== EXPRESIONES ==================
-function actualizarExpresiones(){
-  boca.style.transform =
-    `translateX(-50%) scaleX(${1 + RAVY.emociones.alegria/200})
-     scaleY(${0.5 + RAVY.emociones.energia/200})`;
-}
+    // Voz
+    function hablar(texto) {
+        const voz = new SpeechSynthesisUtterance(texto);
+        voz.lang = "es-ES";
+        speechSynthesis.speak(voz);
+    }
 
-// ================== INICIO ==================
-document.getElementById("inicio").onclick = ()=>{
-  document.getElementById("inicio").style.display="none";
-  document.getElementById("ravy-container").style.display="flex";
-  RAVY.despierto=true;
+    // Reconocimiento de voz
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.continuous = false;
 
-  if(!RAVY.presentacion){
-    hablar("Aquí está RAVY, tu asistente personal.");
-    RAVY.presentacion=true;
-  }
-};
+    recognition.onresult = (event) => {
+        textoEscuchado = event.results[0][0].transcript.toLowerCase();
+        estado.innerText = "Escuché: " + textoEscuchado;
+    };
 
-// ================== ESCUCHAR ==================
-function escuchar(){
-  hablar("Te escucho.");
-}
+    recognition.onerror = () => {
+        estado.innerText = "Error al escuchar";
+    };
 
-// ================== RESPONDER ==================
-function responder(){
-  const respuesta = cerebro();
-  hablar(respuesta);
-}
+    function escuchar() {
+        estado.innerText = "Escuchando...";
+        recognition.start();
+    }
 
-// ================== REPOSO ==================
-function reposo(){
-  RAVY.despierto=false;
-  document.getElementById("ravy-container").style.display="none";
-  document.getElementById("inicio").style.display="block";
-}
+    function responder() {
+        if (textoEscuchado === "") {
+            hablar("Aún no me has dicho nada");
+            return;
+        }
 
-// ================== HABLAR ==================
-function hablar(mensaje){
-  texto.innerText = mensaje;
-  RAVY.emociones.alegria = 70;
-  RAVY.emociones.energia = 70;
-  actualizarExpresiones();
-}
+        if (textoEscuchado.includes("hola")) {
+            hablar("Hola, estoy aquí para ayudarte");
+        } else if (textoEscuchado.includes("buenos días")) {
+            hablar("Buenos días, espero que tengas un gran día");
+        } else if (textoEscuchado.includes("buenas tardes")) {
+            hablar("Buenas tardes, dime en qué puedo ayudarte");
+        } else if (textoEscuchado.includes("buenas noches")) {
+            hablar("Buenas noches, descansa cuando lo necesites");
+        } else {
+            hablar("Te escuché, dime más");
+        }
+    }
 
-// ================== MEMORIA ==================
-function guardarMemoria(tipo, texto){
-  RAVY.memoria[tipo].push({
-    texto,
-    tiempo:new Date().toLocaleString()
-  });
-  localStorage.setItem("ravy_memoria", JSON.stringify(RAVY.memoria));
-}
+    function reposo() {
+        speechSynthesis.cancel();
+        recognition.abort();
+        ravy.style.display = "none";
+        inicio.style.display = "flex";
+    }
 
-// ================== CEREBRO AVANZADO ==================
-function cerebro(){
-  const saludos = ["hola","buenos dias","buenas tardes","buenas noches"];
-  const ultimoSaludo = RAVY.memoria.saludos.slice(-1)[0]?.texto || "";
-
-  if(!ultimoSaludo){
-    guardarMemoria("saludos","primer saludo");
-    return "Hola, estoy contigo.";
-  }
-
-  if(RAVY.memoria.conversaciones.length < 3){
-    guardarMemoria("conversaciones","inicio charla");
-    return "Podemos hablar, dime lo que quieras.";
-  }
-
-  return "Estoy atento, continúa.";
-}
-
-// ================== LOOP ==================
-setInterval(actualizarExpresiones,1000);
+    document.getElementById("btnInicio").onclick = () => {
+        inicio.style.display = "none";
+        ravy.style.display = "flex";
+        hablar("Hola, soy RAVY, tu asistente personal");
+        estado.innerText = "Estoy atento, dime.";
+    };
 </script>
 
 </body>
