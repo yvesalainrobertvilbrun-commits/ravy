@@ -16,7 +16,7 @@ body{
   align-items:center;
 }
 
-/* ================= INICIO ================= */
+/* ========== INICIO ========== */
 #inicio{
   display:flex;
   flex-direction:column;
@@ -25,38 +25,61 @@ body{
 }
 
 #btnInicio{
-  padding:26px 70px;
-  font-size:28px;
+  padding:28px 80px;
+  font-size:30px;
   font-weight:600;
   border:none;
-  border-radius:50px;
+  border-radius:60px;
   background:linear-gradient(135deg,#00f2ff,#007bff);
   cursor:pointer;
-  box-shadow:0 0 30px #00f2ff88;
+  box-shadow:0 0 35px #00f2ff88;
 }
 
-/* ================= RAVY ================= */
+/* ========== RAVY ========== */
 #ravy{
   display:none;
   flex-direction:column;
   align-items:center;
-  gap:22px;
+  gap:20px;
+}
+
+/* Avatar */
+#avatar{
+  width:160px;
+  height:160px;
+  border-radius:50%;
+  background:radial-gradient(circle at top,#00f2ff,#004d66);
+  box-shadow:0 0 40px #00f2ff88;
+  animation:respirar 4s ease-in-out infinite;
+}
+
+.hablando{
+  animation:hablar .4s infinite alternate;
+}
+
+@keyframes respirar{
+  0%,100%{ transform:scale(1); }
+  50%{ transform:scale(1.04); }
+}
+@keyframes hablar{
+  from{ transform:scale(1.02); }
+  to{ transform:scale(1.08); }
 }
 
 #estado{
-  font-size:18px;
+  font-size:16px;
   opacity:.85;
 }
 
-/* ================= BOTONES ================= */
+/* Botones */
 .panel{
   display:flex;
-  gap:18px;
+  gap:16px;
 }
 
 .btn{
-  min-width:120px;
-  padding:14px 18px;
+  min-width:130px;
+  padding:14px 20px;
   border:none;
   border-radius:30px;
   font-size:15px;
@@ -65,7 +88,7 @@ body{
   transition:.25s;
 }
 
-.btn:hover{ transform:scale(1.05); }
+.btn:hover{ transform:scale(1.06); }
 
 .listen{ background:#00ffb3; color:#003b2a; }
 .think{ background:#00aaff; color:#001f2f; }
@@ -73,36 +96,38 @@ body{
   background:#ff4d4d;
   color:#330000;
   margin-top:10px;
-  width:200px;
+  width:220px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- ===== INICIO ===== -->
+<!-- INICIO -->
 <div id="inicio">
   <button id="btnInicio">RAVY</button>
 </div>
 
-<!-- ===== RAVY ===== -->
+<!-- RAVY -->
 <div id="ravy">
+  <div id="avatar"></div>
   <div id="estado">Modo reposo</div>
 
   <div class="panel">
-    <button class="btn listen" onclick="escuchar()">Escuchar</button>
-    <button class="btn think" onclick="responder()">Responder</button>
+    <button class="btn listen" onclick="escuchar()">🎤 Escuchar</button>
+    <button class="btn think" onclick="responder()">🧠 Responder</button>
   </div>
 
-  <button class="btn sleep" onclick="reposo()">Reposo</button>
+  <button class="btn sleep" onclick="reposo()">💤 Reposo</button>
 </div>
 
 <script>
-/* ================= MEMORIA ================= */
+/* ================= MEMORIA NIVEL 20 ================= */
 let memoriaRavy = JSON.parse(localStorage.getItem("memoriaRavy")) || {
   usuario:{ nombre:"" },
-  historial:[],
-  personalidad:"equilibrada",
+  corto:[],
+  largo:[],
+  resumen:"",
   trato:"neutral"
 };
 
@@ -115,12 +140,13 @@ function hablar(texto){
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang="es-ES";
   voz.rate=0.95;
-  voz.pitch=1;
   speechSynthesis.cancel();
+  avatar.classList.add("hablando");
   speechSynthesis.speak(voz);
+  voz.onend=()=>avatar.classList.remove("hablando");
 }
 
-/* ================= VOZ INPUT ================= */
+/* ================= RECONOCIMIENTO ================= */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SR();
 recognition.lang="es-ES";
@@ -129,27 +155,24 @@ recognition.continuous=false;
 let ultimaEntrada="";
 
 recognition.onresult=e=>{
-  ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-  analizarTrato(ultimaEntrada);
-
-  memoriaRavy.historial.push({
-    texto:ultimaEntrada,
-    fecha:Date.now()
-  });
-
-  guardar();
+  ultimaEntrada=e.results[0][0].transcript.toLowerCase();
   estado.textContent="Escuchado. Pulsa responder.";
+
+  memoriaRavy.corto.push(ultimaEntrada);
+  if(memoriaRavy.corto.length>5){
+    crearResumen();
+    memoriaRavy.corto=[];
+  }
+  guardar();
 };
 
 /* ================= ANALISIS ================= */
-function analizarTrato(texto){
-  if(texto.includes("por favor")||texto.includes("gracias")){
-    memoriaRavy.trato="amable";
-  }else if(texto.includes("haz")||texto.includes("rápido")){
-    memoriaRavy.trato="directo";
-  }else{
-    memoriaRavy.trato="neutral";
-  }
+function crearResumen(){
+  const idea = memoriaRavy.corto.join(" | ");
+  memoriaRavy.largo.push(idea);
+  if(memoriaRavy.largo.length>20) memoriaRavy.largo.shift();
+  memoriaRavy.resumen =
+    "Últimos temas: " + memoriaRavy.largo.slice(-3).join(" / ");
 }
 
 /* ================= RESPUESTA ================= */
@@ -174,17 +197,11 @@ function responder(){
     const d=new Date();
     r=`Son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
+  else if(ultimaEntrada.includes("recuerdas")){
+    r = memoriaRavy.resumen || "Aún estoy formando recuerdos.";
+  }
   else{
-    switch(memoriaRavy.trato){
-      case "amable":
-        r="Estoy aquí contigo. Continúa.";
-        break;
-      case "directo":
-        r="Dime qué necesitas.";
-        break;
-      default:
-        r="Te escucho.";
-    }
+    r="Te escucho.";
   }
 
   hablar(r);
@@ -199,7 +216,6 @@ function escuchar(){
 
 function reposo(){
   ultimaEntrada="";
-  estado.textContent="Modo reposo";
   document.getElementById("ravy").style.display="none";
   document.getElementById("inicio").style.display="flex";
 }
