@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 29</title>
+<title>RAVY – Nivel 29.1</title>
 
 <style>
 body{
@@ -30,8 +30,8 @@ body{
   font-size:26px;
   font-weight:bold;
   color:white;
-  background:radial-gradient(circle,#4aa3ff,#003cff);
-  box-shadow:0 0 60px #4aa3ff;
+  background:radial-gradient(circle,#3f8cff,#001a66);
+  box-shadow:0 0 70px #3f8cff;
   cursor:pointer;
 }
 
@@ -54,8 +54,8 @@ body{
   font-size:14px;
   color:white;
   cursor:pointer;
-  background:linear-gradient(145deg,#0b0b1a,#1a1a3a);
-  box-shadow:0 0 20px #4aa3ff;
+  background:linear-gradient(145deg,#0a0a1f,#1a1a4a);
+  box-shadow:0 0 20px #3f8cff;
 }
 .control:hover{ transform:scale(1.06); }
 </style>
@@ -79,45 +79,47 @@ body{
 /* ================= ESCENA ================= */
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
-camera.position.z = 6;
+camera.position.z = 5;
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0x1e3cff,0.5));
+/* ================= LUZ AMBIENTE ================= */
+scene.add(new THREE.AmbientLight(0x1e3cff,0.6));
 
-/* ================= AVATAR LUZ CENTRAL ================= */
-const colorRey = 0x2f6bff;
-
-const nucleoGeo = new THREE.SphereGeometry(1,64,64);
-const nucleoMat = new THREE.MeshBasicMaterial({
-  color:colorRey,
+/* ================= PUNTO AZUL ENERGÉTICO ================= */
+const puntoGeo = new THREE.SphereGeometry(0.15,64,64);
+const puntoMat = new THREE.MeshBasicMaterial({
+  color:0x3f8cff,
   transparent:true,
-  opacity:0.85
+  opacity:1
 });
-const nucleo = new THREE.Mesh(nucleoGeo,nucleoMat);
-scene.add(nucleo);
+const punto = new THREE.Mesh(puntoGeo,puntoMat);
+scene.add(punto);
 
-/* ================= ANILLO REAL ================= */
-const anilloGeo = new THREE.TorusGeometry(1.4,0.08,32,128);
-const anilloMat = new THREE.MeshBasicMaterial({
+/* Halo energético */
+const haloGeo = new THREE.SphereGeometry(0.35,64,64);
+const haloMat = new THREE.MeshBasicMaterial({
   color:0x6fa8ff,
   transparent:true,
-  opacity:0.75
+  opacity:0.35
 });
-const anillo = new THREE.Mesh(anilloGeo,anilloMat);
-anillo.rotation.x = Math.PI/2;
-scene.add(anillo);
+const halo = new THREE.Mesh(haloGeo,haloMat);
+scene.add(halo);
 
-/* ================= MEMORIA ================= */
+/* ================= MEMORIA (NIVEL 29) ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
   emocion:{alegria:60,confianza:60},
   ultimoTema:null,
-  lenguaje:{palabrasAprendidas:{},frasesEscuchadas:0,nivelExpresion:1}
+  lenguaje:{
+    palabrasAprendidas:{},
+    frasesEscuchadas:0,
+    nivelExpresion:1
+  }
 };
 
 function guardarMemoria(){
@@ -151,21 +153,23 @@ if(SpeechRecognition){
   };
 }
 
-/* ================= APRENDER ================= */
+/* ================= APRENDIZAJE ================= */
 function aprender(texto){
   memoriaRavy.historial.push(texto);
   memoriaRavy.lenguaje.frasesEscuchadas++;
 
   texto.split(" ").forEach(p=>{
     if(p.length>3){
-      memoriaRavy.lenguaje.palabrasAprendidas[p]=(memoriaRavy.lenguaje.palabrasAprendidas[p]||0)+1;
+      memoriaRavy.lenguaje.palabrasAprendidas[p] =
+        (memoriaRavy.lenguaje.palabrasAprendidas[p]||0)+1;
     }
   });
 
-  if(memoriaRavy.lenguaje.frasesEscuchadas%4===0){
+  if(memoriaRavy.lenguaje.frasesEscuchadas % 4 === 0){
     memoriaRavy.lenguaje.nivelExpresion++;
-    memoriaRavy.emocion.confianza=Math.min(100,memoriaRavy.emocion.confianza+2);
+    memoriaRavy.emocion.confianza = Math.min(100,memoriaRavy.emocion.confianza+2);
   }
+
   guardarMemoria();
 }
 
@@ -180,21 +184,24 @@ function IA_Real(entrada){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  const nivel=memoriaRavy.lenguaje.nivelExpresion;
-  const base=[
+  const nivel = memoriaRavy.lenguaje.nivelExpresion;
+  const respuestas = [
     "Te escucho.",
     "Estoy contigo.",
     "Comprendo lo que dices.",
     "Analizo tus palabras con atención.",
-    "Cada vez entiendo más tu esencia."
+    "Cada vez aprendo más de ti."
   ];
 
-  return base.slice(0,Math.min(nivel,base.length)).join(" ");
+  return respuestas.slice(0,Math.min(nivel,respuestas.length)).join(" ");
 }
 
 /* ================= CONTROLES ================= */
 function responder(){
-  if(!ultimaEntrada){ hablar("Te escucho."); return; }
+  if(!ultimaEntrada){
+    hablar("Te escucho.");
+    return;
+  }
   hablar(IA_Real(ultimaEntrada));
   ultimaEntrada="";
 }
@@ -207,20 +214,18 @@ function activarRAVY(){
 }
 function reposo(){ location.reload(); }
 
-/* ================= ANIMACIÓN NIVEL 29 ================= */
+/* ================= ANIMACIÓN ENERGÉTICA ================= */
 let t=0;
 function animar(){
   requestAnimationFrame(animar);
-  t+=0.02;
+  t+=0.04;
 
-  const pulso = hablando ? 0.15 : 0.07;
-  nucleo.scale.setScalar(1+Math.sin(t)*pulso);
-  anillo.rotation.z += 0.01;
-  anillo.scale.setScalar(1+Math.sin(t*1.5)*pulso);
+  const pulso = hablando ? 0.25 : 0.12;
 
-  anillo.material.opacity = hablando ? 0.95 : 0.7;
-  nucleo.material.opacity = hablando ? 0.95 : 0.8;
+  punto.scale.setScalar(1 + Math.sin(t)*pulso);
+  halo.scale.setScalar(1.2 + Math.sin(t*1.5)*pulso);
 
+  halo.material.opacity = hablando ? 0.6 : 0.35;
   renderer.render(scene,camera);
 }
 
