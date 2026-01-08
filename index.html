@@ -2,231 +2,231 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>RAVY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAVY – Nivel 25</title>
 
 <style>
 body{
   margin:0;
-  height:100vh;
-  background:radial-gradient(circle at top,#0f2027,#000);
-  font-family:system-ui, Arial;
-  color:white;
+  background:black;
+  overflow:hidden;
+  font-family:Arial, sans-serif;
+}
+
+/* ---------- PANTALLA PRINCIPAL ---------- */
+#inicio{
+  position:absolute;
+  inset:0;
   display:flex;
   justify-content:center;
   align-items:center;
+  z-index:10;
 }
-#inicio{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:20px;
-}
-#btnInicio{
-  padding:28px 90px;
-  font-size:30px;
-  font-weight:600;
-  border:none;
-  border-radius:60px;
-  background:linear-gradient(135deg,#00f2ff,#007bff);
-  cursor:pointer;
-  box-shadow:0 0 40px #00f2ff88;
-  transition:.3s;
-}
-#btnInicio:hover{ transform:scale(1.08); }
-
-#ravy{
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  gap:20px;
-}
-
-#avatar{
+#inicio button{
   width:160px;
   height:160px;
   border-radius:50%;
-  background:radial-gradient(circle at top,#00f2ff,#004d66);
-  box-shadow:0 0 45px #00f2ff88;
-  animation:respirar 4s ease-in-out infinite;
-  transition:all .6s ease;
-}
-.hablando{ animation:hablar .35s infinite alternate; }
-
-@keyframes respirar{
-  0%,100%{ transform:scale(1); }
-  50%{ transform:scale(1.05); }
-}
-@keyframes hablar{
-  from{ transform:scale(1.02); }
-  to{ transform:scale(1.1); }
-}
-
-#estado{ font-size:15px; opacity:.85; }
-
-.panel{ display:flex; gap:18px; }
-
-.btn{
-  min-width:140px;
-  padding:15px 22px;
   border:none;
-  border-radius:18px;
-  font-size:15px;
-  font-weight:600;
+  font-size:26px;
+  font-weight:bold;
+  color:white;
+  background:radial-gradient(circle,#00ffff,#0066ff);
+  box-shadow:0 0 50px #00ffff;
   cursor:pointer;
-  transition:.25s;
 }
-.btn:active{ transform:scale(0.95); }
 
-.listen{ background:linear-gradient(135deg,#00ffb3,#00b37a); }
-.think{ background:linear-gradient(135deg,#00aaff,#0066cc); }
-.sleep{
-  background:linear-gradient(135deg,#ff4d4d,#b30000);
-  width:240px;
+/* ---------- CONTROLES ---------- */
+#controles{
+  position:absolute;
+  bottom:30px;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  gap:25px;
+  z-index:10;
+  display:none;
 }
+.control{
+  width:110px;
+  height:45px;
+  border-radius:30px;
+  border:none;
+  font-weight:bold;
+  font-size:14px;
+  color:white;
+  cursor:pointer;
+  background:linear-gradient(145deg,#222,#444);
+  box-shadow:0 0 15px #00ffff;
+}
+.control:hover{ transform:scale(1.05); }
 </style>
 </head>
 
 <body>
 
+<!-- 🔘 INICIO -->
 <div id="inicio">
-  <button id="btnInicio">RAVY</button>
+  <button onclick="activarRAVY()">RAVY</button>
 </div>
 
-<div id="ravy">
-  <div id="avatar"></div>
-  <div id="estado">Modo reposo</div>
-
-  <div class="panel">
-    <button class="btn listen" onclick="escuchar()">🎤 Escuchar</button>
-    <button class="btn think" onclick="responder()">🧠 Responder</button>
-  </div>
-
-  <button class="btn sleep" onclick="reposo()">💤 Reposo</button>
+<!-- 🔘 CONTROLES -->
+<div id="controles">
+  <button class="control" onclick="escuchar()">Escuchar</button>
+  <button class="control" onclick="responder()">Responder</button>
+  <button class="control" onclick="reposo()">Reposo</button>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 
 <script>
+/* ================= ESCENA ================= */
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
+camera.position.z = 6;
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff,0.7));
+const luz = new THREE.DirectionalLight(0xffffff,1);
+luz.position.set(5,10,7);
+scene.add(luz);
+
+/* ================= AVATAR ================= */
+const cuerpo = new THREE.Group();
+scene.add(cuerpo);
+
+const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
+const ropa = new THREE.MeshStandardMaterial({color:0x00aaff,transparent:true,opacity:0.7});
+
+const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
+cabeza.position.y = 1.6;
+cuerpo.add(cabeza);
+
+const boca = new THREE.Mesh(
+  new THREE.BoxGeometry(0.3,0.08,0.05),
+  new THREE.MeshStandardMaterial({color:0xff5555})
+);
+boca.position.set(0,1.45,0.45);
+cuerpo.add(boca);
+
+const ojoMat = new THREE.MeshStandardMaterial({color:0xffffff});
+const irisMat = new THREE.MeshStandardMaterial({color:0x000000});
+
+function crearOjo(x){
+  const ojo = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16),ojoMat);
+  const iris = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),irisMat);
+  ojo.position.set(x,1.65,0.45);
+  iris.position.set(x,1.65,0.52);
+  cuerpo.add(ojo,iris);
+  return {ojo,iris};
+}
+const ojoI = crearOjo(-0.15);
+const ojoD = crearOjo(0.15);
+
+const torso = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.45,0.45,1.2,32),
+  ropa
+);
+torso.position.y = 0.5;
+cuerpo.add(torso);
+
 /* ================= MEMORIA ================= */
-let memoriaRavy = JSON.parse(localStorage.getItem("memoriaRavy")) || {
-  usuario:{ nombre:"" },
-  corto:[],
-  largo:[],
-  resumen:"",
-  trato:"neutral",
-  emocion:{ alegria:60, respeto:100, confianza:50 }
+const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
+  historial:[],
+  emocion:{alegria:60,confianza:60},
+  resumen:""
 };
 
-function guardar(){
-  localStorage.setItem("memoriaRavy",JSON.stringify(memoriaRavy));
-}
-
-/* ================= NIVEL 23 ================= */
-function actualizarAvatarEmocional(){
-  const a = memoriaRavy.emocion.alegria;
-  const c = memoriaRavy.emocion.confianza;
-
-  let color1="#00f2ff", color2="#004d66", glow="#00f2ff88", speed="4s";
-
-  if(c>70 && a>70){
-    color1="#ffd700"; color2="#b8860b"; glow="#ffd700aa"; speed="2.5s";
-  }else if(a>65){
-    color1="#00ff88"; color2="#007a44"; glow="#00ff88aa"; speed="3s";
-  }else if(c<40){
-    color1="#ff4d4d"; color2="#660000"; glow="#ff4d4daa"; speed="5s";
-  }
-
-  avatar.style.background=`radial-gradient(circle at top,${color1},${color2})`;
-  avatar.style.boxShadow=`0 0 50px ${glow}`;
-  avatar.style.animationDuration=speed;
+function guardarMemoria(){
+  localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy));
 }
 
 /* ================= VOZ ================= */
 function hablar(texto){
-  const voz = new SpeechSynthesisUtterance(texto);
-  voz.lang="es-ES";
-  voz.rate = memoriaRavy.emocion.confianza>60?0.9:1;
-  voz.pitch = memoriaRavy.emocion.alegria>60?1.05:0.95;
-
-  speechSynthesis.cancel();
-  avatar.classList.add("hablando");
-  speechSynthesis.speak(voz);
-  voz.onend=()=>avatar.classList.remove("hablando");
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang="es-ES";
+  u.rate=0.95;
+  speechSynthesis.speak(u);
 }
 
-/* ================= OÍDO ================= */
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SR();
-recognition.lang="es-ES";
-recognition.continuous=false;
-
+/* ================= MIC ================= */
+let recognition;
 let ultimaEntrada="";
 
-recognition.onresult=e=>{
-  ultimaEntrada=e.results[0][0].transcript.toLowerCase();
-  estado.textContent="Escuchado. Pulsa responder.";
-
-  analizarEmocion(ultimaEntrada);
-  actualizarAvatarEmocional();
-
-  memoriaRavy.corto.push(ultimaEntrada);
-  if(memoriaRavy.corto.length>5){
-    memoriaRavy.resumen =
-      "Hemos hablado de: " + memoriaRavy.corto.slice(-3).join(", ");
-    memoriaRavy.corto=[];
-  }
-  guardar();
-};
-
-/* ================= EMOCIÓN ================= */
-function analizarEmocion(t){
-  if(t.includes("gracias")||t.includes("por favor")){
-    memoriaRavy.emocion.confianza+=5;
-    memoriaRavy.emocion.alegria+=3;
-  }
-  memoriaRavy.emocion.confianza=Math.max(0,Math.min(100,memoriaRavy.emocion.confianza));
-  memoriaRavy.emocion.alegria=Math.max(0,Math.min(100,memoriaRavy.emocion.alegria));
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
+  recognition.lang="es-ES";
+  recognition.continuous=false;
+  recognition.onresult = e=>{
+    ultimaEntrada = e.results[0][0].transcript.toLowerCase();
+    memoriaRavy.historial.push(ultimaEntrada);
+    memoriaRavy.resumen = ultimaEntrada;
+    guardarMemoria();
+    hablar("Entendido.");
+  };
 }
 
-/* ================= RESPUESTA ================= */
-function responder(){
-  if(!ultimaEntrada){ hablar("Te escucho."); return; }
-
-  let r="";
-
-  if(ultimaEntrada.includes("hola")||ultimaEntrada.includes("buenos")){
-    r = memoriaRavy.emocion.confianza>60
-      ? "Hola, me alegra escucharte."
-      : "Hola. Aquí estoy.";
-  }else if(ultimaEntrada.includes("hora")){
+/* ================= IA REAL (24) ================= */
+function IA_Real(entrada){
+  if(entrada.includes("hora")){
     const d=new Date();
-    r=`Son las ${d.getHours()} y ${d.getMinutes()}.`;
-  }else{
-    r="Te escucho.";
+    return `Son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
+  if(entrada.includes("quien eres")){
+    return "Aquí está RAVY, tu asistente personal.";
+  }
+  if(entrada.includes("buenos")){
+    return "Buenos días, estoy contigo.";
+  }
+  return "Te escucho con atención.";
+}
 
+/* ================= NIVEL 25 ================= */
+function responder(){
+  if(!ultimaEntrada){
+    hablar("No me has dicho nada aún.");
+    return;
+  }
+  const r = IA_Real(ultimaEntrada);
   hablar(r);
-  actualizarAvatarEmocional();
   ultimaEntrada="";
 }
 
 /* ================= CONTROLES ================= */
 function escuchar(){
-  estado.textContent="Escuchando...";
-  recognition.start();
-}
-function reposo(){
-  ultimaEntrada="";
-  document.getElementById("ravy").style.display="none";
-  document.getElementById("inicio").style.display="flex";
+  if(recognition) recognition.start();
 }
 
-/* ================= INICIO ================= */
-btnInicio.onclick=()=>{
-  inicio.style.display="none";
-  ravy.style.display="flex";
-  estado.textContent="Aquí está RAVY, tu asistente personal.";
-  actualizarAvatarEmocional();
+function activarRAVY(){
+  document.getElementById("inicio").style.display="none";
+  document.getElementById("controles").style.display="flex";
+  animar();
   hablar("Aquí está RAVY, tu asistente personal.");
-};
+}
+
+function reposo(){
+  location.reload();
+}
+
+/* ================= ANIMACIÓN ================= */
+let resp=0,dir=1;
+function animar(){
+  requestAnimationFrame(animar);
+  resp+=0.005*dir;
+  if(Math.abs(resp)>0.05) dir*=-1;
+  torso.position.y=0.5+resp;
+  boca.scale.y=0.8+memoriaRavy.emocion.alegria/200;
+  renderer.render(scene,camera);
+}
+
+addEventListener("resize",()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
 </script>
 
 </body>
