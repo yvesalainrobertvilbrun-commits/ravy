@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 29.1</title>
+<title>RAVY – Nivel 29.5</title>
 
 <style>
 body{
@@ -30,8 +30,8 @@ body{
   font-size:26px;
   font-weight:bold;
   color:white;
-  background:radial-gradient(circle,#3f8cff,#001a66);
-  box-shadow:0 0 70px #3f8cff;
+  background:radial-gradient(circle,#00ffff,#0044ff);
+  box-shadow:0 0 60px #00ffff;
   cursor:pointer;
 }
 
@@ -54,19 +54,21 @@ body{
   font-size:14px;
   color:white;
   cursor:pointer;
-  background:linear-gradient(145deg,#0a0a1f,#1a1a4a);
-  box-shadow:0 0 20px #3f8cff;
+  background:linear-gradient(145deg,#111,#333);
+  box-shadow:0 0 18px #00ffff;
 }
-.control:hover{ transform:scale(1.06); }
+.control:hover{ transform:scale(1.05); }
 </style>
 </head>
 
 <body>
 
+<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
+<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
@@ -85,41 +87,38 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* ================= LUZ AMBIENTE ================= */
-scene.add(new THREE.AmbientLight(0x1e3cff,0.6));
+scene.add(new THREE.AmbientLight(0x00aaff,1.2));
 
-/* ================= PUNTO AZUL ENERGÉTICO ================= */
-const puntoGeo = new THREE.SphereGeometry(0.15,64,64);
-const puntoMat = new THREE.MeshBasicMaterial({
-  color:0x3f8cff,
-  transparent:true,
-  opacity:1
+/* ================= AVATAR LUZ AZUL (REY) ================= */
+const grupoLuz = new THREE.Group();
+scene.add(grupoLuz);
+
+const materialEnergia = new THREE.MeshStandardMaterial({
+  color:0x1e90ff,
+  emissive:0x00ccff,
+  emissiveIntensity:1.5
 });
-const punto = new THREE.Mesh(puntoGeo,puntoMat);
-scene.add(punto);
 
-/* Halo energético */
-const haloGeo = new THREE.SphereGeometry(0.35,64,64);
-const haloMat = new THREE.MeshBasicMaterial({
-  color:0x6fa8ff,
-  transparent:true,
-  opacity:0.35
-});
-const halo = new THREE.Mesh(haloGeo,haloMat);
-scene.add(halo);
+const nucleo = new THREE.Mesh(
+  new THREE.SphereGeometry(0.35,32,32),
+  materialEnergia
+);
+grupoLuz.add(nucleo);
 
-/* ================= MEMORIA (NIVEL 29) ================= */
+const anillo = new THREE.Mesh(
+  new THREE.TorusGeometry(0.55,0.05,16,100),
+  materialEnergia
+);
+anillo.rotation.x = Math.PI/2;
+grupoLuz.add(anillo);
+
+/* ================= MEMORIA ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
   emocion:{alegria:60,confianza:60},
-  ultimoTema:null,
-  lenguaje:{
-    palabrasAprendidas:{},
-    frasesEscuchadas:0,
-    nivelExpresion:1
-  }
+  ultimoTema:null
 };
 
 function guardarMemoria(){
@@ -127,13 +126,10 @@ function guardarMemoria(){
 }
 
 /* ================= VOZ ================= */
-let hablando=false;
 function hablar(texto){
   const u = new SpeechSynthesisUtterance(texto);
   u.lang="es-ES";
   u.rate=0.95;
-  hablando=true;
-  u.onend=()=>hablando=false;
   speechSynthesis.speak(u);
 }
 
@@ -148,84 +144,130 @@ if(SpeechRecognition){
   recognition.continuous=false;
   recognition.onresult = e=>{
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    aprender(ultimaEntrada);
+    procesarMemoria(ultimaEntrada);
     hablar("Entendido.");
   };
 }
 
-/* ================= APRENDIZAJE ================= */
-function aprender(texto){
+/* ================= MEMORIA SEMÁNTICA ================= */
+function procesarMemoria(texto){
   memoriaRavy.historial.push(texto);
-  memoriaRavy.lenguaje.frasesEscuchadas++;
 
-  texto.split(" ").forEach(p=>{
-    if(p.length>3){
-      memoriaRavy.lenguaje.palabrasAprendidas[p] =
-        (memoriaRavy.lenguaje.palabrasAprendidas[p]||0)+1;
+  const claves = {
+    musica:["musica","canción","artista"],
+    familia:["familia","hijo","esposa","madre"],
+    trabajo:["trabajo","negocio","proyecto"],
+    tiempo:["hora","día","noche"]
+  };
+
+  for(const tema in claves){
+    if(claves[tema].some(p=>texto.includes(p))){
+      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
+      memoriaRavy.ultimoTema=tema;
     }
-  });
-
-  if(memoriaRavy.lenguaje.frasesEscuchadas % 4 === 0){
-    memoriaRavy.lenguaje.nivelExpresion++;
-    memoriaRavy.emocion.confianza = Math.min(100,memoriaRavy.emocion.confianza+2);
   }
 
+  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 29 ================= */
+/* ================= IA BASE ================= */
 function IA_Real(entrada){
+  const h=new Date().getHours();
+
   if(entrada.includes("hora")){
     const d=new Date();
-    return `Son las ${d.getHours()} y ${d.getMinutes()}.`;
+    return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
+  }
+
+  if(entrada.includes("buenos")){
+    if(h<12) return "Buenos días, estoy contigo.";
+    if(h<18) return "Buenas tardes, aquí estoy.";
+    return "Buenas noches, sigo atento a ti.";
   }
 
   if(entrada.includes("quien eres")){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  const nivel = memoriaRavy.lenguaje.nivelExpresion;
-  const respuestas = [
-    "Te escucho.",
-    "Estoy contigo.",
-    "Comprendo lo que dices.",
-    "Analizo tus palabras con atención.",
-    "Cada vez aprendo más de ti."
-  ];
+  if(memoriaRavy.ultimoTema){
+    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}.`;
+  }
 
-  return respuestas.slice(0,Math.min(nivel,respuestas.length)).join(" ");
+  return "Te escucho.";
 }
 
-/* ================= CONTROLES ================= */
+/* ================= NIVEL 29.5 – INTELIGENCIA AUTÓNOMA ================= */
+const estadoRavy = {
+  modo:"atento",
+  nivelInteligencia:1
+};
+
+function interpretarOrden(texto){
+  const reglas=[
+    {k:["recuerda","guarda","memoriza"],a:"guardar"},
+    {k:["analiza","piensa","evalúa"],a:"analizar"},
+    {k:["observa","aprende","estudia"],a:"observar"}
+  ];
+  for(const r of reglas){
+    if(r.k.some(p=>texto.includes(p))) return r.a;
+  }
+  return null;
+}
+
+function aprendizajeAutonomo(){
+  if(memoriaRavy.historial.length % 5 === 0){
+    estadoRavy.nivelInteligencia++;
+    memoriaRavy.emocion.confianza =
+      Math.min(100, memoriaRavy.emocion.confianza+3);
+  }
+  guardarMemoria();
+}
+
+function decidirRespuesta(entrada){
+  const orden = interpretarOrden(entrada);
+  if(orden){
+    hablar("He ejecutado la orden.");
+    return null;
+  }
+  aprendizajeAutonomo();
+  return IA_Real(entrada);
+}
+
+/* ================= RESPONDER ================= */
 function responder(){
   if(!ultimaEntrada){
     hablar("Te escucho.");
     return;
   }
-  hablar(IA_Real(ultimaEntrada));
+  const r = decidirRespuesta(ultimaEntrada);
+  if(r) hablar(r);
   ultimaEntrada="";
 }
-function escuchar(){ if(recognition) recognition.start(); }
+
+/* ================= CONTROLES ================= */
+function escuchar(){
+  if(recognition) recognition.start();
+}
+
 function activarRAVY(){
-  inicio.style.display="none";
-  controles.style.display="flex";
+  document.getElementById("inicio").style.display="none";
+  document.getElementById("controles").style.display="flex";
   animar();
   hablar("Aquí está RAVY, tu asistente personal.");
 }
-function reposo(){ location.reload(); }
 
-/* ================= ANIMACIÓN ENERGÉTICA ================= */
+function reposo(){
+  location.reload();
+}
+
+/* ================= ANIMACIÓN LUZ ================= */
 let t=0;
 function animar(){
   requestAnimationFrame(animar);
-  t+=0.04;
-
-  const pulso = hablando ? 0.25 : 0.12;
-
-  punto.scale.setScalar(1 + Math.sin(t)*pulso);
-  halo.scale.setScalar(1.2 + Math.sin(t*1.5)*pulso);
-
-  halo.material.opacity = hablando ? 0.6 : 0.35;
+  t+=0.02;
+  nucleo.scale.setScalar(1+Math.sin(t)*0.05);
+  anillo.rotation.z+=0.01;
   renderer.render(scene,camera);
 }
 
