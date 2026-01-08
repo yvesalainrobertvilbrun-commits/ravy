@@ -17,10 +17,30 @@ body{
   height:100vh;
 }
 
-#contenedor{
+/* ===== VISTAS ===== */
+.vista{
+  display:none;
   text-align:center;
 }
 
+.vista.activa{
+  display:block;
+}
+
+/* ===== BOTÓN INICIO ===== */
+#btnInicio{
+  width:140px;
+  height:140px;
+  border-radius:50%;
+  border:none;
+  font-size:22px;
+  font-weight:bold;
+  color:white;
+  background:linear-gradient(145deg,#00ffff,#0077ff);
+  box-shadow:0 0 40px #00ffff;
+}
+
+/* ===== RAVY ===== */
 #cara{
   width:180px;
   height:180px;
@@ -53,6 +73,7 @@ body{
   transform:translateX(-50%);
 }
 
+/* ===== BOTONES ===== */
 .botones{
   margin-top:25px;
 }
@@ -79,7 +100,13 @@ button{
 
 <body>
 
-<div id="contenedor">
+<!-- ===== PANTALLA PRINCIPAL ===== -->
+<div id="inicio" class="vista activa">
+  <button id="btnInicio">RAVY</button>
+</div>
+
+<!-- ===== RAVY ACTIVO ===== -->
+<div id="ravyApp" class="vista">
   <div id="cara">
     <div class="ojo" id="ojo1"></div>
     <div class="ojo" id="ojo2"></div>
@@ -97,13 +124,14 @@ button{
 
 <script>
 /* =====================
-   🎤 VOZ Y MEMORIA
+   🧠 ESTADO GLOBAL
 ===================== */
-
 let ultimaPregunta = "";
-
 const estado = document.getElementById("estado");
 
+/* =====================
+   🔊 HABLAR
+===================== */
 function hablar(texto){
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang = "es-ES";
@@ -112,9 +140,8 @@ function hablar(texto){
 }
 
 /* =====================
-   🎧 ESCUCHAR
+   🎤 ESCUCHAR
 ===================== */
-
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -125,7 +152,7 @@ if(SpeechRecognition){
   recognition.lang = "es-ES";
   recognition.continuous = false;
 
-  recognition.onresult = (e)=>{
+  recognition.onresult = e=>{
     ultimaPregunta = e.results[0][0].transcript.toLowerCase();
     estado.textContent = "Escuché: " + ultimaPregunta;
   };
@@ -134,32 +161,48 @@ if(SpeechRecognition){
 /* =====================
    🧠 RESPONDER
 ===================== */
-
 function responder(){
-  if(ultimaPregunta === ""){
+  if(!ultimaPregunta){
     hablar("No he escuchado nada todavía.");
     return;
   }
 
-  let respuesta = "Te escucho.";
+  let r = "Te escucho.";
 
   if(ultimaPregunta.includes("hora")){
-    const ahora = new Date();
-    respuesta = `Son las ${ahora.getHours()} con ${ahora.getMinutes()} minutos.`;
+    const d = new Date();
+    r = `Son las ${d.getHours()} con ${d.getMinutes()} minutos.`;
   }
   else if(ultimaPregunta.includes("hola")){
-    respuesta = "Hola. Estoy aquí contigo.";
+    r = "Hola. Estoy aquí contigo.";
   }
-  else if(ultimaPregunta.includes("cómo estás")){
-    respuesta = "Estoy bien y atento a ti.";
+  else if(ultimaPregunta.includes("buenos días")){
+    r = "Buenos días. Espero que tengas un gran día.";
   }
 
-  hablar(respuesta);
+  hablar(r);
+}
+
+/* =====================
+   🔁 CAMBIAR VISTAS
+===================== */
+function mostrarInicio(){
+  document.getElementById("inicio").classList.add("activa");
+  document.getElementById("ravyApp").classList.remove("activa");
+}
+
+function mostrarRavy(){
+  document.getElementById("inicio").classList.remove("activa");
+  document.getElementById("ravyApp").classList.add("activa");
 }
 
 /* =====================
    🔘 BOTONES
 ===================== */
+document.getElementById("btnInicio").onclick = ()=>{
+  mostrarRavy();
+  hablar("Aquí está RAVY, tu asistente personal.");
+};
 
 document.getElementById("escuchar").onclick = ()=>{
   if(recognition){
@@ -176,7 +219,7 @@ document.getElementById("responder").onclick = ()=>{
 document.getElementById("reposo").onclick = ()=>{
   speechSynthesis.cancel();
   ultimaPregunta = "";
-  estado.textContent = "RAVY en reposo.";
+  mostrarInicio(); // 👈 AQUÍ ESTÁ LA CLAVE
 };
 </script>
 
