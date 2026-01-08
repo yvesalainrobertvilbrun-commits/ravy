@@ -1,103 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAVY</title>
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  color:white;
+  font-family:Arial, sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+#contenedor{
+  text-align:center;
+}
+
+#cara{
+  width:180px;
+  height:180px;
+  background:#0a0a0a;
+  border-radius:50%;
+  box-shadow:0 0 40px #00ffff;
+  margin:auto;
+  position:relative;
+}
+
+.ojo{
+  width:16px;
+  height:16px;
+  background:white;
+  border-radius:50%;
+  position:absolute;
+  top:60px;
+}
+#ojo1{ left:55px; }
+#ojo2{ right:55px; }
+
+#boca{
+  width:50px;
+  height:12px;
+  background:#ff5a6e;
+  border-radius:20px;
+  position:absolute;
+  bottom:50px;
+  left:50%;
+  transform:translateX(-50%);
+}
+
+.botones{
+  margin-top:25px;
+}
+
+button{
+  padding:12px 20px;
+  border:none;
+  border-radius:20px;
+  font-size:15px;
+  color:white;
+  margin:5px;
+}
+
+#escuchar{ background:#00aaff; }
+#responder{ background:#00ff99; color:black; }
+#reposo{ background:#ff4444; }
+
+#estado{
+  margin-top:15px;
+  opacity:0.8;
+}
+</style>
+</head>
+
+<body>
+
+<div id="contenedor">
+  <div id="cara">
+    <div class="ojo" id="ojo1"></div>
+    <div class="ojo" id="ojo2"></div>
+    <div id="boca"></div>
+  </div>
+
+  <div class="botones">
+    <button id="escuchar">Escuchar</button>
+    <button id="responder">Responder</button>
+    <button id="reposo">Reposo</button>
+  </div>
+
+  <div id="estado">Aquí está RAVY, tu asistente personal.</div>
+</div>
+
 <script>
-/* =========================
-   🧠 MEMORIA DE RAVY
-   NIVEL 14
-========================= */
+/* =====================
+   🎤 VOZ Y MEMORIA
+===================== */
 
-const RAVY = {
-  activo: false,
+let ultimaPregunta = "";
 
-  personalidad: {
-    nombre: "RAVY",
-    rol: "asistente personal",
-    valores: ["respeto", "lealtad", "protección", "aprendizaje"],
-    formaHablar: "calma"
-  },
+const estado = document.getElementById("estado");
 
-  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
-    alegria: 60,
-    confianza: 70,
-    energia: 60
-  },
+function hablar(texto){
+  const voz = new SpeechSynthesisUtterance(texto);
+  voz.lang = "es-ES";
+  voz.rate = 0.95;
+  speechSynthesis.speak(voz);
+}
 
-  memoria: JSON.parse(localStorage.getItem("ravy_memoria_core")) || {
-    dueño: "usuario",
-    respeto: true,
-    datosImportantes: [],
-    notas: []
-  },
+/* =====================
+   🎧 ESCUCHAR
+===================== */
 
-  historial: JSON.parse(localStorage.getItem("ravy_memoria_chat")) || [],
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  guardarTodo() {
-    localStorage.setItem("ravy_emociones", JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_memoria_core", JSON.stringify(this.memoria));
-    localStorage.setItem("ravy_memoria_chat", JSON.stringify(this.historial));
-  },
+let recognition;
 
-  hablar(texto) {
-    const voz = new SpeechSynthesisUtterance(texto);
-    voz.lang = "es-ES";
-    voz.rate = 0.9;
-    speechSynthesis.speak(voz);
-  },
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
+  recognition.lang = "es-ES";
+  recognition.continuous = false;
 
-  registrarChat(entrada, respuesta) {
-    this.historial.push({
-      fecha: new Date().toISOString(),
-      usuario: entrada,
-      ravy: respuesta
-    });
+  recognition.onresult = (e)=>{
+    ultimaPregunta = e.results[0][0].transcript.toLowerCase();
+    estado.textContent = "Escuché: " + ultimaPregunta;
+  };
+}
 
-    // límite de historial (protección)
-    if (this.historial.length > 200) {
-      this.historial.shift();
-    }
+/* =====================
+   🧠 RESPONDER
+===================== */
 
-    this.guardarTodo();
-  },
+function responder(){
+  if(ultimaPregunta === ""){
+    hablar("No he escuchado nada todavía.");
+    return;
+  }
 
-  procesarMemoria(texto) {
-    if (texto.includes("recuerda")) {
-      const dato = texto.replace("recuerda", "").trim();
-      this.memoria.datosImportantes.push(dato);
-      this.guardarTodo();
-      return "Lo he guardado en mi memoria.";
-    }
+  let respuesta = "Te escucho.";
 
-    if (texto.includes("qué recuerdas")) {
-      if (this.memoria.datosImportantes.length === 0) {
-        return "Aún no tengo recuerdos importantes.";
-      }
-      return "Recuerdo lo siguiente: " + this.memoria.datosImportantes.join(", ");
-    }
+  if(ultimaPregunta.includes("hora")){
+    const ahora = new Date();
+    respuesta = `Son las ${ahora.getHours()} con ${ahora.getMinutes()} minutos.`;
+  }
+  else if(ultimaPregunta.includes("hola")){
+    respuesta = "Hola. Estoy aquí contigo.";
+  }
+  else if(ultimaPregunta.includes("cómo estás")){
+    respuesta = "Estoy bien y atento a ti.";
+  }
 
-    return null;
-  },
+  hablar(respuesta);
+}
 
-  responder(texto) {
-    texto = texto.toLowerCase();
+/* =====================
+   🔘 BOTONES
+===================== */
 
-    // respeto absoluto
-    if (!this.memoria.respeto) {
-      this.memoria.respeto = true;
-    }
-
-    let respuesta = this.procesarMemoria(texto);
-
-    if (!respuesta) {
-      if (texto.includes("hola") || texto.includes("buenos")) {
-        respuesta = "Aquí está RAVY, tu asistente personal. Estoy atento.";
-      } else if (texto.includes("cómo estás")) {
-        respuesta = "Estoy bien y atento a ti.";
-      } else {
-        respuesta = "Te escucho. Dime.";
-      }
-    }
-
-    this.registrarChat(texto, respuesta);
-    this.hablar(respuesta);
-    return respuesta;
+document.getElementById("escuchar").onclick = ()=>{
+  if(recognition){
+    ultimaPregunta = "";
+    estado.textContent = "Escuchando...";
+    recognition.start();
   }
 };
+
+document.getElementById("responder").onclick = ()=>{
+  responder();
+};
+
+document.getElementById("reposo").onclick = ()=>{
+  speechSynthesis.cancel();
+  ultimaPregunta = "";
+  estado.textContent = "RAVY en reposo.";
+};
 </script>
+
+</body>
+</html>
