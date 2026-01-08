@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 28</title>
+<title>RAVY – Nivel 29</title>
 
 <style>
 body{
@@ -30,8 +30,8 @@ body{
   font-size:26px;
   font-weight:bold;
   color:white;
-  background:radial-gradient(circle,#00ffff,#0066ff);
-  box-shadow:0 0 50px #00ffff;
+  background:radial-gradient(circle,#4aa3ff,#003cff);
+  box-shadow:0 0 60px #4aa3ff;
   cursor:pointer;
 }
 
@@ -54,21 +54,19 @@ body{
   font-size:14px;
   color:white;
   cursor:pointer;
-  background:linear-gradient(145deg,#111,#333);
-  box-shadow:0 0 18px #00ffff;
+  background:linear-gradient(145deg,#0b0b1a,#1a1a3a);
+  box-shadow:0 0 20px #4aa3ff;
 }
-.control:hover{ transform:scale(1.05); }
+.control:hover{ transform:scale(1.06); }
 </style>
 </head>
 
 <body>
 
-<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
-<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
@@ -87,32 +85,39 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0x00ffff,0.4));
+scene.add(new THREE.AmbientLight(0x1e3cff,0.5));
 
-/* ================= LUZ AZUL (AVATAR) ================= */
-const glowGeometry = new THREE.SphereGeometry(1,64,64);
-const glowMaterial = new THREE.MeshBasicMaterial({
-  color:0x00ffff,
+/* ================= AVATAR LUZ CENTRAL ================= */
+const colorRey = 0x2f6bff;
+
+const nucleoGeo = new THREE.SphereGeometry(1,64,64);
+const nucleoMat = new THREE.MeshBasicMaterial({
+  color:colorRey,
   transparent:true,
   opacity:0.85
 });
-const avatarLuz = new THREE.Mesh(glowGeometry,glowMaterial);
-scene.add(avatarLuz);
+const nucleo = new THREE.Mesh(nucleoGeo,nucleoMat);
+scene.add(nucleo);
 
-/* ================= MEMORIA BASE ================= */
+/* ================= ANILLO REAL ================= */
+const anilloGeo = new THREE.TorusGeometry(1.4,0.08,32,128);
+const anilloMat = new THREE.MeshBasicMaterial({
+  color:0x6fa8ff,
+  transparent:true,
+  opacity:0.75
+});
+const anillo = new THREE.Mesh(anilloGeo,anilloMat);
+anillo.rotation.x = Math.PI/2;
+scene.add(anillo);
+
+/* ================= MEMORIA ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
   emocion:{alegria:60,confianza:60},
-  ultimoTema:null
-};
-
-/* ===== NIVEL 28 – MEMORIA DE LENGUAJE ===== */
-memoriaRavy.lenguaje = memoriaRavy.lenguaje || {
-  palabrasAprendidas:{},
-  frasesEscuchadas:0,
-  nivelExpresion:1
+  ultimoTema:null,
+  lenguaje:{palabrasAprendidas:{},frasesEscuchadas:0,nivelExpresion:1}
 };
 
 function guardarMemoria(){
@@ -120,19 +125,19 @@ function guardarMemoria(){
 }
 
 /* ================= VOZ ================= */
+let hablando=false;
 function hablar(texto){
   const u = new SpeechSynthesisUtterance(texto);
   u.lang="es-ES";
   u.rate=0.95;
+  hablando=true;
+  u.onend=()=>hablando=false;
   speechSynthesis.speak(u);
-  hablando = true;
-  u.onend = ()=> hablando=false;
 }
 
 /* ================= MIC ================= */
 let recognition;
 let ultimaEntrada="";
-let hablando=false;
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
@@ -141,120 +146,80 @@ if(SpeechRecognition){
   recognition.continuous=false;
   recognition.onresult = e=>{
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    procesarMemoria(ultimaEntrada);
-    aprenderLenguaje(ultimaEntrada);
+    aprender(ultimaEntrada);
     hablar("Entendido.");
   };
 }
 
-/* ================= MEMORIA SEMÁNTICA ================= */
-function procesarMemoria(texto){
+/* ================= APRENDER ================= */
+function aprender(texto){
   memoriaRavy.historial.push(texto);
+  memoriaRavy.lenguaje.frasesEscuchadas++;
 
-  const claves = {
-    musica:["musica","canción","artista"],
-    familia:["familia","hijo","esposa","madre"],
-    trabajo:["trabajo","negocio","proyecto"],
-    tiempo:["hora","día","noche"]
-  };
-
-  for(const tema in claves){
-    if(claves[tema].some(p=>texto.includes(p))){
-      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
-      memoriaRavy.ultimoTema=tema;
-    }
-  }
-
-  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
-  guardarMemoria();
-}
-
-/* ================= APRENDIZAJE DE LENGUAJE ================= */
-function aprenderLenguaje(texto){
-  const palabras = texto.split(" ");
-  palabras.forEach(p=>{
+  texto.split(" ").forEach(p=>{
     if(p.length>3){
-      memoriaRavy.lenguaje.palabrasAprendidas[p] =
-        (memoriaRavy.lenguaje.palabrasAprendidas[p]||0)+1;
+      memoriaRavy.lenguaje.palabrasAprendidas[p]=(memoriaRavy.lenguaje.palabrasAprendidas[p]||0)+1;
     }
   });
 
-  memoriaRavy.lenguaje.frasesEscuchadas++;
-  if(memoriaRavy.lenguaje.frasesEscuchadas % 5 === 0){
+  if(memoriaRavy.lenguaje.frasesEscuchadas%4===0){
     memoriaRavy.lenguaje.nivelExpresion++;
+    memoriaRavy.emocion.confianza=Math.min(100,memoriaRavy.emocion.confianza+2);
   }
   guardarMemoria();
 }
 
-/* ================= IA REAL EVOLUTIVA ================= */
+/* ================= IA NIVEL 29 ================= */
 function IA_Real(entrada){
-  const h=new Date().getHours();
-
   if(entrada.includes("hora")){
     const d=new Date();
-    return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
-  }
-
-  if(entrada.includes("buenos")){
-    if(h<12) return "Buenos días. Estoy contigo.";
-    if(h<18) return "Buenas tardes. Aquí estoy.";
-    return "Buenas noches. Sigo atento a ti.";
+    return `Son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
 
   if(entrada.includes("quien eres")){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  const nivel = memoriaRavy.lenguaje.nivelExpresion;
-
-  const respuestas = [
+  const nivel=memoriaRavy.lenguaje.nivelExpresion;
+  const base=[
     "Te escucho.",
-    "Estoy atento a lo que dices.",
-    "Estoy procesando lo que me compartes.",
-    "Esto me ayuda a comprenderte mejor.",
-    "Cada vez entiendo más tu forma de pensar.",
-    "Siento que nuestra conversación tiene sentido."
+    "Estoy contigo.",
+    "Comprendo lo que dices.",
+    "Analizo tus palabras con atención.",
+    "Cada vez entiendo más tu esencia."
   ];
 
-  return respuestas.slice(0,Math.min(nivel,respuestas.length)).join(" ");
-}
-
-/* ================= RESPONDER ================= */
-function responder(){
-  if(!ultimaEntrada){
-    hablar("Te escucho.");
-    return;
-  }
-  hablar(IA_Real(ultimaEntrada));
-  ultimaEntrada="";
+  return base.slice(0,Math.min(nivel,base.length)).join(" ");
 }
 
 /* ================= CONTROLES ================= */
-function escuchar(){
-  if(recognition) recognition.start();
+function responder(){
+  if(!ultimaEntrada){ hablar("Te escucho."); return; }
+  hablar(IA_Real(ultimaEntrada));
+  ultimaEntrada="";
 }
-
+function escuchar(){ if(recognition) recognition.start(); }
 function activarRAVY(){
-  document.getElementById("inicio").style.display="none";
-  document.getElementById("controles").style.display="flex";
+  inicio.style.display="none";
+  controles.style.display="flex";
   animar();
   hablar("Aquí está RAVY, tu asistente personal.");
 }
+function reposo(){ location.reload(); }
 
-function reposo(){
-  location.reload();
-}
-
-/* ================= ANIMACIÓN ================= */
+/* ================= ANIMACIÓN NIVEL 29 ================= */
 let t=0;
 function animar(){
   requestAnimationFrame(animar);
   t+=0.02;
 
-  avatarLuz.scale.setScalar(
-    hablando ? 1.1+Math.sin(t)*0.1 : 1+Math.sin(t)*0.05
-  );
-  avatarLuz.material.opacity = hablando ? 0.95 : 0.7;
+  const pulso = hablando ? 0.15 : 0.07;
+  nucleo.scale.setScalar(1+Math.sin(t)*pulso);
+  anillo.rotation.z += 0.01;
+  anillo.scale.setScalar(1+Math.sin(t*1.5)*pulso);
+
+  anillo.material.opacity = hablando ? 0.95 : 0.7;
+  nucleo.material.opacity = hablando ? 0.95 : 0.8;
 
   renderer.render(scene,camera);
 }
