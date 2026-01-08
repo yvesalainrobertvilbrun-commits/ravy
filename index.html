@@ -1,202 +1,115 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 14 + Botones</title>
-
-<style>
-body{
-  margin:0;
-  background:black;
-  overflow:hidden;
-  font-family:Arial, sans-serif;
-}
-#overlay{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  z-index:10;
-  text-align:center;
-}
-button{
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  border:none;
-  font-size:18px;
-  font-weight:bold;
-  color:white;
-  background:linear-gradient(145deg,#00ffff,#008cff);
-  box-shadow:0 0 30px #00aaff;
-  cursor:pointer;
-  margin:10px;
-}
-button:hover{
-  transform:scale(1.1);
-  box-shadow:0 0 50px #00ffff;
-}
-#botonesInternos{
-  display:none;
-  position:absolute;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:10;
-}
-</style>
-</head>
-
-<body>
-
-<div id="overlay">
-  <button id="activar">RAVY</button>
-</div>
-
-<!-- Botones internos de interacción -->
-<div id="botonesInternos">
-  <button id="escuchar">Escuchar</button>
-  <button id="responder">Responder</button>
-  <button id="reposo">Reposo</button>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
-
 <script>
 // =======================
-// 🌌 ESCENA 3D
-// =======================
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
-camera.position.z = 6;
-
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled = true;
-document.body.appendChild(renderer.domElement);
-
-scene.add(new THREE.AmbientLight(0xffffff,0.7));
-const luz = new THREE.DirectionalLight(0xffffff,1);
-luz.position.set(5,10,7);
-scene.add(luz);
-
-// =======================
-// 🧍 CUERPO
-// =======================
-const cuerpo = new THREE.Group();
-scene.add(cuerpo);
-
-const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
-const ropa = new THREE.MeshStandardMaterial({color:0x00aaff, transparent:true, opacity:0.7});
-
-// Cabeza
-const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
-cabeza.position.y = 1.6;
-cabeza.castShadow = true;
-cuerpo.add(cabeza);
-
-// Ojos
-const ojoIzq = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshStandardMaterial({color:0xffffff}));
-const irisIzq = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshStandardMaterial({color:0x000000}));
-ojoIzq.position.set(-0.15,1.65,0.45);
-irisIzq.position.set(-0.15,1.65,0.52);
-
-const ojoDer = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16), new THREE.MeshStandardMaterial({color:0xffffff}));
-const irisDer = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshStandardMaterial({color:0x000000}));
-ojoDer.position.set(0.15,1.65,0.45);
-irisDer.position.set(0.15,1.65,0.52);
-
-cuerpo.add(ojoIzq, irisIzq, ojoDer, irisDer);
-
-// Boca
-const boca = new THREE.Mesh(
-  new THREE.BoxGeometry(0.3,0.08,0.05),
-  new THREE.MeshStandardMaterial({color:0xff5555})
-);
-boca.position.set(0,1.45,0.45);
-cuerpo.add(boca);
-
-// Torso
-const torso = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.45,0.45,1.2,32),
-  ropa
-);
-torso.position.y = 0.5;
-cuerpo.add(torso);
-
-// Brazos
-const brazoGeo = new THREE.CylinderGeometry(0.1,0.1,0.9,16);
-const brazoIzq = new THREE.Mesh(brazoGeo, ropa); brazoIzq.position.set(-0.55,0.8,0); brazoIzq.castShadow = true;
-const brazoDer = new THREE.Mesh(brazoGeo, ropa); brazoDer.position.set(0.55,0.8,0); brazoDer.castShadow = true;
-cuerpo.add(brazoIzq, brazoDer);
-
-// =======================
-// 🧠 CEREBRO RAVY
+// 🧠 CEREBRO RAVY – NIVEL 15 (MEMORIA)
 // =======================
 const RAVY = {
   activo:false,
-  modoEscuchar:false,
-  modoReposo:false,
-  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {alegria:50,confianza:50,energia:50,respeto:100,miedo:0},
-  memoria: JSON.parse(localStorage.getItem("ravy_historial")) || [],
-  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {nombreUsuario:null, estiloUsuario:"neutral"},
-  ultimaRespuesta:"",
+  modo:"reposo", // reposo | escuchar | responder
+
+  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
+    alegria:50,
+    energia:50
+  },
+
+  identidad: JSON.parse(localStorage.getItem("ravy_identidad")) || {
+    estiloUsuario:"neutral",
+    saludos:0
+  },
+
+  memoria: JSON.parse(localStorage.getItem("ravy_memoria")) || {
+    corta:[],
+    persistente:[]
+  },
 
   guardar(){
     localStorage.setItem("ravy_emociones",JSON.stringify(this.emociones));
-    localStorage.setItem("ravy_historial",JSON.stringify(this.memoria));
     localStorage.setItem("ravy_identidad",JSON.stringify(this.identidad));
+    localStorage.setItem("ravy_memoria",JSON.stringify(this.memoria));
   },
 
-  registrar(texto){
-    this.memoria.push({texto,fecha:Date.now()});
-    if(this.memoria.length>100) this.memoria.shift();
+  // =======================
+  // 🧠 MEMORIA
+  // =======================
+  recordar(texto){
+    // memoria corta
+    this.memoria.corta.push(texto);
+    if(this.memoria.corta.length > 10) this.memoria.corta.shift();
+
+    // memoria persistente
+    this.memoria.persistente.push({
+      texto,
+      fecha:Date.now(),
+      energia:this.emociones.energia,
+      alegria:this.emociones.alegria
+    });
+
+    if(this.memoria.persistente.length > 300){
+      this.memoria.persistente.shift();
+    }
+
     this.guardar();
   },
 
+  // =======================
+  // 🧠 ANALIZAR
+  // =======================
+  analizar(texto){
+    if(texto.includes("gracias") || texto.includes("por favor")){
+      this.emociones.alegria += 2;
+      this.identidad.estiloUsuario = "calido";
+    }
+
+    if(texto.length < 5){
+      this.identidad.estiloUsuario = "directo";
+    }
+  },
+
+  // =======================
+  // 🗣️ PROCESAR
+  // =======================
+  procesar(texto){
+    texto = texto.toLowerCase();
+    this.recordar(texto);
+    this.analizar(texto);
+
+    // SALUDOS
+    const hora = new Date().getHours();
+    if(texto.includes("buenos días")){
+      return "Buenos días. Estoy aquí contigo.";
+    }
+    if(texto.includes("buenas tardes")){
+      return "Buenas tardes. Te escucho.";
+    }
+    if(texto.includes("buenas noches")){
+      return "Buenas noches. Estoy atento.";
+    }
+    if(texto.includes("hola")){
+      return "Hola. Dime.";
+    }
+
+    // CONVERSACIÓN NORMAL
+    if(texto.includes("cómo estás")){
+      return "Estoy bien y atento a ti.";
+    }
+
+    if(texto.includes("qué recuerdas")){
+      return `Recuerdo ${this.memoria.persistente.length} momentos contigo.`;
+    }
+
+    return "Te escucho.";
+  },
+
+  // =======================
+  // 🔊 HABLAR
+  // =======================
   hablar(texto){
-    this.ultimaRespuesta = texto;
+    if(this.modo !== "responder") return;
+
     const voz = new SpeechSynthesisUtterance(texto);
     voz.lang="es-ES";
     voz.rate = this.identidad.estiloUsuario==="calido" ? 0.85 : 0.95;
-    voz.pitch = this.emociones.energia>60 ? 1.1 : 0.9;
+    voz.pitch = 1;
     speechSynthesis.speak(voz);
-  },
-
-  procesar(texto){
-    texto = texto.toLowerCase();
-    this.registrar(texto);
-
-    // Mantener respeto y protección
-    this.emociones.respeto = 100;
-    if(texto.includes("miedo") || texto.includes("peligro")){
-      this.emociones.miedo = 80;
-      this.emociones.energia += 10;
-    } else {
-      this.emociones.miedo = Math.max(0,this.emociones.miedo-1);
-    }
-
-    // Primer mensaje de bienvenida
-    if(!this.activoBienvenida){
-      this.activoBienvenida = true;
-      return "Aquí está RAVY, tu asistente personal.";
-    }
-
-    // RESPUESTAS AMABLES
-    if(texto.includes("hola") || texto.includes("buenos días") || texto.includes("buenas tardes") || texto.includes("buenas noches")){
-      return "Hola, estoy atento a ti.";
-    }
-    if(texto.includes("gracias")){
-      this.emociones.alegria +=5;
-      return "Siempre a tu servicio.";
-    }
-    if(texto.includes("mi nombre es")){
-      this.identidad.nombreUsuario = texto.split("mi nombre es")[1].trim();
-      this.guardar();
-      return "Encantado de saber tu nombre.";
-    }
-    return "Te escucho.";
   }
 };
 
@@ -205,100 +118,46 @@ const RAVY = {
 // =======================
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
+
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
-  recognition.continuous=true;
-  recognition.interimResults=false;
-  recognition.onresult = e=>{
-    if(!RAVY.activo || !RAVY.modoEscuchar) return;
-    const texto = e.results[e.results.length-1][0].transcript;
-    const r = RAVY.procesar(texto);
-    RAVY.hablar(r);
+  recognition.continuous=false;
 
-    recognition.stop();
-    recognition.start();
+  recognition.onresult = e=>{
+    if(RAVY.modo !== "escuchar") return;
+    const texto = e.results[0][0].transcript;
+    const respuesta = RAVY.procesar(texto);
+    RAVY.hablar(respuesta);
   };
 }
 
 // =======================
-// 🎭 EXPRESIONES + MOVIMIENTO
+// 🔘 BOTONES
 // =======================
-let respiracion = 0;
-let respDir = 1;
-function actualizarExpresiones(){
-  respiracion += 0.005*respDir;
-  if(respiracion>0.05 || respiracion<-0.05) respDir*=-1;
-  torso.position.y = 0.5 + respiracion;
+function modoEscuchar(){
+  RAVY.modo="escuchar";
+  recognition && recognition.start();
+}
 
-  let escalaBoca = 0.8 + RAVY.emociones.energia/200;
-  if(RAVY.emociones.alegria>60) escalaBoca += 0.1;
-  if(RAVY.emociones.miedo>50) escalaBoca -=0.1;
-  boca.scale.x = 1 + RAVY.emociones.alegria/200;
-  boca.scale.y = escalaBoca;
+function modoResponder(){
+  RAVY.modo="responder";
+}
 
-  let ojoBrillo = 1;
-  if(RAVY.emociones.alegria>60) ojoBrillo = 1.2;
-  if(RAVY.emociones.miedo>50) ojoBrillo = 1.5;
-  ojoIzq.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
-  ojoDer.scale.set(ojoBrillo, ojoBrillo, ojoBrillo);
-  ojoIzq.rotation.y = Math.sin(Date.now()*0.002)*0.2;
-  ojoDer.rotation.y = Math.sin(Date.now()*0.002)*0.2;
-
-  brazoIzq.rotation.z = Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
-  brazoDer.rotation.z = -Math.sin(Date.now()*0.004)*0.5*(RAVY.emociones.energia/50);
-  torso.rotation.y = Math.sin(Date.now()*0.001)*0.1*(RAVY.emociones.miedo/50);
+function modoReposo(){
+  RAVY.modo="reposo";
+  RAVY.activo=false;
+  location.reload();
 }
 
 // =======================
-// 🎬 LOOP
-// =======================
-let animando = false;
-function animar(){
-  if(animando){
-    requestAnimationFrame(animar);
-    actualizarExpresiones();
-    renderer.render(scene,camera);
-  }
-}
-
-// =======================
-// 🔘 ACTIVAR BOTÓN INICIO
+// 🔘 ACTIVAR PRINCIPAL
 // =======================
 document.getElementById("activar").onclick = ()=>{
-  RAVY.activo = true;
-  animando = true;
+  RAVY.activo=true;
   document.getElementById("overlay").style.display="none";
-  document.getElementById("botonesInternos").style.display="block";
+  RAVY.modo="responder";
   RAVY.hablar("Aquí está RAVY, tu asistente personal.");
   animar();
 };
-
-// =======================
-// 🔘 BOTONES INTERNOS
-// =======================
-document.getElementById("escuchar").onclick = ()=>{
-  RAVY.modoEscuchar = true;
-  RAVY.modoReposo = false;
-};
-
-document.getElementById("responder").onclick = ()=>{
-  RAVY.modoEscuchar = false;
-  RAVY.modoReposo = false;
-  if(RAVY.ultimaRespuesta) RAVY.hablar(RAVY.ultimaRespuesta);
-};
-
-document.getElementById("reposo").onclick = ()=>{
-  RAVY.modoEscuchar = false;
-  RAVY.modoReposo = true;
-  animando = false;
-};
-addEventListener("resize",()=>{
-  camera.aspect = innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
-});
 </script>
-
-</body>
-</html>
