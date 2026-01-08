@@ -25,14 +25,18 @@ body{
 }
 
 #btnInicio{
-  padding:28px 80px;
+  padding:28px 90px;
   font-size:30px;
   font-weight:600;
   border:none;
   border-radius:60px;
   background:linear-gradient(135deg,#00f2ff,#007bff);
   cursor:pointer;
-  box-shadow:0 0 35px #00f2ff88;
+  box-shadow:0 0 40px #00f2ff88;
+  transition:.3s;
+}
+#btnInicio:hover{
+  transform:scale(1.08);
 }
 
 /* ========== RAVY ========== */
@@ -49,12 +53,12 @@ body{
   height:160px;
   border-radius:50%;
   background:radial-gradient(circle at top,#00f2ff,#004d66);
-  box-shadow:0 0 40px #00f2ff88;
+  box-shadow:0 0 45px #00f2ff88;
   animation:respirar 4s ease-in-out infinite;
 }
 
 .hablando{
-  animation:hablar .4s infinite alternate;
+  animation:hablar .35s infinite alternate;
 }
 
 @keyframes respirar{
@@ -63,40 +67,69 @@ body{
 }
 @keyframes hablar{
   from{ transform:scale(1.02); }
-  to{ transform:scale(1.08); }
+  to{ transform:scale(1.09); }
 }
 
 #estado{
-  font-size:16px;
+  font-size:15px;
   opacity:.85;
 }
 
-/* Botones */
+/* ========== BOTONES PRO ========== */
 .panel{
   display:flex;
-  gap:16px;
+  gap:18px;
 }
 
 .btn{
-  min-width:130px;
-  padding:14px 20px;
+  min-width:140px;
+  padding:15px 22px;
   border:none;
-  border-radius:30px;
+  border-radius:18px;
   font-size:15px;
   font-weight:600;
   cursor:pointer;
   transition:.25s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
 }
 
-.btn:hover{ transform:scale(1.06); }
+.btn:active{
+  transform:scale(0.95);
+}
 
-.listen{ background:#00ffb3; color:#003b2a; }
-.think{ background:#00aaff; color:#001f2f; }
+/* Escuchar */
+.listen{
+  background:linear-gradient(135deg,#00ffb3,#00b37a);
+  color:#003b2a;
+  box-shadow:0 8px 20px #00ffb355;
+}
+.listen:hover{
+  box-shadow:0 12px 30px #00ffb399;
+}
+
+/* Responder */
+.think{
+  background:linear-gradient(135deg,#00aaff,#0066cc);
+  color:#001f2f;
+  box-shadow:0 8px 20px #00aaff55;
+}
+.think:hover{
+  box-shadow:0 12px 30px #00aaff99;
+}
+
+/* Reposo */
 .sleep{
-  background:#ff4d4d;
+  background:linear-gradient(135deg,#ff4d4d,#b30000);
   color:#330000;
+  width:240px;
   margin-top:10px;
-  width:220px;
+  box-shadow:0 8px 25px #ff4d4d66;
+}
+.sleep:hover{
+  box-shadow:0 12px 35px #ff4d4daa;
 }
 </style>
 </head>
@@ -122,7 +155,7 @@ body{
 </div>
 
 <script>
-/* ================= MEMORIA NIVEL 20 ================= */
+/* ================= MEMORIA ================= */
 let memoriaRavy = JSON.parse(localStorage.getItem("memoriaRavy")) || {
   usuario:{ nombre:"" },
   corto:[],
@@ -166,7 +199,7 @@ recognition.onresult=e=>{
   guardar();
 };
 
-/* ================= ANALISIS ================= */
+/* ================= MEMORIA ================= */
 function crearResumen(){
   const idea = memoriaRavy.corto.join(" | ");
   memoriaRavy.largo.push(idea);
