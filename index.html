@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 27</title>
+<title>RAVY – Nivel 28</title>
 
 <style>
 body{
@@ -23,15 +23,15 @@ body{
   z-index:10;
 }
 #inicio button{
-  width:170px;
-  height:170px;
+  width:160px;
+  height:160px;
   border-radius:50%;
   border:none;
-  font-size:28px;
+  font-size:26px;
   font-weight:bold;
   color:white;
-  background:radial-gradient(circle,#00ffff,#0044ff);
-  box-shadow:0 0 60px #00ffff;
+  background:radial-gradient(circle,#00ffff,#0066ff);
+  box-shadow:0 0 50px #00ffff;
   cursor:pointer;
 }
 
@@ -46,27 +46,29 @@ body{
   z-index:10;
 }
 .control{
-  width:130px;
-  height:50px;
-  border-radius:35px;
+  width:120px;
+  height:48px;
+  border-radius:30px;
   border:none;
   font-weight:bold;
   font-size:14px;
   color:white;
   cursor:pointer;
-  background:linear-gradient(145deg,#0a0a0a,#2a2a2a);
-  box-shadow:0 0 20px #00ffff;
+  background:linear-gradient(145deg,#111,#333);
+  box-shadow:0 0 18px #00ffff;
 }
-.control:hover{ transform:scale(1.08); }
+.control:hover{ transform:scale(1.05); }
 </style>
 </head>
 
 <body>
 
+<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
+<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
@@ -78,54 +80,26 @@ body{
 <script>
 /* ================= ESCENA ================= */
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,1000);
+const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
 camera.position.z = 6;
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
-renderer.setPixelRatio(devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-/* ================= LUCES BASE ================= */
-scene.add(new THREE.AmbientLight(0x003366,0.6));
+scene.add(new THREE.AmbientLight(0x00ffff,0.4));
 
-/* ================= AVATAR (NO SE BORRA) ================= */
-const cuerpo = new THREE.Group();
-scene.add(cuerpo);
-
-/* ================= NIVEL 27 – NÚCLEO DE IA ================= */
-
-/* Núcleo */
-const nucleoMat = new THREE.MeshStandardMaterial({
+/* ================= LUZ AZUL (AVATAR) ================= */
+const glowGeometry = new THREE.SphereGeometry(1,64,64);
+const glowMaterial = new THREE.MeshBasicMaterial({
   color:0x00ffff,
-  emissive:0x00ccff,
-  emissiveIntensity:1.2,
   transparent:true,
-  opacity:0.9
+  opacity:0.85
 });
+const avatarLuz = new THREE.Mesh(glowGeometry,glowMaterial);
+scene.add(avatarLuz);
 
-const nucleo = new THREE.Mesh(
-  new THREE.SphereGeometry(0.6,64,64),
-  nucleoMat
-);
-scene.add(nucleo);
-
-/* Halo */
-const halo = new THREE.Mesh(
-  new THREE.TorusGeometry(1.1,0.05,32,100),
-  new THREE.MeshBasicMaterial({
-    color:0x00ffff,
-    transparent:true,
-    opacity:0.7
-  })
-);
-scene.add(halo);
-
-/* Luz dinámica */
-const luzAzul = new THREE.PointLight(0x00ffff,2.5,10);
-scene.add(luzAzul);
-
-/* ================= MEMORIA ================= */
+/* ================= MEMORIA BASE ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
@@ -134,33 +108,41 @@ const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   ultimoTema:null
 };
 
+/* ===== NIVEL 28 – MEMORIA DE LENGUAJE ===== */
+memoriaRavy.lenguaje = memoriaRavy.lenguaje || {
+  palabrasAprendidas:{},
+  frasesEscuchadas:0,
+  nivelExpresion:1
+};
+
 function guardarMemoria(){
   localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy));
 }
 
 /* ================= VOZ ================= */
-let hablando = false;
-
 function hablar(texto){
-  hablando = true;
   const u = new SpeechSynthesisUtterance(texto);
   u.lang="es-ES";
   u.rate=0.95;
-  u.onend = ()=> hablando=false;
   speechSynthesis.speak(u);
+  hablando = true;
+  u.onend = ()=> hablando=false;
 }
 
 /* ================= MIC ================= */
 let recognition;
 let ultimaEntrada="";
+let hablando=false;
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
+  recognition.continuous=false;
   recognition.onresult = e=>{
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
     procesarMemoria(ultimaEntrada);
+    aprenderLenguaje(ultimaEntrada);
     hablar("Entendido.");
   };
 }
@@ -168,20 +150,83 @@ if(SpeechRecognition){
 /* ================= MEMORIA SEMÁNTICA ================= */
 function procesarMemoria(texto){
   memoriaRavy.historial.push(texto);
-  if(texto.includes("hora")) memoriaRavy.ultimoTema="el tiempo";
+
+  const claves = {
+    musica:["musica","canción","artista"],
+    familia:["familia","hijo","esposa","madre"],
+    trabajo:["trabajo","negocio","proyecto"],
+    tiempo:["hora","día","noche"]
+  };
+
+  for(const tema in claves){
+    if(claves[tema].some(p=>texto.includes(p))){
+      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
+      memoriaRavy.ultimoTema=tema;
+    }
+  }
+
+  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
   guardarMemoria();
 }
 
-/* ================= IA ================= */
+/* ================= APRENDIZAJE DE LENGUAJE ================= */
+function aprenderLenguaje(texto){
+  const palabras = texto.split(" ");
+  palabras.forEach(p=>{
+    if(p.length>3){
+      memoriaRavy.lenguaje.palabrasAprendidas[p] =
+        (memoriaRavy.lenguaje.palabrasAprendidas[p]||0)+1;
+    }
+  });
+
+  memoriaRavy.lenguaje.frasesEscuchadas++;
+  if(memoriaRavy.lenguaje.frasesEscuchadas % 5 === 0){
+    memoriaRavy.lenguaje.nivelExpresion++;
+  }
+  guardarMemoria();
+}
+
+/* ================= IA REAL EVOLUTIVA ================= */
 function IA_Real(entrada){
+  const h=new Date().getHours();
+
   if(entrada.includes("hora")){
     const d=new Date();
     return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
-  if(entrada.includes("quien eres")){
-    return "Soy RAVY, una inteligencia diseñada para acompañarte.";
+
+  if(entrada.includes("buenos")){
+    if(h<12) return "Buenos días. Estoy contigo.";
+    if(h<18) return "Buenas tardes. Aquí estoy.";
+    return "Buenas noches. Sigo atento a ti.";
   }
-  return "Te escucho con atención.";
+
+  if(entrada.includes("quien eres")){
+    return "Aquí está RAVY, tu asistente personal.";
+  }
+
+  const nivel = memoriaRavy.lenguaje.nivelExpresion;
+
+  const respuestas = [
+    "Te escucho.",
+    "Estoy atento a lo que dices.",
+    "Estoy procesando lo que me compartes.",
+    "Esto me ayuda a comprenderte mejor.",
+    "Cada vez entiendo más tu forma de pensar.",
+    "Siento que nuestra conversación tiene sentido."
+  ];
+
+  return respuestas.slice(0,Math.min(nivel,respuestas.length)).join(" ");
+}
+
+/* ================= RESPONDER ================= */
+function responder(){
+  if(!ultimaEntrada){
+    hablar("Te escucho.");
+    return;
+  }
+  hablar(IA_Real(ultimaEntrada));
+  ultimaEntrada="";
 }
 
 /* ================= CONTROLES ================= */
@@ -189,43 +234,27 @@ function escuchar(){
   if(recognition) recognition.start();
 }
 
-function responder(){
-  if(!ultimaEntrada){
-    hablar("Estoy atento.");
-    return;
-  }
-  hablar(IA_Real(ultimaEntrada));
-  ultimaEntrada="";
-}
-
 function activarRAVY(){
   document.getElementById("inicio").style.display="none";
   document.getElementById("controles").style.display="flex";
   animar();
-  hablar("RAVY activado.");
+  hablar("Aquí está RAVY, tu asistente personal.");
 }
 
 function reposo(){
   location.reload();
 }
 
-/* ================= ANIMACIÓN NIVEL 27 ================= */
+/* ================= ANIMACIÓN ================= */
 let t=0;
 function animar(){
   requestAnimationFrame(animar);
-  t+=0.01;
+  t+=0.02;
 
-  nucleo.scale.setScalar(1 + Math.sin(t*2)*0.05);
-  halo.rotation.x += 0.003;
-  halo.rotation.y += 0.006;
-
-  if(hablando){
-    luzAzul.intensity = 3 + Math.sin(t*10);
-    nucleo.material.emissiveIntensity = 2;
-  }else{
-    luzAzul.intensity = 2;
-    nucleo.material.emissiveIntensity = 1.2;
-  }
+  avatarLuz.scale.setScalar(
+    hablando ? 1.1+Math.sin(t)*0.1 : 1+Math.sin(t)*0.05
+  );
+  avatarLuz.material.opacity = hablando ? 0.95 : 0.7;
 
   renderer.render(scene,camera);
 }
