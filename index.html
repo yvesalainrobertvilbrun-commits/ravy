@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 25</title>
+<title>RAVY – Nivel 26</title>
 
 <style>
 body{
@@ -13,7 +13,7 @@ body{
   font-family:Arial, sans-serif;
 }
 
-/* ---------- PANTALLA PRINCIPAL ---------- */
+/* ---------- INICIO ---------- */
 #inicio{
   position:absolute;
   inset:0;
@@ -38,25 +38,24 @@ body{
 /* ---------- CONTROLES ---------- */
 #controles{
   position:absolute;
-  bottom:30px;
+  bottom:25px;
   width:100%;
-  display:flex;
+  display:none;
   justify-content:center;
   gap:25px;
   z-index:10;
-  display:none;
 }
 .control{
-  width:110px;
-  height:45px;
+  width:120px;
+  height:48px;
   border-radius:30px;
   border:none;
   font-weight:bold;
   font-size:14px;
   color:white;
   cursor:pointer;
-  background:linear-gradient(145deg,#222,#444);
-  box-shadow:0 0 15px #00ffff;
+  background:linear-gradient(145deg,#111,#333);
+  box-shadow:0 0 18px #00ffff;
 }
 .control:hover{ transform:scale(1.05); }
 </style>
@@ -64,12 +63,12 @@ body{
 
 <body>
 
-<!-- 🔘 INICIO -->
+<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
-<!-- 🔘 CONTROLES -->
+<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
@@ -88,55 +87,31 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff,0.7));
-const luz = new THREE.DirectionalLight(0xffffff,1);
-luz.position.set(5,10,7);
-scene.add(luz);
+/* ================= LUZ AZUL (RAVY) ================= */
+scene.add(new THREE.AmbientLight(0x0088ff,0.4));
 
-/* ================= AVATAR ================= */
-const cuerpo = new THREE.Group();
-scene.add(cuerpo);
+const luzRavy = new THREE.PointLight(0x00ffff,2,10);
+scene.add(luzRavy);
 
-const piel = new THREE.MeshStandardMaterial({color:0xffd1b3});
-const ropa = new THREE.MeshStandardMaterial({color:0x00aaff,transparent:true,opacity:0.7});
-
-const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.5,32,32),piel);
-cabeza.position.y = 1.6;
-cuerpo.add(cabeza);
-
-const boca = new THREE.Mesh(
-  new THREE.BoxGeometry(0.3,0.08,0.05),
-  new THREE.MeshStandardMaterial({color:0xff5555})
+const esferaRavy = new THREE.Mesh(
+  new THREE.SphereGeometry(0.6,64,64),
+  new THREE.MeshStandardMaterial({
+    color:0x00ffff,
+    emissive:0x0088ff,
+    emissiveIntensity:1,
+    transparent:true,
+    opacity:0.9
+  })
 );
-boca.position.set(0,1.45,0.45);
-cuerpo.add(boca);
-
-const ojoMat = new THREE.MeshStandardMaterial({color:0xffffff});
-const irisMat = new THREE.MeshStandardMaterial({color:0x000000});
-
-function crearOjo(x){
-  const ojo = new THREE.Mesh(new THREE.SphereGeometry(0.08,16,16),ojoMat);
-  const iris = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16),irisMat);
-  ojo.position.set(x,1.65,0.45);
-  iris.position.set(x,1.65,0.52);
-  cuerpo.add(ojo,iris);
-  return {ojo,iris};
-}
-const ojoI = crearOjo(-0.15);
-const ojoD = crearOjo(0.15);
-
-const torso = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.45,0.45,1.2,32),
-  ropa
-);
-torso.position.y = 0.5;
-cuerpo.add(torso);
+scene.add(esferaRavy);
 
 /* ================= MEMORIA ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
+  temas:{},
+  preferencias:{},
   emocion:{alegria:60,confianza:60},
-  resumen:""
+  ultimoTema:null
 };
 
 function guardarMemoria(){
@@ -144,10 +119,16 @@ function guardarMemoria(){
 }
 
 /* ================= VOZ ================= */
+let hablando = false;
+
 function hablar(texto){
   const u = new SpeechSynthesisUtterance(texto);
   u.lang="es-ES";
   u.rate=0.95;
+
+  u.onstart = ()=> hablando = true;
+  u.onend = ()=> hablando = false;
+
   speechSynthesis.speak(u);
 }
 
@@ -162,36 +143,70 @@ if(SpeechRecognition){
   recognition.continuous=false;
   recognition.onresult = e=>{
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    memoriaRavy.historial.push(ultimaEntrada);
-    memoriaRavy.resumen = ultimaEntrada;
-    guardarMemoria();
+    procesarMemoria(ultimaEntrada);
     hablar("Entendido.");
   };
 }
 
-/* ================= IA REAL (24) ================= */
+/* ================= MEMORIA SEMÁNTICA ================= */
+function procesarMemoria(texto){
+  memoriaRavy.historial.push(texto);
+
+  const claves = {
+    musica:["musica","canción","artista"],
+    familia:["familia","hijo","esposa","madre"],
+    trabajo:["trabajo","negocio","proyecto"],
+    tiempo:["hora","día","noche"]
+  };
+
+  for(const tema in claves){
+    if(claves[tema].some(p=>texto.includes(p))){
+      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
+      memoriaRavy.ultimoTema=tema;
+    }
+  }
+
+  if(texto.includes("me gusta")){
+    memoriaRavy.preferencias[texto]=true;
+  }
+
+  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
+  guardarMemoria();
+}
+
+/* ================= IA ================= */
 function IA_Real(entrada){
+  const h = new Date().getHours();
+
   if(entrada.includes("hora")){
     const d=new Date();
-    return `Son las ${d.getHours()} y ${d.getMinutes()}.`;
+    return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
+
+  if(entrada.includes("buenos")){
+    if(h<12) return "Buenos días, estoy contigo.";
+    if(h<18) return "Buenas tardes, aquí estoy.";
+    return "Buenas noches, sigo atento a ti.";
+  }
+
   if(entrada.includes("quien eres")){
     return "Aquí está RAVY, tu asistente personal.";
   }
-  if(entrada.includes("buenos")){
-    return "Buenos días, estoy contigo.";
+
+  if(memoriaRavy.ultimoTema){
+    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}.`;
   }
+
   return "Te escucho con atención.";
 }
 
-/* ================= NIVEL 25 ================= */
+/* ================= RESPONDER ================= */
 function responder(){
   if(!ultimaEntrada){
-    hablar("No me has dicho nada aún.");
+    hablar("Aún no me has dicho nada.");
     return;
   }
-  const r = IA_Real(ultimaEntrada);
-  hablar(r);
+  hablar(IA_Real(ultimaEntrada));
   ultimaEntrada="";
 }
 
@@ -212,13 +227,17 @@ function reposo(){
 }
 
 /* ================= ANIMACIÓN ================= */
-let resp=0,dir=1;
+let t=0;
 function animar(){
   requestAnimationFrame(animar);
-  resp+=0.005*dir;
-  if(Math.abs(resp)>0.05) dir*=-1;
-  torso.position.y=0.5+resp;
-  boca.scale.y=0.8+memoriaRavy.emocion.alegria/200;
+  t+=0.01;
+
+  esferaRavy.position.y = Math.sin(t)*0.3;
+  esferaRavy.scale.setScalar(hablando ? 1.2 : 1);
+
+  luzRavy.position.copy(esferaRavy.position);
+  luzRavy.intensity = hablando ? 3 : 1.5;
+
   renderer.render(scene,camera);
 }
 
