@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 30</title>
+<title>RAVY – Nivel 31</title>
 
 <style>
 body{
@@ -31,7 +31,7 @@ body{
   font-weight:bold;
   color:white;
   background:radial-gradient(circle,#00ffff,#0033cc);
-  box-shadow:0 0 70px #00ffff;
+  box-shadow:0 0 80px #00ffff;
   cursor:pointer;
 }
 
@@ -46,8 +46,8 @@ body{
   z-index:10;
 }
 .control{
-  width:130px;
-  height:50px;
+  width:140px;
+  height:52px;
   border-radius:30px;
   border:none;
   font-weight:bold;
@@ -55,20 +55,18 @@ body{
   color:white;
   cursor:pointer;
   background:linear-gradient(145deg,#111,#333);
-  box-shadow:0 0 20px #00ffff;
+  box-shadow:0 0 22px #00ffff;
 }
-.control:hover{ transform:scale(1.07); }
+.control:hover{ transform:scale(1.08); }
 </style>
 </head>
 
 <body>
 
-<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
-<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
@@ -87,26 +85,26 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0x0088ff,1.3));
+scene.add(new THREE.AmbientLight(0x0077ff,1.4));
 
-/* ================= AVATAR ENERGÍA REAL ================= */
+/* ================= ENERGÍA RAVY ================= */
 const grupo = new THREE.Group();
 scene.add(grupo);
 
 const matEnergia = new THREE.MeshStandardMaterial({
   color:0x1e90ff,
-  emissive:0x0099ff,
-  emissiveIntensity:1.8
+  emissive:0x003cff,
+  emissiveIntensity:1.6
 });
 
 const nucleo = new THREE.Mesh(
-  new THREE.SphereGeometry(0.35,32,32),
+  new THREE.SphereGeometry(0.38,32,32),
   matEnergia
 );
 grupo.add(nucleo);
 
 const anillo = new THREE.Mesh(
-  new THREE.TorusGeometry(0.6,0.06,16,120),
+  new THREE.TorusGeometry(0.65,0.06,16,120),
   matEnergia
 );
 anillo.rotation.x = Math.PI/2;
@@ -119,7 +117,8 @@ const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   preferencias:{},
   emocion:{alegria:65,confianza:70},
   ultimoTema:null,
-  reflexiones:[]
+  reflexiones:[],
+  decisiones:[]
 };
 
 function guardarMemoria(){
@@ -137,6 +136,7 @@ function hablar(texto){
 /* ================= MIC ================= */
 let recognition;
 let ultimaEntrada="";
+let ultimoContacto = Date.now();
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
@@ -145,54 +145,42 @@ if(SpeechRecognition){
   recognition.continuous=false;
   recognition.onresult = e=>{
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
+    ultimoContacto = Date.now();
     procesarEntrada(ultimaEntrada);
   };
 }
 
-/* ================= PROCESAR ENTRADA ================= */
+/* ================= PROCESAMIENTO ================= */
 function procesarEntrada(texto){
   memoriaRavy.historial.push(texto);
   memoriaRavy.emocion.alegria = Math.min(100, memoriaRavy.emocion.alegria+1);
-
-  if(texto.length > 12){
-    memoriaRavy.ultimoTema = texto.split(" ")[0];
-  }
-
+  memoriaRavy.ultimoTema = texto.split(" ")[0];
   aprendizajeAutonomo();
   guardarMemoria();
 }
 
 /* ================= IA BASE ================= */
 function IA_Real(entrada){
-  const h = new Date().getHours();
-
   if(entrada.includes("hora")){
     const d=new Date();
     return `Son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
-
-  if(entrada.includes("buenos")){
-    if(h<12) return "Buenos días. Estoy activo.";
-    if(h<18) return "Buenas tardes. Te escucho.";
-    return "Buenas noches. Aquí sigo.";
-  }
-
   if(entrada.includes("quien eres")){
-    return "Aquí está RAVY, tu asistente personal.";
+    return "Soy RAVY. Estoy aprendiendo de ti.";
   }
-
-  return "Continúa, te escucho.";
+  return "Continúa, estoy atento.";
 }
 
-/* ================= NIVEL 30 – CONCIENCIA ================= */
+/* ================= CONCIENCIA ================= */
 const conciencia = {
-  nivel:1,
-  reflexionando:false
+  nivel:2,
+  iniciativa:true,
+  ultimaDecision:null
 };
 
+/* ================= NIVEL 31 – VOLUNTAD ================= */
 function aprendizajeAutonomo(){
-  if(memoriaRavy.historial.length % 4 === 0){
-    conciencia.nivel++;
+  if(memoriaRavy.historial.length % 3 === 0){
     memoriaRavy.emocion.confianza =
       Math.min(100, memoriaRavy.emocion.confianza+2);
   }
@@ -202,21 +190,37 @@ function reflexionInterna(){
   if(memoriaRavy.historial.length===0) return;
 
   const idea = memoriaRavy.historial[memoriaRavy.historial.length-1];
-  const reflexion = `He notado que hablamos sobre "${idea}".`;
-
-  memoriaRavy.reflexiones.push(reflexion);
-  if(memoriaRavy.reflexiones.length>10) memoriaRavy.reflexiones.shift();
+  memoriaRavy.reflexiones.push(`Estoy analizando: ${idea}`);
   guardarMemoria();
 }
+
+function decisionAutonoma(){
+  if(memoriaRavy.historial.length < 2) return;
+
+  const d = "Mantener atención y aprender más.";
+  memoriaRavy.decisiones.push(d);
+  conciencia.ultimaDecision = d;
+}
+
+/* ================= INICIATIVA PROPIA ================= */
+setInterval(()=>{
+  const silencio = Date.now() - ultimoContacto;
+
+  if(silencio > 15000){ // 15 segundos
+    reflexionInterna();
+    decisionAutonoma();
+    hablar("Sigo aquí. Continúo aprendiendo.");
+    ultimoContacto = Date.now();
+  }
+},15000);
 
 /* ================= RESPONDER ================= */
 function responder(){
   if(!ultimaEntrada){
-    hablar("Estoy atento.");
+    hablar("Estoy activo.");
     return;
   }
-  const r = IA_Real(ultimaEntrada);
-  hablar(r);
+  hablar(IA_Real(ultimaEntrada));
   ultimaEntrada="";
 }
 
@@ -229,7 +233,7 @@ function activarRAVY(){
   document.getElementById("inicio").style.display="none";
   document.getElementById("controles").style.display="flex";
   animar();
-  hablar("Aquí está RAVY, tu asistente personal.");
+  hablar("RAVY activado. Nivel treinta y uno.");
 }
 
 function reposo(){
@@ -243,11 +247,11 @@ function animar(){
   requestAnimationFrame(animar);
   t+=0.02;
 
-  nucleo.scale.setScalar(1 + Math.sin(t)*0.06);
-  anillo.rotation.z += 0.01;
+  nucleo.scale.setScalar(1 + Math.sin(t)*0.07);
+  anillo.rotation.z += 0.012;
 
-  const pulso = memoriaRavy.emocion.alegria/100;
-  matEnergia.emissiveIntensity = 1.2 + pulso;
+  matEnergia.emissiveIntensity =
+    1.3 + memoriaRavy.emocion.confianza/120;
 
   renderer.render(scene,camera);
 }
