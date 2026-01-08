@@ -97,7 +97,8 @@ body{
 
 let memoriaRavy = JSON.parse(localStorage.getItem("memoriaRavy")) || {
   usuario:{ nombre:"" },
-  historial:[]
+  historial:[],
+  emocion:"neutral"
 };
 
 function guardarMemoria(){
@@ -125,8 +126,11 @@ recognition.onresult = e=>{
   ultimaPregunta = e.results[0][0].transcript.toLowerCase();
   ultimaIntencion = ultimaPregunta;
 
+  detectarEmocion(ultimaPregunta);
+
   memoriaRavy.historial.push({
     texto: ultimaPregunta,
+    emocion: memoriaRavy.emocion,
     fecha: Date.now()
   });
 
@@ -139,6 +143,28 @@ recognition.onresult = e=>{
 };
 
 /* ===============================
+   EMOCIONES
+================================ */
+
+function detectarEmocion(texto){
+  if(texto.includes("triste") || texto.includes("mal") || texto.includes("deprimido")){
+    memoriaRavy.emocion = "triste";
+  }
+  else if(texto.includes("feliz") || texto.includes("contento") || texto.includes("bien")){
+    memoriaRavy.emocion = "feliz";
+  }
+  else if(texto.includes("cansado") || texto.includes("agotado")){
+    memoriaRavy.emocion = "cansado";
+  }
+  else if(texto.includes("molesto") || texto.includes("enojado")){
+    memoriaRavy.emocion = "molesto";
+  }
+  else{
+    memoriaRavy.emocion = "neutral";
+  }
+}
+
+/* ===============================
    SÍNTESIS DE VOZ
 ================================ */
 
@@ -149,13 +175,8 @@ function hablar(texto){
 }
 
 /* ===============================
-   FUNCIONES DE CONTROL
+   RESPUESTA INTELIGENTE
 ================================ */
-
-function escuchar(){
-  estado.textContent = "Escuchando...";
-  recognition.start();
-}
 
 function responder(){
   if(!ultimaIntencion){
@@ -164,38 +185,49 @@ function responder(){
   }
 
   let respuesta = "";
-  const hora = new Date().getHours();
 
-  if(ultimaIntencion.includes("buenos días")){
-    respuesta = "Buenos días. Aquí está RAVY, atento a ti.";
-  }
-  else if(ultimaIntencion.includes("buenas tardes")){
-    respuesta = "Buenas tardes. Dime, te escucho.";
-  }
-  else if(ultimaIntencion.includes("buenas noches")){
-    respuesta = "Buenas noches. Estoy aquí contigo.";
-  }
-  else if(ultimaIntencion.includes("hola")){
-    respuesta = memoriaRavy.usuario.nombre
-      ? `Hola ${memoriaRavy.usuario.nombre}, dime.`
-      : "Hola, dime.";
-  }
-  else if(ultimaIntencion.includes("mi nombre es")){
+  if(ultimaIntencion.includes("mi nombre es")){
     memoriaRavy.usuario.nombre =
       ultimaIntencion.split("mi nombre es")[1].trim();
     guardarMemoria();
     respuesta = "Perfecto, recordaré tu nombre.";
   }
-  else if(ultimaIntencion.includes("hora")){
-    const d = new Date();
-    respuesta = `Son las ${d.getHours()} con ${d.getMinutes()} minutos.`;
+  else if(ultimaIntencion.includes("hola")){
+    respuesta = memoriaRavy.usuario.nombre
+      ? `Hola ${memoriaRavy.usuario.nombre}, aquí estoy.`
+      : "Hola, aquí está RAVY.";
   }
   else{
-    respuesta = "Te escucho. Continúa.";
+    // RESPUESTA SEGÚN EMOCIÓN
+    switch(memoriaRavy.emocion){
+      case "triste":
+        respuesta = "Noto que estás triste. Estoy contigo, no estás solo.";
+        break;
+      case "feliz":
+        respuesta = "Me alegra sentir tu felicidad.";
+        break;
+      case "cansado":
+        respuesta = "Tal vez necesitas descansar un poco.";
+        break;
+      case "molesto":
+        respuesta = "Entiendo tu molestia. Respiremos un momento.";
+        break;
+      default:
+        respuesta = "Te escucho, continúa.";
+    }
   }
 
   ultimaRespuesta = respuesta;
   hablar(respuesta);
+}
+
+/* ===============================
+   CONTROLES
+================================ */
+
+function escuchar(){
+  estado.textContent = "Escuchando...";
+  recognition.start();
 }
 
 function reposo(){
@@ -213,7 +245,7 @@ function reposo(){
 btnInicio.onclick = ()=>{
   document.getElementById("inicio").style.display="none";
   document.getElementById("ravy").style.display="flex";
-  estado.textContent = "Aquí está RAVY, tu asistente personal.";
+  estado.textContent = "RAVY activo. Te escucho.";
 };
 </script>
 
