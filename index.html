@@ -48,16 +48,17 @@ body{
   background:radial-gradient(circle at top,#00f2ff,#004d66);
   box-shadow:0 0 45px #00f2ff88;
   animation:respirar 4s ease-in-out infinite;
+  transition:all .6s ease;
 }
 .hablando{ animation:hablar .35s infinite alternate; }
 
 @keyframes respirar{
   0%,100%{ transform:scale(1); }
-  50%{ transform:scale(1.04); }
+  50%{ transform:scale(1.05); }
 }
 @keyframes hablar{
   from{ transform:scale(1.02); }
-  to{ transform:scale(1.09); }
+  to{ transform:scale(1.1); }
 }
 
 #estado{ font-size:15px; opacity:.85; }
@@ -76,12 +77,8 @@ body{
 }
 .btn:active{ transform:scale(0.95); }
 
-.listen{
-  background:linear-gradient(135deg,#00ffb3,#00b37a);
-}
-.think{
-  background:linear-gradient(135deg,#00aaff,#0066cc);
-}
+.listen{ background:linear-gradient(135deg,#00ffb3,#00b37a); }
+.think{ background:linear-gradient(135deg,#00aaff,#0066cc); }
 .sleep{
   background:linear-gradient(135deg,#ff4d4d,#b30000);
   width:240px;
@@ -108,34 +105,46 @@ body{
 </div>
 
 <script>
-/* ================= MEMORIA BASE ================= */
+/* ================= MEMORIA ================= */
 let memoriaRavy = JSON.parse(localStorage.getItem("memoriaRavy")) || {
   usuario:{ nombre:"" },
   corto:[],
   largo:[],
   resumen:"",
   trato:"neutral",
-
-  /* 🔥 NIVEL 22: MEMORIA EMOCIONAL */
-  emocion:{
-    alegria:60,
-    respeto:100,
-    confianza:50
-  }
+  emocion:{ alegria:60, respeto:100, confianza:50 }
 };
 
 function guardar(){
   localStorage.setItem("memoriaRavy",JSON.stringify(memoriaRavy));
 }
 
+/* ================= NIVEL 23 ================= */
+function actualizarAvatarEmocional(){
+  const a = memoriaRavy.emocion.alegria;
+  const c = memoriaRavy.emocion.confianza;
+
+  let color1="#00f2ff", color2="#004d66", glow="#00f2ff88", speed="4s";
+
+  if(c>70 && a>70){
+    color1="#ffd700"; color2="#b8860b"; glow="#ffd700aa"; speed="2.5s";
+  }else if(a>65){
+    color1="#00ff88"; color2="#007a44"; glow="#00ff88aa"; speed="3s";
+  }else if(c<40){
+    color1="#ff4d4d"; color2="#660000"; glow="#ff4d4daa"; speed="5s";
+  }
+
+  avatar.style.background=`radial-gradient(circle at top,${color1},${color2})`;
+  avatar.style.boxShadow=`0 0 50px ${glow}`;
+  avatar.style.animationDuration=speed;
+}
+
 /* ================= VOZ ================= */
 function hablar(texto){
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang="es-ES";
-
-  // 🎭 tono emocional
-  voz.rate = memoriaRavy.emocion.confianza > 60 ? 0.9 : 1;
-  voz.pitch = memoriaRavy.emocion.alegria > 60 ? 1.05 : 0.95;
+  voz.rate = memoriaRavy.emocion.confianza>60?0.9:1;
+  voz.pitch = memoriaRavy.emocion.alegria>60?1.05:0.95;
 
   speechSynthesis.cancel();
   avatar.classList.add("hablando");
@@ -156,44 +165,30 @@ recognition.onresult=e=>{
   estado.textContent="Escuchado. Pulsa responder.";
 
   analizarEmocion(ultimaEntrada);
+  actualizarAvatarEmocional();
 
   memoriaRavy.corto.push(ultimaEntrada);
   if(memoriaRavy.corto.length>5){
-    crearResumen();
+    memoriaRavy.resumen =
+      "Hemos hablado de: " + memoriaRavy.corto.slice(-3).join(", ");
     memoriaRavy.corto=[];
   }
   guardar();
 };
 
-/* ================= EMOCIÓN NIVEL 22 ================= */
+/* ================= EMOCIÓN ================= */
 function analizarEmocion(t){
   if(t.includes("gracias")||t.includes("por favor")){
     memoriaRavy.emocion.confianza+=5;
     memoriaRavy.emocion.alegria+=3;
   }
-  if(t.length<4){
-    memoriaRavy.emocion.confianza-=2;
-  }
-
-  memoriaRavy.emocion.confianza =
-    Math.max(0,Math.min(100,memoriaRavy.emocion.confianza));
-  memoriaRavy.emocion.alegria =
-    Math.max(0,Math.min(100,memoriaRavy.emocion.alegria));
-}
-
-/* ================= MEMORIA ================= */
-function crearResumen(){
-  memoriaRavy.resumen =
-    "Hemos hablado de: " +
-    memoriaRavy.corto.slice(-3).join(", ");
+  memoriaRavy.emocion.confianza=Math.max(0,Math.min(100,memoriaRavy.emocion.confianza));
+  memoriaRavy.emocion.alegria=Math.max(0,Math.min(100,memoriaRavy.emocion.alegria));
 }
 
 /* ================= RESPUESTA ================= */
 function responder(){
-  if(!ultimaEntrada){
-    hablar("Te escucho.");
-    return;
-  }
+  if(!ultimaEntrada){ hablar("Te escucho."); return; }
 
   let r="";
 
@@ -201,19 +196,15 @@ function responder(){
     r = memoriaRavy.emocion.confianza>60
       ? "Hola, me alegra escucharte."
       : "Hola. Aquí estoy.";
-  }
-  else if(ultimaEntrada.includes("hora")){
+  }else if(ultimaEntrada.includes("hora")){
     const d=new Date();
     r=`Son las ${d.getHours()} y ${d.getMinutes()}.`;
-  }
-  else if(ultimaEntrada.includes("recuerdas")){
-    r = memoriaRavy.resumen || "Aún estoy formando recuerdos.";
-  }
-  else{
+  }else{
     r="Te escucho.";
   }
 
   hablar(r);
+  actualizarAvatarEmocional();
   ultimaEntrada="";
 }
 
@@ -230,9 +221,10 @@ function reposo(){
 
 /* ================= INICIO ================= */
 btnInicio.onclick=()=>{
-  document.getElementById("inicio").style.display="none";
-  document.getElementById("ravy").style.display="flex";
+  inicio.style.display="none";
+  ravy.style.display="flex";
   estado.textContent="Aquí está RAVY, tu asistente personal.";
+  actualizarAvatarEmocional();
   hablar("Aquí está RAVY, tu asistente personal.");
 };
 </script>
