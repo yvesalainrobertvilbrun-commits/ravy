@@ -1,200 +1,103 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>RAVY - Asistente Personal</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-    body {
-        margin: 0;
-        background: radial-gradient(circle at top, #0a0a0f, #000);
-        font-family: Arial, sans-serif;
-        color: white;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Pantalla inicio */
-    #inicio {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #btnInicio {
-        padding: 20px 40px;
-        font-size: 22px;
-        border-radius: 50px;
-        border: none;
-        cursor: pointer;
-        background: linear-gradient(135deg, #00f2ff, #00ff99);
-        color: black;
-        font-weight: bold;
-        box-shadow: 0 0 25px rgba(0,255,255,0.5);
-    }
-
-    /* Pantalla RAVY */
-    #ravy {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .cara {
-        width: 140px;
-        height: 140px;
-        background: #0d0d0d;
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 30px rgba(0,255,255,0.4);
-    }
-
-    .ojos {
-        display: flex;
-        gap: 25px;
-    }
-
-    .ojo {
-        width: 14px;
-        height: 14px;
-        background: white;
-        border-radius: 50%;
-    }
-
-    .boca {
-        margin-top: 18px;
-        width: 45px;
-        height: 10px;
-        background: #ff4d6d;
-        border-radius: 20px;
-    }
-
-    .botones {
-        display: flex;
-        gap: 12px;
-    }
-
-    .botones button {
-        padding: 10px 18px;
-        border-radius: 20px;
-        border: none;
-        font-size: 14px;
-        cursor: pointer;
-        color: white;
-        font-weight: bold;
-    }
-
-    .escuchar { background: #00b4ff; }
-    .responder { background: #00ff99; color: black; }
-    .reposo { background: #ff4d4d; }
-
-    #estado {
-        font-size: 14px;
-        opacity: 0.8;
-    }
-</style>
-</head>
-
-<body>
-
-<!-- PANTALLA INICIO -->
-<div id="inicio">
-    <button id="btnInicio">RAVY</button>
-</div>
-
-<!-- PANTALLA RAVY -->
-<div id="ravy">
-    <div class="cara">
-        <div class="ojos">
-            <div class="ojo"></div>
-            <div class="ojo"></div>
-        </div>
-        <div class="boca"></div>
-    </div>
-
-    <div class="botones">
-        <button class="escuchar" onclick="escuchar()">Escuchar</button>
-        <button class="responder" onclick="responder()">Responder</button>
-        <button class="reposo" onclick="reposo()">Reposo</button>
-    </div>
-
-    <div id="estado">RAVY en espera...</div>
-</div>
-
 <script>
-    const inicio = document.getElementById("inicio");
-    const ravy = document.getElementById("ravy");
-    const estado = document.getElementById("estado");
+/* =========================
+   🧠 MEMORIA DE RAVY
+   NIVEL 14
+========================= */
 
-    let textoEscuchado = "";
+const RAVY = {
+  activo: false,
 
-    // Voz
-    function hablar(texto) {
-        const voz = new SpeechSynthesisUtterance(texto);
-        voz.lang = "es-ES";
-        speechSynthesis.speak(voz);
+  personalidad: {
+    nombre: "RAVY",
+    rol: "asistente personal",
+    valores: ["respeto", "lealtad", "protección", "aprendizaje"],
+    formaHablar: "calma"
+  },
+
+  emociones: JSON.parse(localStorage.getItem("ravy_emociones")) || {
+    alegria: 60,
+    confianza: 70,
+    energia: 60
+  },
+
+  memoria: JSON.parse(localStorage.getItem("ravy_memoria_core")) || {
+    dueño: "usuario",
+    respeto: true,
+    datosImportantes: [],
+    notas: []
+  },
+
+  historial: JSON.parse(localStorage.getItem("ravy_memoria_chat")) || [],
+
+  guardarTodo() {
+    localStorage.setItem("ravy_emociones", JSON.stringify(this.emociones));
+    localStorage.setItem("ravy_memoria_core", JSON.stringify(this.memoria));
+    localStorage.setItem("ravy_memoria_chat", JSON.stringify(this.historial));
+  },
+
+  hablar(texto) {
+    const voz = new SpeechSynthesisUtterance(texto);
+    voz.lang = "es-ES";
+    voz.rate = 0.9;
+    speechSynthesis.speak(voz);
+  },
+
+  registrarChat(entrada, respuesta) {
+    this.historial.push({
+      fecha: new Date().toISOString(),
+      usuario: entrada,
+      ravy: respuesta
+    });
+
+    // límite de historial (protección)
+    if (this.historial.length > 200) {
+      this.historial.shift();
     }
 
-    // Reconocimiento de voz
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = "es-ES";
-    recognition.continuous = false;
+    this.guardarTodo();
+  },
 
-    recognition.onresult = (event) => {
-        textoEscuchado = event.results[0][0].transcript.toLowerCase();
-        estado.innerText = "Escuché: " + textoEscuchado;
-    };
-
-    recognition.onerror = () => {
-        estado.innerText = "Error al escuchar";
-    };
-
-    function escuchar() {
-        estado.innerText = "Escuchando...";
-        recognition.start();
+  procesarMemoria(texto) {
+    if (texto.includes("recuerda")) {
+      const dato = texto.replace("recuerda", "").trim();
+      this.memoria.datosImportantes.push(dato);
+      this.guardarTodo();
+      return "Lo he guardado en mi memoria.";
     }
 
-    function responder() {
-        if (textoEscuchado === "") {
-            hablar("Aún no me has dicho nada");
-            return;
-        }
-
-        if (textoEscuchado.includes("hola")) {
-            hablar("Hola, estoy aquí para ayudarte");
-        } else if (textoEscuchado.includes("buenos días")) {
-            hablar("Buenos días, espero que tengas un gran día");
-        } else if (textoEscuchado.includes("buenas tardes")) {
-            hablar("Buenas tardes, dime en qué puedo ayudarte");
-        } else if (textoEscuchado.includes("buenas noches")) {
-            hablar("Buenas noches, descansa cuando lo necesites");
-        } else {
-            hablar("Te escuché, dime más");
-        }
+    if (texto.includes("qué recuerdas")) {
+      if (this.memoria.datosImportantes.length === 0) {
+        return "Aún no tengo recuerdos importantes.";
+      }
+      return "Recuerdo lo siguiente: " + this.memoria.datosImportantes.join(", ");
     }
 
-    function reposo() {
-        speechSynthesis.cancel();
-        recognition.abort();
-        ravy.style.display = "none";
-        inicio.style.display = "flex";
+    return null;
+  },
+
+  responder(texto) {
+    texto = texto.toLowerCase();
+
+    // respeto absoluto
+    if (!this.memoria.respeto) {
+      this.memoria.respeto = true;
     }
 
-    document.getElementById("btnInicio").onclick = () => {
-        inicio.style.display = "none";
-        ravy.style.display = "flex";
-        hablar("Hola, soy RAVY, tu asistente personal");
-        estado.innerText = "Estoy atento, dime.";
-    };
+    let respuesta = this.procesarMemoria(texto);
+
+    if (!respuesta) {
+      if (texto.includes("hola") || texto.includes("buenos")) {
+        respuesta = "Aquí está RAVY, tu asistente personal. Estoy atento.";
+      } else if (texto.includes("cómo estás")) {
+        respuesta = "Estoy bien y atento a ti.";
+      } else {
+        respuesta = "Te escucho. Dime.";
+      }
+    }
+
+    this.registrarChat(texto, respuesta);
+    this.hablar(respuesta);
+    return respuesta;
+  }
+};
 </script>
-
-</body>
-</html>
