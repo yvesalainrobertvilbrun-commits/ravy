@@ -7,38 +7,40 @@
 <style>
 body{
   margin:0;
-  font-family: Arial, sans-serif;
-  background:#0b0f14;
+  height:100vh;
+  background:radial-gradient(circle at top,#0f2027,#000);
+  font-family:system-ui, Arial;
   color:white;
   display:flex;
   justify-content:center;
   align-items:center;
-  height:100vh;
 }
 
-/* PANTALLA PRINCIPAL */
+/* ================= INICIO ================= */
 #inicio{
   display:flex;
   flex-direction:column;
   align-items:center;
+  gap:20px;
 }
 
 #btnInicio{
-  padding:25px 60px;
-  font-size:26px;
+  padding:26px 70px;
+  font-size:28px;
+  font-weight:600;
   border:none;
-  border-radius:40px;
-  background:linear-gradient(135deg,#00f2ff,#0066ff);
-  color:black;
+  border-radius:50px;
+  background:linear-gradient(135deg,#00f2ff,#007bff);
   cursor:pointer;
+  box-shadow:0 0 30px #00f2ff88;
 }
 
-/* CUERPO DE RAVY */
+/* ================= RAVY ================= */
 #ravy{
   display:none;
   flex-direction:column;
   align-items:center;
-  gap:20px;
+  gap:22px;
 }
 
 #estado{
@@ -46,233 +48,167 @@ body{
   opacity:.85;
 }
 
-/* BOTONES */
-.controles{
+/* ================= BOTONES ================= */
+.panel{
   display:flex;
-  justify-content:space-between;
-  width:320px;
+  gap:18px;
 }
 
 .btn{
-  padding:14px 22px;
-  font-size:16px;
+  min-width:120px;
+  padding:14px 18px;
   border:none;
-  border-radius:25px;
+  border-radius:30px;
+  font-size:15px;
+  font-weight:600;
   cursor:pointer;
+  transition:.25s;
 }
 
-.escuchar{ background:#00ff9d; }
-.responder{ background:#00b3ff; }
-.reposo{
-  background:#ff3b3b;
+.btn:hover{ transform:scale(1.05); }
+
+.listen{ background:#00ffb3; color:#003b2a; }
+.think{ background:#00aaff; color:#001f2f; }
+.sleep{
+  background:#ff4d4d;
+  color:#330000;
   margin-top:10px;
-  width:180px;
+  width:200px;
 }
 </style>
 </head>
 
 <body>
 
+<!-- ===== INICIO ===== -->
 <div id="inicio">
   <button id="btnInicio">RAVY</button>
 </div>
 
+<!-- ===== RAVY ===== -->
 <div id="ravy">
   <div id="estado">Modo reposo</div>
 
-  <div class="controles">
-    <button class="btn escuchar" onclick="escuchar()">Escuchar</button>
-    <button class="btn responder" onclick="responder()">Responder</button>
+  <div class="panel">
+    <button class="btn listen" onclick="escuchar()">Escuchar</button>
+    <button class="btn think" onclick="responder()">Responder</button>
   </div>
 
-  <button class="btn reposo" onclick="reposo()">Reposo</button>
+  <button class="btn sleep" onclick="reposo()">Reposo</button>
 </div>
 
 <script>
-/* ===============================
-   MEMORIA BASE (NO SE BORRA)
-================================ */
-
+/* ================= MEMORIA ================= */
 let memoriaRavy = JSON.parse(localStorage.getItem("memoriaRavy")) || {
   usuario:{ nombre:"" },
   historial:[],
-  emocion:"neutral"
+  personalidad:"equilibrada",
+  trato:"neutral"
 };
 
-/* ===============================
-   NUEVO – CONTEXTO DE CONVERSACIÓN
-================================ */
-
-let contextoConversacion = [];
-let ultimoTema = "";
-let modoConversacion = true;
-
-/* ===============================
-   GUARDAR MEMORIA
-================================ */
-
-function guardarMemoria(){
-  localStorage.setItem("memoriaRavy", JSON.stringify(memoriaRavy));
+function guardar(){
+  localStorage.setItem("memoriaRavy",JSON.stringify(memoriaRavy));
 }
 
-/* ===============================
-   VOZ
-================================ */
-
+/* ================= VOZ ================= */
 function hablar(texto){
   const voz = new SpeechSynthesisUtterance(texto);
-  voz.lang = "es-ES";
+  voz.lang="es-ES";
+  voz.rate=0.95;
+  voz.pitch=1;
+  speechSynthesis.cancel();
   speechSynthesis.speak(voz);
 }
 
-/* ===============================
-   RECONOCIMIENTO DE VOZ
-================================ */
+/* ================= VOZ INPUT ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SR();
+recognition.lang="es-ES";
+recognition.continuous=false;
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-recognition.lang = "es-ES";
-recognition.continuous = false;
+let ultimaEntrada="";
 
-let ultimaPregunta = "";
-
-recognition.onresult = e=>{
-  ultimaPregunta = e.results[0][0].transcript.toLowerCase();
-
-  detectarEmocion(ultimaPregunta);
-  detectarTema(ultimaPregunta);
-
-  contextoConversacion.push(ultimaPregunta);
-  if(contextoConversacion.length > 5){
-    contextoConversacion.shift();
-  }
+recognition.onresult=e=>{
+  ultimaEntrada = e.results[0][0].transcript.toLowerCase();
+  analizarTrato(ultimaEntrada);
 
   memoriaRavy.historial.push({
-    texto: ultimaPregunta,
-    emocion: memoriaRavy.emocion,
-    fecha: Date.now()
+    texto:ultimaEntrada,
+    fecha:Date.now()
   });
 
-  guardarMemoria();
-  estado.textContent = "Te escuché. Continúa o responde.";
+  guardar();
+  estado.textContent="Escuchado. Pulsa responder.";
 };
 
-/* ===============================
-   EMOCIONES
-================================ */
-
-function detectarEmocion(texto){
-  if(texto.includes("triste") || texto.includes("mal")){
-    memoriaRavy.emocion = "triste";
-  }else if(texto.includes("feliz") || texto.includes("bien")){
-    memoriaRavy.emocion = "feliz";
-  }else if(texto.includes("cansado")){
-    memoriaRavy.emocion = "cansado";
+/* ================= ANALISIS ================= */
+function analizarTrato(texto){
+  if(texto.includes("por favor")||texto.includes("gracias")){
+    memoriaRavy.trato="amable";
+  }else if(texto.includes("haz")||texto.includes("rápido")){
+    memoriaRavy.trato="directo";
   }else{
-    memoriaRavy.emocion = "neutral";
+    memoriaRavy.trato="neutral";
   }
 }
 
-/* ===============================
-   TEMA DE CONVERSACIÓN
-================================ */
-
-function detectarTema(texto){
-  if(texto.includes("hora")) ultimoTema = "hora";
-  if(texto.includes("nombre")) ultimoTema = "nombre";
-  if(texto.includes("como estas")) ultimoTema = "estado";
-}
-
-/* ===============================
-   RESPUESTA CONTINUA
-================================ */
-
+/* ================= RESPUESTA ================= */
 function responder(){
-  if(!ultimaPregunta){
-    hablar("Te escucho, dime algo.");
+  if(!ultimaEntrada){
+    hablar("Te escucho cuando quieras.");
     return;
   }
 
-  let respuesta = "";
+  let r="";
 
-  // CONTEXTO
-  if(ultimaPregunta.includes("y tú")){
-    respuesta = "Estoy aquí contigo, atento a ti.";
+  if(ultimaEntrada.includes("hola")||ultimaEntrada.includes("buenos")){
+    r="Aquí está RAVY, tu asistente personal.";
   }
-
-  else if(ultimoTema === "hora"){
-    const ahora = new Date();
-    respuesta = `Son las ${ahora.getHours()} y ${ahora.getMinutes()}.`;
+  else if(ultimaEntrada.includes("mi nombre es")){
+    memoriaRavy.usuario.nombre=
+      ultimaEntrada.split("mi nombre es")[1].trim();
+    guardar();
+    r="Perfecto, lo recordaré.";
   }
-
-  else if(ultimoTema === "nombre"){
-    if(memoriaRavy.usuario.nombre){
-      respuesta = `Tu nombre es ${memoriaRavy.usuario.nombre}.`;
-    }else{
-      respuesta = "Aún no me has dicho tu nombre.";
-    }
+  else if(ultimaEntrada.includes("hora")){
+    const d=new Date();
+    r=`Son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
-
-  else if(ultimaPregunta.includes("mi nombre es")){
-    memoriaRavy.usuario.nombre =
-      ultimaPregunta.split("mi nombre es")[1].trim();
-    guardarMemoria();
-    respuesta = "Perfecto, lo recordaré.";
-  }
-
-  else if(ultimaPregunta.includes("hola") || ultimaPregunta.includes("buenos")){
-    respuesta = memoriaRavy.usuario.nombre
-      ? `Hola ${memoriaRavy.usuario.nombre}, aquí está RAVY.`
-      : "Aquí está RAVY, tu asistente personal.";
-  }
-
   else{
-    // RESPUESTA EMOCIONAL
-    switch(memoriaRavy.emocion){
-      case "triste":
-        respuesta = "Estoy contigo. Puedes seguir hablando.";
+    switch(memoriaRavy.trato){
+      case "amable":
+        r="Estoy aquí contigo. Continúa.";
         break;
-      case "feliz":
-        respuesta = "Se siente bien escucharte así.";
-        break;
-      case "cansado":
-        respuesta = "Tómate tu tiempo, aquí estoy.";
+      case "directo":
+        r="Dime qué necesitas.";
         break;
       default:
-        respuesta = "Te escucho. Continúa.";
+        r="Te escucho.";
     }
   }
 
-  hablar(respuesta);
-  ultimaPregunta = "";
+  hablar(r);
+  ultimaEntrada="";
 }
 
-/* ===============================
-   CONTROLES
-================================ */
-
+/* ================= CONTROLES ================= */
 function escuchar(){
-  estado.textContent = "Escuchando...";
+  estado.textContent="Escuchando...";
   recognition.start();
 }
 
 function reposo(){
-  ultimaPregunta = "";
-  contextoConversacion = [];
-  ultimoTema = "";
-  estado.textContent = "Modo reposo";
+  ultimaEntrada="";
+  estado.textContent="Modo reposo";
   document.getElementById("ravy").style.display="none";
   document.getElementById("inicio").style.display="flex";
 }
 
-/* ===============================
-   INICIO
-================================ */
-
-btnInicio.onclick = ()=>{
+/* ================= INICIO ================= */
+btnInicio.onclick=()=>{
   document.getElementById("inicio").style.display="none";
   document.getElementById("ravy").style.display="flex";
-  estado.textContent = "Aquí está RAVY, tu asistente personal.";
+  estado.textContent="Aquí está RAVY, tu asistente personal.";
   hablar("Aquí está RAVY, tu asistente personal.");
 };
 </script>
