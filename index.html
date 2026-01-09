@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Memoria Autónoma</title>
+<title>RAVY – IA Mejorada</title>
 
 <style>
 body{
@@ -12,8 +12,6 @@ body{
   overflow:hidden;
   font-family:Arial, sans-serif;
 }
-
-/* ---------- INICIO ---------- */
 #inicio{
   position:absolute;
   inset:0;
@@ -34,8 +32,6 @@ body{
   box-shadow:0 0 50px #00ffff;
   cursor:pointer;
 }
-
-/* ---------- CONTROLES ---------- */
 #controles{
   position:absolute;
   bottom:25px;
@@ -63,12 +59,10 @@ body{
 
 <body>
 
-<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
-<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
@@ -82,7 +76,6 @@ body{
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
 camera.position.z = 6;
-
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -92,7 +85,7 @@ const luzRavy = new THREE.PointLight(0x1a73e8,1,8);
 luzRavy.position.set(0,1.5,0);
 scene.add(luzRavy);
 
-/* ================= MEMORIA AUTÓNOMA ================= */
+/* ================= MEMORIA ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
@@ -100,7 +93,6 @@ const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   emocion:{alegria:60,confianza:60},
   ultimoTema:null
 };
-
 function guardarMemoria(){
   localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy));
 }
@@ -116,7 +108,6 @@ function hablar(texto){
 /* ================= MIC ================= */
 let recognition;
 let ultimaEntrada="";
-
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
@@ -124,71 +115,86 @@ if(SpeechRecognition){
   recognition.continuous=false;
   recognition.onresult = e=>{
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    procesarMemoria(ultimaEntrada); // memoria autónoma
+    procesarMemoria(ultimaEntrada);
     hablar("Entendido.");
+    // Proactividad: sugerir tema si RAVY detecta silencio
+    setTimeout(()=>proactividad(),2000);
   };
 }
 
 /* ================= MEMORIA AUTÓNOMA ================= */
 function procesarMemoria(texto){
-  // Guardar todo lo que diga el usuario
   memoriaRavy.historial.push(texto);
 
-  // Detectar temas automáticamente
   const claves = {
     musica:["musica","canción","artista"],
     familia:["familia","hijo","esposa","madre"],
     trabajo:["trabajo","negocio","proyecto"],
-    tiempo:["hora","día","noche"]
+    tiempo:["hora","día","noche"],
+    emociones:["feliz","triste","enfadado","emocionado","cansado","ansioso"]
   };
 
   for(const tema in claves){
     if(claves[tema].some(p=>texto.includes(p))){
       memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
       memoriaRavy.ultimoTema=tema;
+
+      // Ajuste emocional automático
+      if(tema==="emociones"){
+        if(texto.includes("feliz") || texto.includes("emocionado")){
+          memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+5);
+        } else if(texto.includes("triste") || texto.includes("enfadado")){
+          memoriaRavy.emocion.alegria=Math.max(0,memoriaRavy.emocion.alegria-5);
+        }
+      }
     }
   }
 
-  // Detectar preferencias automáticamente
   if(texto.includes("me gusta")){
     memoriaRavy.preferencias[texto]=true;
   }
-
-  // Emociones autónomas
-  if(texto.includes("feliz") || texto.includes("alegría")){
-    memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+5);
-  }
-  if(texto.includes("confío") || texto.includes("confianza")){
-    memoriaRavy.emocion.confianza=Math.min(100,memoriaRavy.emocion.confianza+5);
-  }
-
   guardarMemoria();
 }
 
-/* ================= IA ================= */
+/* ================= IA MEJORADA ================= */
 function IA_Real(entrada){
   const h = new Date().getHours();
+  let respuesta="";
 
+  // Tiempo
   if(entrada.includes("hora")){
     const d=new Date();
     return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
 
+  // Saludo
   if(entrada.includes("buenos")){
     if(h<12) return "Buenos días, estoy contigo.";
     if(h<18) return "Buenas tardes, aquí estoy.";
     return "Buenas noches, sigo atento a ti.";
   }
 
+  // Identidad
   if(entrada.includes("quien eres")){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  if(memoriaRavy.ultimoTema){
-    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
+  // Emociones detectadas
+  if(memoriaRavy.ultimoTema==="emociones"){
+    if(memoriaRavy.emocion.alegria>70) respuesta="Parece que estás muy feliz, me alegra saberlo.";
+    else if(memoriaRavy.emocion.alegria<40) respuesta="Veo que no te sientes muy bien, ¿quieres hablar de ello?";
+    else respuesta="Te escucho, sigo atento a tus emociones.";
+    return respuesta;
   }
 
-  return "Te escucho con atención.";
+  // Conversación contextual
+  if(memoriaRavy.ultimoTema){
+    respuesta = `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
+  } else {
+    respuesta = "Te escucho con atención.";
+  }
+
+  return respuesta;
 }
 
 /* ================= RESPONDER ================= */
@@ -200,6 +206,20 @@ function responder(){
   const r = IA_Real(ultimaEntrada);
   hablar(r);
   ultimaEntrada="";
+}
+
+/* ================= PROACTIVIDAD ================= */
+function proactividad(){
+  if(!ultimaEntrada){
+    // RAVY sugiere un tema de conversación aleatorio
+    const temas = Object.keys(memoriaRavy.temas);
+    if(temas.length>0){
+      const t = temas[Math.floor(Math.random()*temas.length)];
+      hablar(`¿Quieres hablar sobre ${t}?`);
+    } else {
+      hablar("Podemos hablar sobre música, familia o tu día.");
+    }
+  }
 }
 
 /* ================= CONTROLES ================= */
