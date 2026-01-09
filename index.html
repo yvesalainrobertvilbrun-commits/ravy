@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 35</title>
+<title>RAVY – Nivel 37</title>
 
 <style>
 body{
@@ -98,14 +98,15 @@ luzRavy.position.set(0,1.5,0);
 scene.add(luzRavy);
 let anguloLuz = 0;
 
-/* ================= MEMORIA REFINADA NIVEL 35 ================= */
+/* ================= MEMORIA NIVEL 37 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
   emocion:{alegria:60,confianza:60,miedo:0},
   resumen:"",
-  ultimoTema:null
+  ultimoTema:null,
+  patrones:[]
 };
 
 function guardarMemoria(){
@@ -134,10 +135,11 @@ if(SpeechRecognition){
     procesarMemoria(ultimaEntrada);
     hablar("Entendido.");
     ejecutarOrden(ultimaEntrada);
+    predecirProximaAccion(ultimaEntrada);
   };
 }
 
-/* ================= MEMORIA AVANZADA ================= */
+/* ================= MEMORIA REFINADA ================= */
 function procesarMemoria(texto){
   memoriaRavy.historial.push({texto,fecha:Date.now()});
 
@@ -159,6 +161,10 @@ function procesarMemoria(texto){
     memoriaRavy.preferencias[texto]=true;
   }
 
+  // Guardamos patrones para predicción
+  memoriaRavy.patrones.push(texto);
+  if(memoriaRavy.patrones.length>20) memoriaRavy.patrones.shift();
+
   memoriaRavy.emocion.alegria = Math.min(100, memoriaRavy.emocion.alegria + 1);
   memoriaRavy.emocion.confianza = Math.min(100, memoriaRavy.emocion.confianza + 1);
 
@@ -169,7 +175,7 @@ function procesarMemoria(texto){
   guardarMemoria();
 }
 
-/* ================= IA AUTÓNOMA ================= */
+/* ================= IA NIVEL 37 ================= */
 function IA_Real(entrada){
   const h = new Date().getHours();
 
@@ -196,36 +202,78 @@ function IA_Real(entrada){
     return `Recuerdo que hemos hablado de: ${memoriaRavy.resumen}.`;
   }
 
+  // Niveles de recomendación y consejo
+  if(entrada.includes("ayuda") || entrada.includes("consejo")){
+    return generarConsejo();
+  }
+
   return "Te escucho con atención.";
 }
 
-/* ================= EJECUTAR ORDENES AUTOMÁTICAS ================= */
+/* ================= CONSEJOS INTELIGENTES ================= */
+function generarConsejo(){
+  const confianza = memoriaRavy.emocion.confianza;
+  const alegria = memoriaRavy.emocion.alegria;
+  const temas = Object.keys(memoriaRavy.temas);
+  
+  let consejo = "Aquí tienes un consejo: ";
+  
+  if(temas.includes("trabajo")){
+    consejo += "Recuerda organizar tus tareas y priorizar lo más importante. ";
+  }
+  if(temas.includes("familia")){
+    consejo += "Dedica tiempo a tus seres queridos, es valioso. ";
+  }
+  if(temas.includes("musica")){
+    consejo += "La música puede ayudarte a relajarte y concentrarte. ";
+  }
+  
+  if(confianza>70 && alegria>70){
+    consejo += "Hoy es un buen día para empezar algo nuevo y emocionante.";
+  } else if(confianza<40){
+    consejo += "Respira profundo y toma decisiones con calma.";
+  } else {
+    consejo += "Mantén la atención en lo que es importante para ti.";
+  }
+
+  return consejo;
+}
+
+/* ================= EJECUTAR ORDENES ================= */
 function ejecutarOrden(entrada){
-  // Orden de música
   if(entrada.includes("musica") || entrada.includes("canción")){
     hablar("Reproduciendo tus canciones favoritas.");
   }
 
-  // Orden de hora
   if(entrada.includes("hora")){
     const d=new Date();
     hablar(`La hora actual es ${d.getHours()}:${d.getMinutes()}.`);
   }
 
-  // Orden familiar
   if(entrada.includes("familia") || entrada.includes("hijo")){
     hablar("Recuerdo que la familia es importante para ti.");
   }
 
-  // Orden trabajo
   if(entrada.includes("trabajo") || entrada.includes("proyecto")){
     hablar("Vamos a enfocarnos en tus objetivos.");
   }
 
-  // IA autónoma aprende sola
   memoriaRavy.emocion.confianza = Math.min(100, memoriaRavy.emocion.confianza + 1);
   memoriaRavy.emocion.alegria = Math.min(100, memoriaRavy.emocion.alegria + 1);
   guardarMemoria();
+}
+
+/* ================= PREDICCIÓN ================= */
+function predecirProximaAccion(entrada){
+  const patrones = memoriaRavy.patrones.join(" ");
+  if(patrones.includes("musica") && !entrada.includes("musica")){
+    hablar("¿Quieres que reproduzca música ahora?");
+  }
+
+  if(patrones.includes("hora") && !entrada.includes("hora")){
+    const d = new Date();
+    hablar(`Si quieres, puedo decirte la hora: ${d.getHours()}:${d.getMinutes()}.`);
+  }
 }
 
 /* ================= RESPONDER ================= */
