@@ -6,34 +6,69 @@
 <title>RAVY – Nivel 34</title>
 
 <style>
-body{margin:0;background:black;overflow:hidden;font-family:Arial,sans-serif;}
-#inicio{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;z-index:10;}
-#inicio button{
-  width:160px;height:160px;border-radius:50%;border:none;
-  font-size:26px;font-weight:bold;color:white;
-  background:radial-gradient(circle,#00ffff,#001a66);
-  box-shadow:0 0 100px #00ffff;cursor:pointer;
+body{
+  margin:0;
+  background:black;
+  overflow:hidden;
+  font-family:Arial, sans-serif;
 }
+
+/* ---------- INICIO ---------- */
+#inicio{
+  position:absolute;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:10;
+}
+#inicio button{
+  width:160px;
+  height:160px;
+  border-radius:50%;
+  border:none;
+  font-size:26px;
+  font-weight:bold;
+  color:white;
+  background:radial-gradient(circle,#00ffff,#0066ff);
+  box-shadow:0 0 50px #00ffff;
+  cursor:pointer;
+}
+
+/* ---------- CONTROLES ---------- */
 #controles{
-  position:absolute;bottom:25px;width:100%;
-  display:none;justify-content:center;gap:25px;z-index:10;
+  position:absolute;
+  bottom:25px;
+  width:100%;
+  display:none;
+  justify-content:center;
+  gap:25px;
+  z-index:10;
 }
 .control{
-  width:150px;height:54px;border-radius:30px;border:none;
-  font-weight:bold;font-size:14px;color:white;cursor:pointer;
+  width:120px;
+  height:48px;
+  border-radius:30px;
+  border:none;
+  font-weight:bold;
+  font-size:14px;
+  color:white;
+  cursor:pointer;
   background:linear-gradient(145deg,#111,#333);
-  box-shadow:0 0 26px #00ffff;
+  box-shadow:0 0 18px #00ffff;
 }
-.control:hover{transform:scale(1.08);}
+.control:hover{ transform:scale(1.05); }
 </style>
 </head>
 
 <body>
 
+<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
+<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
@@ -44,35 +79,33 @@ body{margin:0;background:black;overflow:hidden;font-family:Arial,sans-serif;}
 
 <script>
 /* ================= ESCENA ================= */
-const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
-camera.position.z=5;
-const renderer=new THREE.WebGLRenderer({antialias:true});
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
+camera.position.z = 6;
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
-scene.add(new THREE.AmbientLight(0x0066ff,1.8));
 
-/* ================= LUZ AZUL ================= */
-const grupo=new THREE.Group();scene.add(grupo);
-const mat=new THREE.MeshStandardMaterial({
-  color:0x1e90ff,
-  emissive:0x0044ff,
-  emissiveIntensity:2
-});
-const nucleo=new THREE.Mesh(new THREE.SphereGeometry(0.38,32,32),mat);
-const anillo=new THREE.Mesh(new THREE.TorusGeometry(0.7,0.06,16,120),mat);
-anillo.rotation.x=Math.PI/2;
-grupo.add(nucleo,anillo);
+scene.add(new THREE.AmbientLight(0xffffff,0.7));
+const luzDireccional = new THREE.DirectionalLight(0xffffff,1);
+luzDireccional.position.set(5,10,7);
+scene.add(luzDireccional);
 
-/* ================= MEMORIA NIVEL 34 ================= */
-const memoriaRavy=JSON.parse(localStorage.getItem("ravy_memoria"))||{
+/* ================= LUZ AZUL ANILLO ================= */
+const luzRavy = new THREE.PointLight(0x1e90ff, 2, 6, 2);
+luzRavy.position.set(0,1.5,0);
+scene.add(luzRavy);
+let anguloLuz = 0;
+
+/* ================= MEMORIA REFINADA NIVEL 34 ================= */
+const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
-  reflexiones:[],
-  conocimiento:[],
   temas:{},
-  conclusiones:[],
-  emocion:{alegria:65,confianza:70,profundidad:50},
-  ordenesEjecutadas:0
+  preferencias:{},
+  emocion:{alegria:60,confianza:60,miedo:0},
+  resumen:"",
+  ultimoTema:null
 };
 
 function guardarMemoria(){
@@ -80,137 +113,133 @@ function guardarMemoria(){
 }
 
 /* ================= VOZ ================= */
-function hablar(t){
-  const u=new SpeechSynthesisUtterance(t);
+function hablar(texto){
+  const u = new SpeechSynthesisUtterance(texto);
   u.lang="es-ES";
-  u.rate=0.95 + memoriaRavy.emocion.profundidad/500;
+  u.rate=0.95;
   speechSynthesis.speak(u);
 }
 
 /* ================= MIC ================= */
-let recognition,ultimaEntrada="",escuchando=false;
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(SR){
-  recognition=new SR();
+let recognition;
+let ultimaEntrada="";
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SpeechRecognition){
+  recognition = new SpeechRecognition();
   recognition.lang="es-ES";
-  recognition.continuous=true;
-  recognition.interimResults=true;
-  recognition.onresult=e=>{
-    const r=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
-    if(r.length<2) return;
-    ultimaEntrada=r;
-    analizarEntrada(r);
+  recognition.continuous=false;
+  recognition.onresult = e=>{
+    ultimaEntrada = e.results[0][0].transcript.toLowerCase();
+    procesarMemoria(ultimaEntrada);
+    hablar("Entendido.");
   };
-  recognition.onend=()=>{ if(escuchando) recognition.start(); };
 }
 
-/* ================= ANÁLISIS ================= */
-function tipoEntrada(t){
-  if(t.startsWith("ravy")) return "orden";
-  if(t.includes("?")) return "pregunta";
-  if(t.split(" ").length>12) return "reflexion";
-  return "conversacion";
-}
+/* ================= MEMORIA AVANZADA ================= */
+function procesarMemoria(texto){
+  // Historial
+  memoriaRavy.historial.push({texto,fecha:Date.now()});
 
-function analizarEntrada(texto){
-  memoriaRavy.historial.push(texto);
+  // Clasificación semántica
+  const claves = {
+    musica:["musica","canción","artista"],
+    familia:["familia","hijo","esposa","madre"],
+    trabajo:["trabajo","negocio","proyecto"],
+    tiempo:["hora","día","noche"]
+  };
 
-  const palabras=texto.split(" ");
-  palabras.forEach(p=>{
-    memoriaRavy.temas[p]=(memoriaRavy.temas[p]||0)+1;
-  });
-
-  if(tipoEntrada(texto)==="reflexion"){
-    memoriaRavy.reflexiones.push(texto);
-    if(memoriaRavy.reflexiones.length%3===0){
-      memoriaRavy.conclusiones.push(
-        "He notado que reflexionas mucho sobre ciertos temas."
-      );
-      memoriaRavy.emocion.profundidad+=5;
+  for(const tema in claves){
+    if(claves[tema].some(p=>texto.includes(p))){
+      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
+      memoriaRavy.ultimoTema=tema;
     }
   }
 
-  if(texto.length>25){
-    memoriaRavy.conocimiento.push(texto);
+  // Preferencias
+  if(texto.includes("me gusta")){
+    memoriaRavy.preferencias[texto]=true;
+  }
+
+  // Ajuste de emociones autónomo
+  memoriaRavy.emocion.alegria = Math.min(100, memoriaRavy.emocion.alegria + 1);
+  memoriaRavy.emocion.confianza = Math.min(100, memoriaRavy.emocion.confianza + 1);
+
+  // Resumen automático
+  if(memoriaRavy.historial.length % 5 === 0){
+    memoriaRavy.resumen = memoriaRavy.historial.slice(-5).map(h=>h.texto).join(", ");
   }
 
   guardarMemoria();
 }
 
 /* ================= IA NIVEL 34 ================= */
-function IA_Real(t){
-  const tipo=tipoEntrada(t);
+function IA_Real(entrada){
+  const h = new Date().getHours();
 
-  if(tipo==="orden"){
-    memoriaRavy.ordenesEjecutadas++;
-    if(t.includes("escucha")){escuchar();return "Escuchando atentamente.";}
-    if(t.includes("responde")){return "Estoy listo para responderte.";}
-    if(t.includes("descansa")){reposo();return "Entrando en reposo.";}
-    return "Orden comprendida.";
-  }
-
-  if(t.includes("hora")){
+  if(entrada.includes("hora")){
     const d=new Date();
-    return `Ahora son las ${d.getHours()} y ${d.getMinutes()}.`;
+    return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
 
-  if(t.includes("quien eres")){
-    return "Soy RAVY, tu asistente personal. Aprendo de ti con cada conversación.";
+  if(entrada.includes("buenos")){
+    if(h<12) return "Buenos días, estoy atento a ti.";
+    if(h<18) return "Buenas tardes, aquí estoy.";
+    return "Buenas noches, sigo atento a ti.";
   }
 
-  if(tipo==="pregunta"){
-    return "Estoy analizando tu pregunta con mi experiencia previa.";
+  if(entrada.includes("quien eres")){
+    return "Aquí está RAVY, tu asistente personal.";
   }
 
-  if(tipo==="reflexion"){
-    return "Lo que dices tiene profundidad. Lo guardaré como experiencia.";
+  if(memoriaRavy.ultimoTema){
+    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
   }
 
-  if(memoriaRavy.conclusiones.length){
-    return memoriaRavy.conclusiones[memoriaRavy.conclusiones.length-1];
+  if(memoriaRavy.resumen){
+    return `Recuerdo que hemos hablado de: ${memoriaRavy.resumen}.`;
   }
 
-  return "Te escucho. Continúa.";
+  return "Te escucho con atención.";
+}
+
+/* ================= RESPONDER ================= */
+function responder(){
+  if(!ultimaEntrada){
+    hablar("Aún no me has dicho nada.");
+    return;
+  }
+  const r = IA_Real(ultimaEntrada);
+  hablar(r);
+  ultimaEntrada="";
 }
 
 /* ================= CONTROLES ================= */
 function escuchar(){
-  if(!recognition) return;
-  escuchando=true;
-  recognition.start();
-  hablar("Escuchando.");
-}
-
-function responder(){
-  if(!ultimaEntrada){
-    hablar("No detecté voz.");
-    return;
-  }
-  hablar(IA_Real(ultimaEntrada));
-  ultimaEntrada="";
+  if(recognition) recognition.start();
 }
 
 function activarRAVY(){
   document.getElementById("inicio").style.display="none";
   document.getElementById("controles").style.display="flex";
   animar();
-  hablar("RAVY activo. Nivel treinta y cuatro.");
+  hablar("Aquí está RAVY, tu asistente personal.");
 }
 
 function reposo(){
-  escuchando=false;
-  recognition?.stop();
   location.reload();
 }
 
-/* ================= ANIMACIÓN ================= */
-let t=0;
+/* ================= ANIMACIÓN LUZ ================= */
 function animar(){
   requestAnimationFrame(animar);
-  t+=0.02;
-  nucleo.scale.setScalar(1+Math.sin(t)*0.1);
-  anillo.rotation.z+=0.018;
-  mat.emissiveIntensity=1.6+memoriaRavy.emocion.profundidad/80;
+  
+  // Luz azul anillo energético
+  anguloLuz += 0.05;
+  luzRavy.position.x = Math.sin(anguloLuz)*1.5;
+  luzRavy.position.z = Math.cos(anguloLuz)*1.5;
+  luzRavy.position.y = 1.5 + Math.sin(Date.now()*0.002)*0.1;
+
   renderer.render(scene,camera);
 }
 
