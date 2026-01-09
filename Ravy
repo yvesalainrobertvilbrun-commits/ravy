@@ -1,6 +1,15 @@
 ravy/
-├── index.html        ← Login / Registro
-├── app.html          ← RAVY (solo usuarios logueados)
-├── firebase.js       ← Configuración Firebase
-├── auth.js           ← Lógica login / registro
-└── ravy.html         ← (opcional si separas escenas)
+├── index.html        ← Login / Bienvenida
+├── app.html          ← Página principal (RAVY)
+├── css/
+│   └── style.css
+├── js/
+│   ├── auth.js       ← Login simple (local)
+│   ├── ravy-core.js  ← Cerebro IA
+│   ├── memory.js     ← Memoria inteligente
+│   ├── emotions.js  ← Emociones
+│   ├── proactive.js ← IA proactiva
+│   └── voice.js     ← Voz y escucha
+├── assets/
+│   └── logo.png
+└── README.md
