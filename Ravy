@@ -1,13 +1,6 @@
 ravy/
-├── index.html        (login / registro)
-├── app.html          (pantalla principal de RAVY)
-├── css/
-│   └── style.css
-├── js/
-│   ├── auth.js
-│   ├── ravy.js
-│   ├── memoria.js
-│   └── ui.js
-├── firebase.js
-└── assets/
-    └── avatar.png
+├── index.html        ← Login / Registro
+├── app.html          ← RAVY (solo usuarios logueados)
+├── firebase.js       ← Configuración Firebase
+├── auth.js           ← Lógica login / registro
+└── ravy.html         ← (opcional si separas escenas)
