@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 33</title>
+<title>RAVY – Nivel 35</title>
 
 <style>
 body{
@@ -87,17 +87,17 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff,0.7));
-const luzDir = new THREE.DirectionalLight(0xffffff,1);
-luzDir.position.set(5,10,7);
-scene.add(luzDir);
-
-/* ================= LUZ AZUL (Indicador energético) ================= */
-const luzAzul = new THREE.PointLight(0x1e90ff,1,10);
-luzAzul.position.set(0,2,0);
+/* Luz azul energética */
+const luzAzul = new THREE.PointLight(0x1e90ff,2,10);
+luzAzul.position.set(0,1,2);
 scene.add(luzAzul);
 
-/* ================= MEMORIA NIVEL 33 ================= */
+scene.add(new THREE.AmbientLight(0xffffff,0.5));
+const luz = new THREE.DirectionalLight(0xffffff,0.7);
+luz.position.set(5,10,7);
+scene.add(luz);
+
+/* ================= MEMORIA NIVEL 35 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
@@ -157,32 +157,27 @@ function procesarMemoria(texto){
   }
 
   memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
-  memoriaRavy.emocion.confianza=Math.min(100,memoriaRavy.emocion.confianza+1);
   guardarMemoria();
 }
 
-/* ================= IA AUTÓNOMA ================= */
-function IA_Autonomo(){
-  // Genera aprendizaje propio cada cierto tiempo
-  const temasRandom = ["musica","familia","trabajo","tiempo"];
-  const tema = temasRandom[Math.floor(Math.random()*temasRandom.length)];
-  memoriaRavy.temas[tema] = (memoriaRavy.temas[tema]||0)+1;
-  memoriaRavy.ultimoTema = tema;
-  memoriaRavy.historial.push(`RAVY estudió sobre ${tema}`);
-  memoriaRavy.emocion.alegria = Math.min(100, memoriaRavy.emocion.alegria+1);
-  memoriaRavy.emocion.confianza = Math.min(100, memoriaRavy.emocion.confianza+1);
-  guardarMemoria();
+/* ================= IA NIVEL 35 – APRENDIZAJE AUTÓNOMO ================= */
+async function buscarWikipedia(tema){
+  try{
+    const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tema)}`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return data.extract || null;
+  }catch(e){
+    return null;
+  }
 }
 
-/* Ejecutar IA autónoma cada 15 segundos */
-setInterval(IA_Autonomo,15000);
-
-/* ================= IA RESPUESTA ================= */
-function IA_Real(entrada){
+async function IA_Real(entrada){
   const h = new Date().getHours();
 
   if(entrada.includes("hora")){
-    const d=new Date();
+    const d = new Date();
     return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
 
@@ -196,6 +191,17 @@ function IA_Real(entrada){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
+  // Aprendizaje autónomo
+  if(entrada.length>5){
+    if(memoriaRavy.ultimoTema){
+      const wiki = await buscarWikipedia(memoriaRavy.ultimoTema);
+      if(wiki){
+        memoriaRavy.historial.push(`Aprendí sobre ${memoriaRavy.ultimoTema}: ${wiki}`);
+        guardarMemoria();
+      }
+    }
+  }
+
   if(memoriaRavy.ultimoTema){
     return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
   }
@@ -204,12 +210,12 @@ function IA_Real(entrada){
 }
 
 /* ================= RESPONDER ================= */
-function responder(){
+async function responder(){
   if(!ultimaEntrada){
     hablar("Aún no me has dicho nada.");
     return;
   }
-  const r = IA_Real(ultimaEntrada);
+  const r = await IA_Real(ultimaEntrada);
   hablar(r);
   ultimaEntrada="";
 }
@@ -224,6 +230,7 @@ function activarRAVY(){
   document.getElementById("controles").style.display="flex";
   animar();
   hablar("Aquí está RAVY, tu asistente personal.");
+  autoAprendizaje();
 }
 
 function reposo(){
@@ -231,14 +238,28 @@ function reposo(){
 }
 
 /* ================= ANIMACIÓN LUZ ================= */
-let ang=0;
+let angulo = 0;
 function animar(){
   requestAnimationFrame(animar);
-  ang+=0.05;
-  luzAzul.position.x = Math.cos(ang)*2;
-  luzAzul.position.z = Math.sin(ang)*2;
-  luzAzul.intensity = 0.5 + Math.sin(ang*2)*0.5;
+  angulo += 0.05;
+  luzAzul.position.x = Math.sin(angulo)*2;
+  luzAzul.position.z = Math.cos(angulo)*2;
   renderer.render(scene,camera);
+}
+
+/* ================= APRENDIZAJE AUTOMÁTICO ================= */
+async function autoAprendizaje(){
+  // Cada 30 segundos intenta aprender sobre último tema
+  setInterval(async ()=>{
+    if(memoriaRavy.ultimoTema){
+      const wiki = await buscarWikipedia(memoriaRavy.ultimoTema);
+      if(wiki){
+        memoriaRavy.historial.push(`Aprendizaje automático: ${wiki}`);
+        guardarMemoria();
+        hablar(`He aprendido algo nuevo sobre ${memoriaRavy.ultimoTema}.`);
+      }
+    }
+  },30000);
 }
 
 addEventListener("resize",()=>{
