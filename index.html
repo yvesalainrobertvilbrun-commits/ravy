@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 42</title>
+<title>RAVY – Nivel 43</title>
 
 <style>
 body{
@@ -136,10 +136,13 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* Luz azul energética */
+/* Luz azul energética con halo dinámico */
 const luzAzul = new THREE.PointLight(0x4169e1,2,10);
-luzAzul.position.set(0,1,2);
+const haloGeometry = new THREE.SphereGeometry(0.5,32,32);
+const haloMaterial = new THREE.MeshBasicMaterial({color:0x4169e1, transparent:true, opacity:0.2});
+const halo = new THREE.Mesh(haloGeometry,haloMaterial);
 scene.add(luzAzul);
+scene.add(halo);
 
 /* Luz ambiente y direccional */
 scene.add(new THREE.AmbientLight(0xffffff,0.5));
@@ -147,7 +150,7 @@ const luz = new THREE.DirectionalLight(0xffffff,0.7);
 luz.position.set(5,10,7);
 scene.add(luz);
 
-/* ================= MEMORIA NIVEL 42 ================= */
+/* ================= MEMORIA NIVEL 43 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
@@ -216,7 +219,7 @@ function procesarMemoria(texto){
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 42 ================= */
+/* ================= IA NIVEL 43 ================= */
 async function buscarWikipedia(tema){
   try{
     const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tema)}`;
@@ -305,26 +308,33 @@ function reposo(){
   location.reload();
 }
 
-/* ================= ANIMACIÓN LUZ CON EMOCIÓN ================= */
+/* ================= ANIMACIÓN LUZ CON HALO ================= */
 let angulo = 0;
 function animar(){
   requestAnimationFrame(animar);
   angulo += 0.05;
 
-  // Cambia posición
+  // Posición
   luzAzul.position.x = Math.sin(angulo)*2;
   luzAzul.position.z = Math.cos(angulo)*2;
+  halo.position.copy(luzAzul.position);
 
-  // Cambia color e intensidad según emoción
+  // Pulso y halo según emociones
   const alegria = memoriaRavy.emocion.alegria;
   const tristeza = memoriaRavy.emocion.tristeza;
   const miedo = memoriaRavy.emocion.miedo;
-  const confianza = memoriaRavy.emocion.confianza;
+
+  const intensidad = 1.5 + (alegria-tristeza+miedo)/50;
+  luzAzul.intensity = intensidad;
+
+  halo.scale.set(1+alegria/100,1+alegria/100,1+alegria/100);
+  halo.material.opacity = 0.2 + alegria/500 - miedo/300;
+
+  // Color dinámico
   luzAzul.color.setHSL(0.6,1,0.5 + (alegria-tristeza)/200);
-  luzAzul.intensity = 1.5 + (alegria-tristeza+miedo)/50;
+  halo.material.color.setHSL(0.6,1,0.5 + (alegria-tristeza)/200);
 
   actualizarPanelEmociones();
-
   renderer.render(scene,camera);
 }
 
