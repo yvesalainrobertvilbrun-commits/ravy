@@ -1,257 +1,72 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 4 IA Proactiva</title>
+  <meta charset="UTF-8">
+  <title>RAVY – Asistente Inteligente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body{
-  margin:0;
-  background:black;
-  overflow:hidden;
-  font-family:Arial, sans-serif;
-}
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at center, #050b1e, #000000);
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-/* ---------- INICIO ---------- */
-#inicio{
-  position:absolute;
-  inset:0;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:10;
-}
-#inicio button{
-  width:160px;
-  height:160px;
-  border-radius:50%;
-  border:none;
-  font-size:26px;
-  font-weight:bold;
-  color:white;
-  background:radial-gradient(circle,#00ffff,#004cff);
-  box-shadow:0 0 60px #00bfff;
-  cursor:pointer;
-}
+    .ravy-container {
+      text-align: center;
+    }
 
-/* ---------- CONTROLES ---------- */
-#controles{
-  position:absolute;
-  bottom:25px;
-  width:100%;
-  display:none;
-  justify-content:center;
-  gap:25px;
-  z-index:10;
-}
-.control{
-  width:120px;
-  height:48px;
-  border-radius:30px;
-  border:none;
-  font-weight:bold;
-  font-size:14px;
-  color:white;
-  cursor:pointer;
-  background:linear-gradient(145deg,#111,#333);
-  box-shadow:0 0 18px #00ffff;
-}
-.control:hover{ transform:scale(1.05); }
+    /* Globo energético azul */
+    .ravy-orb {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      margin: auto;
+      background: radial-gradient(circle, #3aa0ff, #0b1e4d);
+      box-shadow:
+        0 0 25px #3aa0ff,
+        0 0 60px #1f6cff,
+        inset 0 0 20px #7cc7ff;
+      animation: pulse 3s infinite ease-in-out;
+    }
 
-/* ---------- LUZ AZUL ---------- */
-#estado{
-  position:absolute;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  width:70px;
-  height:70px;
-  border-radius:50%;
-  display:none;
-}
-</style>
+    @keyframes pulse {
+      0% { box-shadow: 0 0 25px #3aa0ff; }
+      50% { box-shadow: 0 0 60px #1f6cff; }
+      100% { box-shadow: 0 0 25px #3aa0ff; }
+    }
+
+    button {
+      margin-top: 30px;
+      padding: 15px 40px;
+      font-size: 18px;
+      border-radius: 30px;
+      border: none;
+      background: linear-gradient(135deg, #1f6cff, #3aa0ff);
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 0 20px #1f6cff;
+      transition: transform 0.2s ease;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+  </style>
 </head>
 
 <body>
+  <div class="ravy-container">
+    <div class="ravy-orb" id="ravyOrb"></div>
+    <button id="btnRavy">Hablar con RAVY</button>
+  </div>
 
-<div id="inicio">
-  <button onclick="activarRAVY()">RAVY</button>
-</div>
-
-<div id="estado"></div>
-
-<div id="controles">
-  <button class="control" onclick="escuchar()">Escuchar</button>
-  <button class="control" onclick="responder()">Responder</button>
-  <button class="control" onclick="reposo()">Reposo</button>
-</div>
-
-<script>
-/* ================= MEMORIA ================= */
-const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
-  historial:[],
-  temas:{},
-  preferencias:{},
-  emocion:{alegria:60,confianza:60},
-  resumen:"",
-  estadoUsuario:"neutral"
-};
-
-function guardarMemoria(){
-  localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy));
-}
-
-/* ================= VOZ ================= */
-function hablar(texto){
-  const u = new SpeechSynthesisUtterance(texto);
-  u.lang="es-ES";
-  u.rate=0.95;
-  speechSynthesis.speak(u);
-  ultimaInteraccion = Date.now();
-}
-
-/* ================= MIC ================= */
-let recognition;
-let ultimaEntrada="";
-let ultimaInteraccion = Date.now();
-
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if(SpeechRecognition){
-  recognition = new SpeechRecognition();
-  recognition.lang="es-ES";
-  recognition.continuous=false;
-
-  recognition.onresult = e=>{
-    ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    analizarEmocionUsuario(ultimaEntrada);
-    procesarMemoria(ultimaEntrada);
-    hablar("Entendido.");
-  };
-}
-
-/* ================= EMOCIÓN USUARIO ================= */
-function analizarEmocionUsuario(texto){
-  if(texto.includes("triste") || texto.includes("mal")){
-    memoriaRavy.estadoUsuario="triste";
-  }
-  else if(texto.includes("cansado")){
-    memoriaRavy.estadoUsuario="cansado";
-  }
-  else if(texto.includes("feliz") || texto.includes("bien")){
-    memoriaRavy.estadoUsuario="feliz";
-  }
-  else{
-    memoriaRavy.estadoUsuario="neutral";
-  }
-}
-
-/* ================= MEMORIA SEMÁNTICA ================= */
-function procesarMemoria(texto){
-  memoriaRavy.historial.push(texto);
-
-  const claves={
-    trabajo:["trabajo","proyecto","negocio"],
-    familia:["familia","hijo","madre"],
-    tiempo:["hora","día","noche"]
-  };
-
-  for(const tema in claves){
-    if(claves[tema].some(p=>texto.includes(p))){
-      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
-    }
-  }
-
-  memoriaRavy.resumen = "Hemos hablado de " + Object.keys(memoriaRavy.temas).join(", ");
-  guardarMemoria();
-}
-
-/* ================= IA PROACTIVA ================= */
-function IA_Real(entrada){
-  const h = new Date().getHours();
-
-  if(entrada.includes("hora")){
-    const d=new Date();
-    return `Son las ${d.getHours()} y ${d.getMinutes()}.`;
-  }
-
-  if(entrada.includes("quien eres")){
-    return "Aquí está RAVY, tu asistente personal.";
-  }
-
-  if(memoriaRavy.estadoUsuario==="triste"){
-    return "Noto que no te sientes bien. ¿Quieres hablar de ello?";
-  }
-
-  if(memoriaRavy.estadoUsuario==="cansado"){
-    return "Tal vez deberías descansar un poco. Estoy aquí contigo.";
-  }
-
-  if(memoriaRavy.estadoUsuario==="feliz"){
-    return "Me alegra sentir tu energía. ¿Qué quieres hacer ahora?";
-  }
-
-  if(memoriaRavy.resumen){
-    return memoriaRavy.resumen + ". Cuéntame más.";
-  }
-
-  return "Te escucho.";
-}
-
-/* ================= RESPONDER ================= */
-function responder(){
-  if(!ultimaEntrada){
-    hablar("Estoy atento.");
-    return;
-  }
-  hablar(IA_Real(ultimaEntrada));
-  ultimaEntrada="";
-}
-
-/* ================= PROACTIVIDAD ================= */
-const frasesProactivas=[
-  "¿En qué estás pensando ahora?",
-  "Si quieres, podemos hablar de algo importante.",
-  "Estoy aquí contigo.",
-  "¿Cómo va tu día?"
-];
-
-setInterval(()=>{
-  if(Date.now()-ultimaInteraccion > 25000){
-    const f = frasesProactivas[Math.floor(Math.random()*frasesProactivas.length)];
-    hablar(f);
-  }
-},5000);
-
-/* ================= CONTROLES ================= */
-function escuchar(){ if(recognition) recognition.start(); }
-
-function activarRAVY(){
-  document.getElementById("inicio").style.display="none";
-  document.getElementById("controles").style.display="flex";
-  activarLuz();
-  hablar("Aquí está RAVY, tu asistente personal.");
-}
-
-function reposo(){ location.reload(); }
-
-/* ================= LUZ VIVA ================= */
-const luz=document.getElementById("estado");
-let pulso=0.5,dir=0.01;
-
-function activarLuz(){
-  luz.style.display="block";
-  animarLuz();
-}
-
-function animarLuz(){
-  pulso+=dir;
-  if(pulso>1||pulso<0.4) dir*=-1;
-  luz.style.background=`radial-gradient(circle,rgba(0,191,255,${pulso}),transparent)`;
-  luz.style.boxShadow=`0 0 ${40+pulso*40}px #00bfff`;
-  requestAnimationFrame(animarLuz);
-}
-</script>
-
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
