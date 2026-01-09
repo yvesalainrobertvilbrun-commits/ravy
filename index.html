@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 39</title>
+<title>RAVY – Nivel 40</title>
 
 <style>
 body{
@@ -33,6 +33,11 @@ body{
   background:radial-gradient(circle,#00ffff,#0066ff);
   box-shadow:0 0 50px #00ffff;
   cursor:pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+#inicio button:hover{
+  transform: scale(1.1);
+  box-shadow: 0 0 80px #00ffff;
 }
 
 /* ---------- CONTROLES ---------- */
@@ -46,18 +51,33 @@ body{
   z-index:10;
 }
 .control{
-  width:120px;
-  height:48px;
-  border-radius:30px;
+  width:140px;
+  height:50px;
+  border-radius:25px;
   border:none;
   font-weight:bold;
-  font-size:14px;
+  font-size:16px;
   color:white;
   cursor:pointer;
-  background:linear-gradient(145deg,#111,#333);
-  box-shadow:0 0 18px #00ffff;
+  background: linear-gradient(145deg,#111,#222);
+  box-shadow:0 0 20px #00ffff;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
 }
-.control:hover{ transform:scale(1.05); }
+.control:hover{
+  transform: scale(1.1);
+  box-shadow:0 0 40px #00ffff;
+  background: linear-gradient(145deg,#00aaff,#0044cc);
+}
+
+/* Botón de reposo más destacado */
+#reposoBtn{
+  background: radial-gradient(circle,#ff5555,#aa0000);
+  box-shadow:0 0 30px #ff5555;
+}
+#reposoBtn:hover{
+  background: radial-gradient(circle,#ff8888,#ff0000);
+  box-shadow:0 0 60px #ff5555;
+}
 </style>
 </head>
 
@@ -72,7 +92,7 @@ body{
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
-  <button class="control" onclick="reposo()">Reposo</button>
+  <button class="control" id="reposoBtn" onclick="reposo()">Reposo</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
@@ -97,7 +117,7 @@ const luz = new THREE.DirectionalLight(0xffffff,0.7);
 luz.position.set(5,10,7);
 scene.add(luz);
 
-/* ================= MEMORIA NIVEL 39 ================= */
+/* ================= MEMORIA NIVEL 40 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
@@ -161,7 +181,7 @@ function procesarMemoria(texto){
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 39 – AUTONOMÍA EXTENDIDA ================= */
+/* ================= IA NIVEL 40 – AUTONOMÍA AVANZADA ================= */
 async function buscarWikipedia(tema){
   try{
     const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tema)}`;
@@ -169,18 +189,6 @@ async function buscarWikipedia(tema){
     if(!res.ok) return null;
     const data = await res.json();
     return data.extract || null;
-  }catch(e){
-    return null;
-  }
-}
-
-async function buscarAPIexterna(query){
-  // Ejemplo: usar API pública de noticias o info libre
-  try{
-    const res = await fetch(`https://api.publicapis.org/entries`);
-    if(!res.ok) return null;
-    const data = await res.json();
-    return `Información general: ${data.count} entradas disponibles.`;
   }catch(e){
     return null;
   }
@@ -209,7 +217,7 @@ async function IA_Real(entrada){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  // Aprendizaje y actualización de memoria
+  // Aprendizaje automático de memoria
   const temasOrdenados = Object.keys(memoriaRavy.temas).sort((a,b)=>memoriaRavy.temas[b]-memoriaRavy.temas[a]);
   for(const tema of temasOrdenados){
     const wiki = await buscarWikipedia(tema);
@@ -222,17 +230,6 @@ async function IA_Real(entrada){
     }
   }
 
-  // Consulta API externa para más inteligencia
-  if(Math.random()>0.5){
-    const infoExterna = await buscarAPIexterna(entrada);
-    if(infoExterna){
-      memoriaRavy.historial.push(`Información externa: ${infoExterna}`);
-      guardarMemoria();
-      hablar(`He buscado información externa sobre tu tema.`);
-    }
-  }
-
-  // Respuesta detallada
   if(memoriaRavy.ultimoTema){
     const resumen = memoriaRavy.resumenes[memoriaRavy.ultimoTema] || "";
     return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}: ${resumen} Te escucho.`;
