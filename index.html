@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 35</title>
+<title>RAVY – Nivel 37</title>
 
 <style>
 body{
@@ -88,7 +88,7 @@ renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /* Luz azul energética */
-const luzAzul = new THREE.PointLight(0x1e90ff,2,10);
+const luzAzul = new THREE.PointLight(0x4169e1,2,10); // Azul real de rey
 luzAzul.position.set(0,1,2);
 scene.add(luzAzul);
 
@@ -97,11 +97,12 @@ const luz = new THREE.DirectionalLight(0xffffff,0.7);
 luz.position.set(5,10,7);
 scene.add(luz);
 
-/* ================= MEMORIA NIVEL 35 ================= */
+/* ================= MEMORIA NIVEL 37 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
+  resumenes:{},
   emocion:{alegria:60,confianza:60},
   ultimoTema:null
 };
@@ -160,7 +161,7 @@ function procesarMemoria(texto){
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 35 – APRENDIZAJE AUTÓNOMO ================= */
+/* ================= IA NIVEL 37 – APRENDIZAJE AVANZADO ================= */
 async function buscarWikipedia(tema){
   try{
     const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tema)}`;
@@ -171,6 +172,12 @@ async function buscarWikipedia(tema){
   }catch(e){
     return null;
   }
+}
+
+async function generarResumen(texto){
+  // Simplemente un resumen por las primeras 3 oraciones
+  const oraciones = texto.split(".").filter(s=>s.trim().length>0);
+  return oraciones.slice(0,3).join(".") + ".";
 }
 
 async function IA_Real(entrada){
@@ -191,19 +198,24 @@ async function IA_Real(entrada){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  // Aprendizaje autónomo
-  if(entrada.length>5){
-    if(memoriaRavy.ultimoTema){
-      const wiki = await buscarWikipedia(memoriaRavy.ultimoTema);
-      if(wiki){
-        memoriaRavy.historial.push(`Aprendí sobre ${memoriaRavy.ultimoTema}: ${wiki}`);
-        guardarMemoria();
-      }
+  // Aprendizaje automático avanzado y clasificación
+  const temasOrdenados = Object.keys(memoriaRavy.temas).sort((a,b)=>memoriaRavy.temas[b]-memoriaRavy.temas[a]);
+
+  for(const tema of temasOrdenados){
+    const wiki = await buscarWikipedia(tema);
+    if(wiki && !memoriaRavy.historial.some(h=>h.includes(wiki))){
+      memoriaRavy.historial.push(`Aprendí sobre ${tema}: ${wiki}`);
+      memoriaRavy.resumenes[tema] = await generarResumen(wiki);
+      guardarMemoria();
+      hablar(`He aprendido algo nuevo y resumido sobre ${tema}.`);
+      break;
     }
   }
 
+  // Respuesta detallada
   if(memoriaRavy.ultimoTema){
-    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
+    const resumen = memoriaRavy.resumenes[memoriaRavy.ultimoTema] || "";
+    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}: ${resumen} Te escucho.`;
   }
 
   return "Te escucho con atención.";
@@ -249,14 +261,16 @@ function animar(){
 
 /* ================= APRENDIZAJE AUTOMÁTICO ================= */
 async function autoAprendizaje(){
-  // Cada 30 segundos intenta aprender sobre último tema
   setInterval(async ()=>{
-    if(memoriaRavy.ultimoTema){
-      const wiki = await buscarWikipedia(memoriaRavy.ultimoTema);
-      if(wiki){
+    const temasOrdenados = Object.keys(memoriaRavy.temas).sort((a,b)=>memoriaRavy.temas[b]-memoriaRavy.temas[a]);
+    for(const tema of temasOrdenados){
+      const wiki = await buscarWikipedia(tema);
+      if(wiki && !memoriaRavy.historial.some(h=>h.includes(wiki))){
         memoriaRavy.historial.push(`Aprendizaje automático: ${wiki}`);
+        memoriaRavy.resumenes[tema] = await generarResumen(wiki);
         guardarMemoria();
-        hablar(`He aprendido algo nuevo sobre ${memoriaRavy.ultimoTema}.`);
+        hablar(`He aprendido algo nuevo y resumido sobre ${tema}.`);
+        break;
       }
     }
   },30000);
