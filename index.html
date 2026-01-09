@@ -3,55 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Registro y Asistente</title>
+<title>RAVY – Memoria Autónoma</title>
+
 <style>
 body{
   margin:0;
   background:black;
-  font-family:Arial, sans-serif;
   overflow:hidden;
+  font-family:Arial, sans-serif;
 }
 
-/* ---------- LOGIN ---------- */
-#loginBox{
-  position:absolute;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:rgba(0,0,50,0.95);
-  z-index:20;
-  color:white;
-  text-align:center;
-}
-#loginBox input{
-  display:block;
-  margin:10px auto;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  width:70%;
-  font-size:16px;
-}
-#loginBox button{
-  margin-top:15px;
-  padding:12px 25px;
-  border:none;
-  border-radius:15px;
-  font-size:18px;
-  font-weight:bold;
-  color:white;
-  background:linear-gradient(145deg,#00ffff,#0066ff);
-  cursor:pointer;
-  box-shadow:0 0 30px #00ffff;
-}
-#loginBox button:hover{
-  transform:scale(1.05);
-  box-shadow:0 0 50px #00ffff;
-}
-
-/* ---------- INICIO RAVY ---------- */
+/* ---------- INICIO ---------- */
 #inicio{
   position:absolute;
   inset:0;
@@ -59,7 +21,6 @@ body{
   justify-content:center;
   align-items:center;
   z-index:10;
-  display:none;
 }
 #inicio button{
   width:160px;
@@ -99,16 +60,8 @@ body{
 .control:hover{ transform:scale(1.05); }
 </style>
 </head>
-<body>
 
-<!-- LOGIN -->
-<div id="loginBox">
-  <h2>Registro / Login RAVY</h2>
-  <input type="text" id="usuario" placeholder="Nombre de usuario">
-  <input type="password" id="password" placeholder="Contraseña">
-  <button onclick="registrar()">Entrar</button>
-  <p id="mensaje"></p>
-</div>
+<body>
 
 <!-- INICIO -->
 <div id="inicio">
@@ -125,123 +78,155 @@ body{
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 
 <script>
-/* =================== LOGIN =================== */
-function registrar(){
-  const usuario = document.getElementById("usuario").value.trim();
-  const pass = document.getElementById("password").value.trim();
-  const mensaje = document.getElementById("mensaje");
-  if(!usuario || !pass){
-    mensaje.textContent="Completa todos los campos.";
-    return;
-  }
-  const usuarios = JSON.parse(localStorage.getItem("usuariosRAVY"))||{};
-  if(usuarios[usuario]){
-    if(usuarios[usuario]===pass){
-      mensaje.textContent="Bienvenido de nuevo "+usuario;
-      setTimeout(()=>{loginExitoso();},1000);
-    }else{
-      mensaje.textContent="Contraseña incorrecta.";
-    }
-  }else{
-    usuarios[usuario]=pass;
-    localStorage.setItem("usuariosRAVY",JSON.stringify(usuarios));
-    mensaje.textContent="Registro exitoso. Bienvenido "+usuario;
-    setTimeout(()=>{loginExitoso();},1000);
-  }
-}
-function loginExitoso(){
-  document.getElementById("loginBox").style.display="none";
-  document.getElementById("inicio").style.display="flex";
-}
-
-/* =================== ESCENA 3D =================== */
+/* ================= ESCENA ================= */
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
-camera.position.z=6;
+camera.position.z = 6;
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff,0.7));
-const luz = new THREE.DirectionalLight(0xffffff,1);
-luz.position.set(5,10,7);
-scene.add(luz);
-
-/* =================== LUZ AZUL (Avatar) =================== */
-const luzRavy = new THREE.PointLight(0x1a75ff,1,10);
-luzRavy.position.set(0,1,0);
+/* ================= LUZ AZUL ================= */
+const luzRavy = new THREE.PointLight(0x1a73e8,1,8);
+luzRavy.position.set(0,1.5,0);
 scene.add(luzRavy);
-let angulo=0;
 
-/* =================== MEMORIA =================== */
-const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria"))||{
+/* ================= MEMORIA AUTÓNOMA ================= */
+const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
-  emocion:{alegria:60,confianza:60}
+  temas:{},
+  preferencias:{},
+  emocion:{alegria:60,confianza:60},
+  ultimoTema:null
 };
+
 function guardarMemoria(){
   localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy));
 }
 
-/* =================== VOZ =================== */
+/* ================= VOZ ================= */
 function hablar(texto){
   const u = new SpeechSynthesisUtterance(texto);
-  u.lang="es-ES"; u.rate=0.95;
+  u.lang="es-ES";
+  u.rate=0.95;
   speechSynthesis.speak(u);
 }
 
-/* =================== MIC =================== */
+/* ================= MIC ================= */
 let recognition;
 let ultimaEntrada="";
+
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.continuous=false;
   recognition.onresult = e=>{
-    ultimaEntrada=e.results[0][0].transcript.toLowerCase();
-    memoriaRavy.historial.push(ultimaEntrada);
-    guardarMemoria();
+    ultimaEntrada = e.results[0][0].transcript.toLowerCase();
+    procesarMemoria(ultimaEntrada); // memoria autónoma
     hablar("Entendido.");
   };
 }
 
-/* =================== IA =================== */
+/* ================= MEMORIA AUTÓNOMA ================= */
+function procesarMemoria(texto){
+  // Guardar todo lo que diga el usuario
+  memoriaRavy.historial.push(texto);
+
+  // Detectar temas automáticamente
+  const claves = {
+    musica:["musica","canción","artista"],
+    familia:["familia","hijo","esposa","madre"],
+    trabajo:["trabajo","negocio","proyecto"],
+    tiempo:["hora","día","noche"]
+  };
+
+  for(const tema in claves){
+    if(claves[tema].some(p=>texto.includes(p))){
+      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
+      memoriaRavy.ultimoTema=tema;
+    }
+  }
+
+  // Detectar preferencias automáticamente
+  if(texto.includes("me gusta")){
+    memoriaRavy.preferencias[texto]=true;
+  }
+
+  // Emociones autónomas
+  if(texto.includes("feliz") || texto.includes("alegría")){
+    memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+5);
+  }
+  if(texto.includes("confío") || texto.includes("confianza")){
+    memoriaRavy.emocion.confianza=Math.min(100,memoriaRavy.emocion.confianza+5);
+  }
+
+  guardarMemoria();
+}
+
+/* ================= IA ================= */
 function IA_Real(entrada){
-  const h=new Date().getHours();
+  const h = new Date().getHours();
+
   if(entrada.includes("hora")){
     const d=new Date();
-    return `Ahora son las ${d.getHours()} y ${d.getMinutes()}`;
+    return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
+
   if(entrada.includes("buenos")){
     if(h<12) return "Buenos días, estoy contigo.";
-    if(h<18) return "Buenas tardes, sigo atento a ti.";
-    return "Buenas noches, estoy aquí.";
+    if(h<18) return "Buenas tardes, aquí estoy.";
+    return "Buenas noches, sigo atento a ti.";
   }
-  if(entrada.includes("quien eres")) return "Aquí está RAVY, tu asistente personal.";
+
+  if(entrada.includes("quien eres")){
+    return "Aquí está RAVY, tu asistente personal.";
+  }
+
+  if(memoriaRavy.ultimoTema){
+    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
+  }
+
   return "Te escucho con atención.";
 }
 
-/* =================== CONTROLES =================== */
+/* ================= RESPONDER ================= */
+function responder(){
+  if(!ultimaEntrada){
+    hablar("Aún no me has dicho nada.");
+    return;
+  }
+  const r = IA_Real(ultimaEntrada);
+  hablar(r);
+  ultimaEntrada="";
+}
+
+/* ================= CONTROLES ================= */
+function escuchar(){
+  if(recognition) recognition.start();
+}
+
 function activarRAVY(){
   document.getElementById("inicio").style.display="none";
   document.getElementById("controles").style.display="flex";
   animar();
   hablar("Aquí está RAVY, tu asistente personal.");
 }
-function escuchar(){ if(recognition) recognition.start(); }
-function responder(){ if(!ultimaEntrada){ hablar("Aún no me has dicho nada."); return; } const r=IA_Real(ultimaEntrada); hablar(r); ultimaEntrada=""; }
-function reposo(){ location.reload(); }
 
-/* =================== ANIMACIÓN =================== */
+function reposo(){
+  location.reload();
+}
+
+/* ================= ANIMACIÓN LUZ ================= */
+let luzDir=1;
 function animar(){
   requestAnimationFrame(animar);
-  angulo+=0.02;
-  luzRavy.position.x=Math.sin(angulo)*2;
-  luzRavy.position.z=Math.cos(angulo)*2;
-  luzRavy.position.y=1+Math.sin(angulo*2)*0.3;
+  luzRavy.position.y += 0.01*luzDir;
+  if(luzRavy.position.y>2 || luzRavy.position.y<1) luzDir*=-1;
   renderer.render(scene,camera);
 }
+
 addEventListener("resize",()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
