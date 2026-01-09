@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 37</title>
+<title>RAVY – Nivel 38</title>
 
 <style>
 body{
@@ -88,7 +88,7 @@ renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /* Luz azul energética */
-const luzAzul = new THREE.PointLight(0x4169e1,2,10); // Azul real de rey
+const luzAzul = new THREE.PointLight(0x4169e1,2,10); // Azul rey
 luzAzul.position.set(0,1,2);
 scene.add(luzAzul);
 
@@ -97,7 +97,7 @@ const luz = new THREE.DirectionalLight(0xffffff,0.7);
 luz.position.set(5,10,7);
 scene.add(luz);
 
-/* ================= MEMORIA NIVEL 37 ================= */
+/* ================= MEMORIA NIVEL 38 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
@@ -161,7 +161,7 @@ function procesarMemoria(texto){
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 37 – APRENDIZAJE AVANZADO ================= */
+/* ================= IA NIVEL 38 – AUTONOMÍA ================= */
 async function buscarWikipedia(tema){
   try{
     const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tema)}`;
@@ -175,7 +175,6 @@ async function buscarWikipedia(tema){
 }
 
 async function generarResumen(texto){
-  // Simplemente un resumen por las primeras 3 oraciones
   const oraciones = texto.split(".").filter(s=>s.trim().length>0);
   return oraciones.slice(0,3).join(".") + ".";
 }
@@ -198,16 +197,15 @@ async function IA_Real(entrada){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  // Aprendizaje automático avanzado y clasificación
+  // Aprendizaje y actualización de memoria
   const temasOrdenados = Object.keys(memoriaRavy.temas).sort((a,b)=>memoriaRavy.temas[b]-memoriaRavy.temas[a]);
-
   for(const tema of temasOrdenados){
     const wiki = await buscarWikipedia(tema);
     if(wiki && !memoriaRavy.historial.some(h=>h.includes(wiki))){
       memoriaRavy.historial.push(`Aprendí sobre ${tema}: ${wiki}`);
       memoriaRavy.resumenes[tema] = await generarResumen(wiki);
       guardarMemoria();
-      hablar(`He aprendido algo nuevo y resumido sobre ${tema}.`);
+      hablar(`He aprendido algo nuevo sobre ${tema}.`);
       break;
     }
   }
@@ -243,6 +241,7 @@ function activarRAVY(){
   animar();
   hablar("Aquí está RAVY, tu asistente personal.");
   autoAprendizaje();
+  iniciarAutonomia();
 }
 
 function reposo(){
@@ -274,6 +273,20 @@ async function autoAprendizaje(){
       }
     }
   },30000);
+}
+
+/* ================= AUTONOMÍA ================= */
+function iniciarAutonomia(){
+  setInterval(()=>{
+    const temas = Object.keys(memoriaRavy.temas);
+    if(temas.length===0) return;
+    const temaAleatorio = temas[Math.floor(Math.random()*temas.length)];
+    if(Math.random()>0.7){
+      hablar(`Propongo hablar sobre ${temaAleatorio}.`);
+      memoriaRavy.ultimoTema = temaAleatorio;
+      guardarMemoria();
+    }
+  },60000); // cada 60 segundos RAVY propone temas
 }
 
 addEventListener("resize",()=>{
