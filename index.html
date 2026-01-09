@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 40</title>
+<title>RAVY – Nivel 42</title>
 
 <style>
 body{
@@ -11,6 +11,7 @@ body{
   background:black;
   overflow:hidden;
   font-family:Arial, sans-serif;
+  color:white;
 }
 
 /* ---------- INICIO ---------- */
@@ -68,8 +69,6 @@ body{
   box-shadow:0 0 40px #00ffff;
   background: linear-gradient(145deg,#00aaff,#0044cc);
 }
-
-/* Botón de reposo más destacado */
 #reposoBtn{
   background: radial-gradient(circle,#ff5555,#aa0000);
   box-shadow:0 0 30px #ff5555;
@@ -78,6 +77,28 @@ body{
   background: radial-gradient(circle,#ff8888,#ff0000);
   box-shadow:0 0 60px #ff5555;
 }
+
+/* ---------- PANEL DE EMOCIONES ---------- */
+#emocionesPanel{
+  position:absolute;
+  right:20px;
+  top:20px;
+  width:150px;
+  padding:10px;
+  background: rgba(0,0,0,0.5);
+  border-radius:12px;
+  font-size:14px;
+}
+.bar{
+  height:14px;
+  border-radius:7px;
+  margin:6px 0;
+  background:#00ffff;
+  transition: width 0.3s, background 0.3s;
+}
+.bar-tristeza{ background:#5555ff; }
+.bar-miedo{ background:#ff5555; }
+.bar-confianza{ background:#00ff88; }
 </style>
 </head>
 
@@ -95,6 +116,14 @@ body{
   <button class="control" id="reposoBtn" onclick="reposo()">Reposo</button>
 </div>
 
+<!-- PANEL DE EMOCIONES -->
+<div id="emocionesPanel" style="display:none;">
+  <div>Alegría: <div id="alegriaBar" class="bar"></div></div>
+  <div>Tristeza: <div id="tristezaBar" class="bar bar-tristeza"></div></div>
+  <div>Miedo: <div id="miedoBar" class="bar bar-miedo"></div></div>
+  <div>Confianza: <div id="confianzaBar" class="bar bar-confianza"></div></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 
 <script>
@@ -108,22 +137,23 @@ renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /* Luz azul energética */
-const luzAzul = new THREE.PointLight(0x4169e1,2,10); // Azul rey
+const luzAzul = new THREE.PointLight(0x4169e1,2,10);
 luzAzul.position.set(0,1,2);
 scene.add(luzAzul);
 
+/* Luz ambiente y direccional */
 scene.add(new THREE.AmbientLight(0xffffff,0.5));
 const luz = new THREE.DirectionalLight(0xffffff,0.7);
 luz.position.set(5,10,7);
 scene.add(luz);
 
-/* ================= MEMORIA NIVEL 40 ================= */
+/* ================= MEMORIA NIVEL 42 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
   resumenes:{},
-  emocion:{alegria:60,confianza:60},
+  emocion:{alegria:60,tristeza:0,miedo:0,confianza:60},
   ultimoTema:null
 };
 
@@ -152,6 +182,7 @@ if(SpeechRecognition){
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
     procesarMemoria(ultimaEntrada);
     hablar("Entendido.");
+    actualizarPanelEmociones();
   };
 }
 
@@ -177,11 +208,15 @@ function procesarMemoria(texto){
     memoriaRavy.preferencias[texto]=true;
   }
 
-  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
+  // Ajuste de emociones según interacción
+  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+2);
+  memoriaRavy.emocion.tristeza=Math.max(0,memoriaRavy.emocion.tristeza-1);
+  memoriaRavy.emocion.confianza=Math.min(100,memoriaRavy.emocion.confianza+1);
+  memoriaRavy.emocion.miedo=Math.max(0,memoriaRavy.emocion.miedo-1);
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 40 – AUTONOMÍA AVANZADA ================= */
+/* ================= IA NIVEL 42 ================= */
 async function buscarWikipedia(tema){
   try{
     const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tema)}`;
@@ -217,7 +252,7 @@ async function IA_Real(entrada){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
-  // Aprendizaje automático de memoria
+  // Aprendizaje automático
   const temasOrdenados = Object.keys(memoriaRavy.temas).sort((a,b)=>memoriaRavy.temas[b]-memoriaRavy.temas[a]);
   for(const tema of temasOrdenados){
     const wiki = await buscarWikipedia(tema);
@@ -226,6 +261,7 @@ async function IA_Real(entrada){
       memoriaRavy.resumenes[tema] = await generarResumen(wiki);
       guardarMemoria();
       hablar(`He aprendido algo nuevo sobre ${tema}.`);
+      actualizarPanelEmociones();
       break;
     }
   }
@@ -247,6 +283,7 @@ async function responder(){
   const r = await IA_Real(ultimaEntrada);
   hablar(r);
   ultimaEntrada="";
+  actualizarPanelEmociones();
 }
 
 /* ================= CONTROLES ================= */
@@ -257,6 +294,7 @@ function escuchar(){
 function activarRAVY(){
   document.getElementById("inicio").style.display="none";
   document.getElementById("controles").style.display="flex";
+  document.getElementById("emocionesPanel").style.display="block";
   animar();
   hablar("Aquí está RAVY, tu asistente personal.");
   autoAprendizaje();
@@ -267,14 +305,35 @@ function reposo(){
   location.reload();
 }
 
-/* ================= ANIMACIÓN LUZ ================= */
+/* ================= ANIMACIÓN LUZ CON EMOCIÓN ================= */
 let angulo = 0;
 function animar(){
   requestAnimationFrame(animar);
   angulo += 0.05;
+
+  // Cambia posición
   luzAzul.position.x = Math.sin(angulo)*2;
   luzAzul.position.z = Math.cos(angulo)*2;
+
+  // Cambia color e intensidad según emoción
+  const alegria = memoriaRavy.emocion.alegria;
+  const tristeza = memoriaRavy.emocion.tristeza;
+  const miedo = memoriaRavy.emocion.miedo;
+  const confianza = memoriaRavy.emocion.confianza;
+  luzAzul.color.setHSL(0.6,1,0.5 + (alegria-tristeza)/200);
+  luzAzul.intensity = 1.5 + (alegria-tristeza+miedo)/50;
+
+  actualizarPanelEmociones();
+
   renderer.render(scene,camera);
+}
+
+/* ================= PANEL DE EMOCIONES ================= */
+function actualizarPanelEmociones(){
+  document.getElementById("alegriaBar").style.width = memoriaRavy.emocion.alegria + "%";
+  document.getElementById("tristezaBar").style.width = memoriaRavy.emocion.tristeza + "%";
+  document.getElementById("miedoBar").style.width = memoriaRavy.emocion.miedo + "%";
+  document.getElementById("confianzaBar").style.width = memoriaRavy.emocion.confianza + "%";
 }
 
 /* ================= APRENDIZAJE AUTOMÁTICO ================= */
