@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 2 Mejorado (Voz y Micrófono)</title>
+<title>RAVY – Nivel 3 Memoria Inteligente</title>
 
 <style>
 body{
@@ -125,14 +125,16 @@ const luz = new THREE.DirectionalLight(0xffffff,1);
 luz.position.set(5,10,7);
 scene.add(luz);
 
-/* ================= MEMORIA ================= */
+/* ================= MEMORIA NIVEL 3 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
   emocion:{alegria:60,confianza:60},
-  ultimoTema:null
+  ultimoTema:null,
+  resumen:""
 };
+
 function guardarMemoria(){ localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy)); }
 
 /* ================= VOZ ================= */
@@ -154,7 +156,7 @@ if(!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)){
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SpeechRecognition();
   recognition.lang = "es-ES";
-  recognition.continuous = false; // frase completa por intento
+  recognition.continuous = false;
   recognition.interimResults = false;
 
   recognition.onstart = ()=>{
@@ -180,44 +182,64 @@ if(!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)){
   };
 }
 
-/* ================= MEMORIA SEMÁNTICA ================= */
+/* ================= MEMORIA SEMÁNTICA Y AUTÓNOMA ================= */
 function procesarMemoria(texto){
   memoriaRavy.historial.push(texto);
+
   const claves = {
     musica:["musica","canción","artista"],
     familia:["familia","hijo","esposa","madre"],
     trabajo:["trabajo","negocio","proyecto"],
     tiempo:["hora","día","noche"]
   };
+
   for(const tema in claves){
     if(claves[tema].some(p=>texto.includes(p))){
       memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
       memoriaRavy.ultimoTema=tema;
     }
   }
+
   if(texto.includes("me gusta")) memoriaRavy.preferencias[texto]=true;
+
+  // Incrementar alegría automáticamente
   memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
+
+  // 🔹 Aprendizaje autónomo: generar resumen automático
+  if(memoriaRavy.historial.length>5){
+    memoriaRavy.resumen = "Hemos hablado sobre: " + Object.keys(memoriaRavy.temas).join(", ");
+  }
+
   guardarMemoria();
 }
 
-/* ================= IA ================= */
+/* ================= IA NIVEL 3 ================= */
 function IA_Real(entrada){
   const h = new Date().getHours();
+
   if(entrada.includes("hora")){
-    const d=new Date();
+    const d = new Date();
     return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
+
   if(entrada.includes("buenos")){
     if(h<12) return "Buenos días, estoy contigo.";
     if(h<18) return "Buenas tardes, aquí estoy.";
     return "Buenas noches, sigo atento a ti.";
   }
+
   if(entrada.includes("quien eres")){
     return "Aquí está RAVY, tu asistente personal.";
   }
+
+  if(memoriaRavy.resumen){
+    return `Según lo que recuerdo: ${memoriaRavy.resumen}. Te escucho con atención.`;
+  }
+
   if(memoriaRavy.ultimoTema){
     return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
   }
+
   return "Te escucho con atención.";
 }
 
