@@ -3,18 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 43</title>
-
+<title>RAVY – Registro y Asistente</title>
 <style>
 body{
   margin:0;
   background:black;
-  overflow:hidden;
   font-family:Arial, sans-serif;
-  color:white;
+  overflow:hidden;
 }
 
-/* ---------- INICIO ---------- */
+/* ---------- LOGIN ---------- */
+#loginBox{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,50,0.95);
+  z-index:20;
+  color:white;
+  text-align:center;
+}
+#loginBox input{
+  display:block;
+  margin:10px auto;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  width:70%;
+  font-size:16px;
+}
+#loginBox button{
+  margin-top:15px;
+  padding:12px 25px;
+  border:none;
+  border-radius:15px;
+  font-size:18px;
+  font-weight:bold;
+  color:white;
+  background:linear-gradient(145deg,#00ffff,#0066ff);
+  cursor:pointer;
+  box-shadow:0 0 30px #00ffff;
+}
+#loginBox button:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 50px #00ffff;
+}
+
+/* ---------- INICIO RAVY ---------- */
 #inicio{
   position:absolute;
   inset:0;
@@ -22,6 +59,7 @@ body{
   justify-content:center;
   align-items:center;
   z-index:10;
+  display:none;
 }
 #inicio button{
   width:160px;
@@ -34,11 +72,6 @@ body{
   background:radial-gradient(circle,#00ffff,#0066ff);
   box-shadow:0 0 50px #00ffff;
   cursor:pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-#inicio button:hover{
-  transform: scale(1.1);
-  box-shadow: 0 0 80px #00ffff;
 }
 
 /* ---------- CONTROLES ---------- */
@@ -52,57 +85,30 @@ body{
   z-index:10;
 }
 .control{
-  width:140px;
-  height:50px;
-  border-radius:25px;
+  width:120px;
+  height:48px;
+  border-radius:30px;
   border:none;
   font-weight:bold;
-  font-size:16px;
+  font-size:14px;
   color:white;
   cursor:pointer;
-  background: linear-gradient(145deg,#111,#222);
-  box-shadow:0 0 20px #00ffff;
-  transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+  background:linear-gradient(145deg,#111,#333);
+  box-shadow:0 0 18px #00ffff;
 }
-.control:hover{
-  transform: scale(1.1);
-  box-shadow:0 0 40px #00ffff;
-  background: linear-gradient(145deg,#00aaff,#0044cc);
-}
-#reposoBtn{
-  background: radial-gradient(circle,#ff5555,#aa0000);
-  box-shadow:0 0 30px #ff5555;
-}
-#reposoBtn:hover{
-  background: radial-gradient(circle,#ff8888,#ff0000);
-  box-shadow:0 0 60px #ff5555;
-}
-
-/* ---------- PANEL DE EMOCIONES ---------- */
-#emocionesPanel{
-  position:absolute;
-  right:20px;
-  top:20px;
-  width:150px;
-  padding:10px;
-  background: rgba(0,0,0,0.5);
-  border-radius:12px;
-  font-size:14px;
-}
-.bar{
-  height:14px;
-  border-radius:7px;
-  margin:6px 0;
-  background:#00ffff;
-  transition: width 0.3s, background 0.3s;
-}
-.bar-tristeza{ background:#5555ff; }
-.bar-miedo{ background:#ff5555; }
-.bar-confianza{ background:#00ff88; }
+.control:hover{ transform:scale(1.05); }
 </style>
 </head>
-
 <body>
+
+<!-- LOGIN -->
+<div id="loginBox">
+  <h2>Registro / Login RAVY</h2>
+  <input type="text" id="usuario" placeholder="Nombre de usuario">
+  <input type="password" id="password" placeholder="Contraseña">
+  <button onclick="registrar()">Entrar</button>
+  <p id="mensaje"></p>
+</div>
 
 <!-- INICIO -->
 <div id="inicio">
@@ -113,270 +119,129 @@ body{
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
-  <button class="control" id="reposoBtn" onclick="reposo()">Reposo</button>
-</div>
-
-<!-- PANEL DE EMOCIONES -->
-<div id="emocionesPanel" style="display:none;">
-  <div>Alegría: <div id="alegriaBar" class="bar"></div></div>
-  <div>Tristeza: <div id="tristezaBar" class="bar bar-tristeza"></div></div>
-  <div>Miedo: <div id="miedoBar" class="bar bar-miedo"></div></div>
-  <div>Confianza: <div id="confianzaBar" class="bar bar-confianza"></div></div>
+  <button class="control" onclick="reposo()">Reposo</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 
 <script>
-/* ================= ESCENA ================= */
+/* =================== LOGIN =================== */
+function registrar(){
+  const usuario = document.getElementById("usuario").value.trim();
+  const pass = document.getElementById("password").value.trim();
+  const mensaje = document.getElementById("mensaje");
+  if(!usuario || !pass){
+    mensaje.textContent="Completa todos los campos.";
+    return;
+  }
+  const usuarios = JSON.parse(localStorage.getItem("usuariosRAVY"))||{};
+  if(usuarios[usuario]){
+    if(usuarios[usuario]===pass){
+      mensaje.textContent="Bienvenido de nuevo "+usuario;
+      setTimeout(()=>{loginExitoso();},1000);
+    }else{
+      mensaje.textContent="Contraseña incorrecta.";
+    }
+  }else{
+    usuarios[usuario]=pass;
+    localStorage.setItem("usuariosRAVY",JSON.stringify(usuarios));
+    mensaje.textContent="Registro exitoso. Bienvenido "+usuario;
+    setTimeout(()=>{loginExitoso();},1000);
+  }
+}
+function loginExitoso(){
+  document.getElementById("loginBox").style.display="none";
+  document.getElementById("inicio").style.display="flex";
+}
+
+/* =================== ESCENA 3D =================== */
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
-camera.position.z = 6;
+camera.position.z=6;
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* Luz azul energética con halo dinámico */
-const luzAzul = new THREE.PointLight(0x4169e1,2,10);
-const haloGeometry = new THREE.SphereGeometry(0.5,32,32);
-const haloMaterial = new THREE.MeshBasicMaterial({color:0x4169e1, transparent:true, opacity:0.2});
-const halo = new THREE.Mesh(haloGeometry,haloMaterial);
-scene.add(luzAzul);
-scene.add(halo);
-
-/* Luz ambiente y direccional */
-scene.add(new THREE.AmbientLight(0xffffff,0.5));
-const luz = new THREE.DirectionalLight(0xffffff,0.7);
+scene.add(new THREE.AmbientLight(0xffffff,0.7));
+const luz = new THREE.DirectionalLight(0xffffff,1);
 luz.position.set(5,10,7);
 scene.add(luz);
 
-/* ================= MEMORIA NIVEL 43 ================= */
-const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
-  historial:[],
-  temas:{},
-  preferencias:{},
-  resumenes:{},
-  emocion:{alegria:60,tristeza:0,miedo:0,confianza:60},
-  ultimoTema:null
-};
+/* =================== LUZ AZUL (Avatar) =================== */
+const luzRavy = new THREE.PointLight(0x1a75ff,1,10);
+luzRavy.position.set(0,1,0);
+scene.add(luzRavy);
+let angulo=0;
 
+/* =================== MEMORIA =================== */
+const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria"))||{
+  historial:[],
+  emocion:{alegria:60,confianza:60}
+};
 function guardarMemoria(){
   localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy));
 }
 
-/* ================= VOZ ================= */
+/* =================== VOZ =================== */
 function hablar(texto){
   const u = new SpeechSynthesisUtterance(texto);
-  u.lang="es-ES";
-  u.rate=0.95;
+  u.lang="es-ES"; u.rate=0.95;
   speechSynthesis.speak(u);
 }
 
-/* ================= MIC ================= */
+/* =================== MIC =================== */
 let recognition;
 let ultimaEntrada="";
-
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(SpeechRecognition){
   recognition = new SpeechRecognition();
   recognition.lang="es-ES";
   recognition.continuous=false;
   recognition.onresult = e=>{
-    ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    procesarMemoria(ultimaEntrada);
+    ultimaEntrada=e.results[0][0].transcript.toLowerCase();
+    memoriaRavy.historial.push(ultimaEntrada);
+    guardarMemoria();
     hablar("Entendido.");
-    actualizarPanelEmociones();
   };
 }
 
-/* ================= MEMORIA SEMÁNTICA ================= */
-function procesarMemoria(texto){
-  memoriaRavy.historial.push(texto);
-
-  const claves = {
-    musica:["musica","canción","artista"],
-    familia:["familia","hijo","esposa","madre"],
-    trabajo:["trabajo","negocio","proyecto"],
-    tiempo:["hora","día","noche"]
-  };
-
-  for(const tema in claves){
-    if(claves[tema].some(p=>texto.includes(p))){
-      memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
-      memoriaRavy.ultimoTema=tema;
-    }
-  }
-
-  if(texto.includes("me gusta")){
-    memoriaRavy.preferencias[texto]=true;
-  }
-
-  // Ajuste de emociones según interacción
-  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+2);
-  memoriaRavy.emocion.tristeza=Math.max(0,memoriaRavy.emocion.tristeza-1);
-  memoriaRavy.emocion.confianza=Math.min(100,memoriaRavy.emocion.confianza+1);
-  memoriaRavy.emocion.miedo=Math.max(0,memoriaRavy.emocion.miedo-1);
-  guardarMemoria();
-}
-
-/* ================= IA NIVEL 43 ================= */
-async function buscarWikipedia(tema){
-  try{
-    const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tema)}`;
-    const res = await fetch(url);
-    if(!res.ok) return null;
-    const data = await res.json();
-    return data.extract || null;
-  }catch(e){
-    return null;
-  }
-}
-
-async function generarResumen(texto){
-  const oraciones = texto.split(".").filter(s=>s.trim().length>0);
-  return oraciones.slice(0,3).join(".") + ".";
-}
-
-async function IA_Real(entrada){
-  const h = new Date().getHours();
-
+/* =================== IA =================== */
+function IA_Real(entrada){
+  const h=new Date().getHours();
   if(entrada.includes("hora")){
-    const d = new Date();
-    return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
+    const d=new Date();
+    return `Ahora son las ${d.getHours()} y ${d.getMinutes()}`;
   }
-
   if(entrada.includes("buenos")){
     if(h<12) return "Buenos días, estoy contigo.";
-    if(h<18) return "Buenas tardes, aquí estoy.";
-    return "Buenas noches, sigo atento a ti.";
+    if(h<18) return "Buenas tardes, sigo atento a ti.";
+    return "Buenas noches, estoy aquí.";
   }
-
-  if(entrada.includes("quien eres")){
-    return "Aquí está RAVY, tu asistente personal.";
-  }
-
-  // Aprendizaje automático
-  const temasOrdenados = Object.keys(memoriaRavy.temas).sort((a,b)=>memoriaRavy.temas[b]-memoriaRavy.temas[a]);
-  for(const tema of temasOrdenados){
-    const wiki = await buscarWikipedia(tema);
-    if(wiki && !memoriaRavy.historial.some(h=>h.includes(wiki))){
-      memoriaRavy.historial.push(`Aprendí sobre ${tema}: ${wiki}`);
-      memoriaRavy.resumenes[tema] = await generarResumen(wiki);
-      guardarMemoria();
-      hablar(`He aprendido algo nuevo sobre ${tema}.`);
-      actualizarPanelEmociones();
-      break;
-    }
-  }
-
-  if(memoriaRavy.ultimoTema){
-    const resumen = memoriaRavy.resumenes[memoriaRavy.ultimoTema] || "";
-    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}: ${resumen} Te escucho.`;
-  }
-
+  if(entrada.includes("quien eres")) return "Aquí está RAVY, tu asistente personal.";
   return "Te escucho con atención.";
 }
 
-/* ================= RESPONDER ================= */
-async function responder(){
-  if(!ultimaEntrada){
-    hablar("Aún no me has dicho nada.");
-    return;
-  }
-  const r = await IA_Real(ultimaEntrada);
-  hablar(r);
-  ultimaEntrada="";
-  actualizarPanelEmociones();
-}
-
-/* ================= CONTROLES ================= */
-function escuchar(){
-  if(recognition) recognition.start();
-}
-
+/* =================== CONTROLES =================== */
 function activarRAVY(){
   document.getElementById("inicio").style.display="none";
   document.getElementById("controles").style.display="flex";
-  document.getElementById("emocionesPanel").style.display="block";
   animar();
   hablar("Aquí está RAVY, tu asistente personal.");
-  autoAprendizaje();
-  iniciarAutonomia();
 }
+function escuchar(){ if(recognition) recognition.start(); }
+function responder(){ if(!ultimaEntrada){ hablar("Aún no me has dicho nada."); return; } const r=IA_Real(ultimaEntrada); hablar(r); ultimaEntrada=""; }
+function reposo(){ location.reload(); }
 
-function reposo(){
-  location.reload();
-}
-
-/* ================= ANIMACIÓN LUZ CON HALO ================= */
-let angulo = 0;
+/* =================== ANIMACIÓN =================== */
 function animar(){
   requestAnimationFrame(animar);
-  angulo += 0.05;
-
-  // Posición
-  luzAzul.position.x = Math.sin(angulo)*2;
-  luzAzul.position.z = Math.cos(angulo)*2;
-  halo.position.copy(luzAzul.position);
-
-  // Pulso y halo según emociones
-  const alegria = memoriaRavy.emocion.alegria;
-  const tristeza = memoriaRavy.emocion.tristeza;
-  const miedo = memoriaRavy.emocion.miedo;
-
-  const intensidad = 1.5 + (alegria-tristeza+miedo)/50;
-  luzAzul.intensity = intensidad;
-
-  halo.scale.set(1+alegria/100,1+alegria/100,1+alegria/100);
-  halo.material.opacity = 0.2 + alegria/500 - miedo/300;
-
-  // Color dinámico
-  luzAzul.color.setHSL(0.6,1,0.5 + (alegria-tristeza)/200);
-  halo.material.color.setHSL(0.6,1,0.5 + (alegria-tristeza)/200);
-
-  actualizarPanelEmociones();
+  angulo+=0.02;
+  luzRavy.position.x=Math.sin(angulo)*2;
+  luzRavy.position.z=Math.cos(angulo)*2;
+  luzRavy.position.y=1+Math.sin(angulo*2)*0.3;
   renderer.render(scene,camera);
 }
-
-/* ================= PANEL DE EMOCIONES ================= */
-function actualizarPanelEmociones(){
-  document.getElementById("alegriaBar").style.width = memoriaRavy.emocion.alegria + "%";
-  document.getElementById("tristezaBar").style.width = memoriaRavy.emocion.tristeza + "%";
-  document.getElementById("miedoBar").style.width = memoriaRavy.emocion.miedo + "%";
-  document.getElementById("confianzaBar").style.width = memoriaRavy.emocion.confianza + "%";
-}
-
-/* ================= APRENDIZAJE AUTOMÁTICO ================= */
-async function autoAprendizaje(){
-  setInterval(async ()=>{
-    const temasOrdenados = Object.keys(memoriaRavy.temas).sort((a,b)=>memoriaRavy.temas[b]-memoriaRavy.temas[a]);
-    for(const tema of temasOrdenados){
-      const wiki = await buscarWikipedia(tema);
-      if(wiki && !memoriaRavy.historial.some(h=>h.includes(wiki))){
-        memoriaRavy.historial.push(`Aprendizaje automático: ${wiki}`);
-        memoriaRavy.resumenes[tema] = await generarResumen(wiki);
-        guardarMemoria();
-        hablar(`He aprendido algo nuevo y resumido sobre ${tema}.`);
-        break;
-      }
-    }
-  },30000);
-}
-
-/* ================= AUTONOMÍA ================= */
-function iniciarAutonomia(){
-  setInterval(()=>{
-    const temas = Object.keys(memoriaRavy.temas);
-    if(temas.length===0) return;
-    const temaAleatorio = temas[Math.floor(Math.random()*temas.length)];
-    if(Math.random()>0.7){
-      hablar(`Propongo hablar sobre ${temaAleatorio}.`);
-      memoriaRavy.ultimoTema = temaAleatorio;
-      guardarMemoria();
-    }
-  },60000);
-}
-
 addEventListener("resize",()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
