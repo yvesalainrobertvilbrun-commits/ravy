@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 34</title>
+<title>RAVY – Nivel 35</title>
 
 <style>
 body{
@@ -98,7 +98,7 @@ luzRavy.position.set(0,1.5,0);
 scene.add(luzRavy);
 let anguloLuz = 0;
 
-/* ================= MEMORIA REFINADA NIVEL 34 ================= */
+/* ================= MEMORIA REFINADA NIVEL 35 ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
@@ -133,15 +133,14 @@ if(SpeechRecognition){
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
     procesarMemoria(ultimaEntrada);
     hablar("Entendido.");
+    ejecutarOrden(ultimaEntrada);
   };
 }
 
 /* ================= MEMORIA AVANZADA ================= */
 function procesarMemoria(texto){
-  // Historial
   memoriaRavy.historial.push({texto,fecha:Date.now()});
 
-  // Clasificación semántica
   const claves = {
     musica:["musica","canción","artista"],
     familia:["familia","hijo","esposa","madre"],
@@ -156,16 +155,13 @@ function procesarMemoria(texto){
     }
   }
 
-  // Preferencias
   if(texto.includes("me gusta")){
     memoriaRavy.preferencias[texto]=true;
   }
 
-  // Ajuste de emociones autónomo
   memoriaRavy.emocion.alegria = Math.min(100, memoriaRavy.emocion.alegria + 1);
   memoriaRavy.emocion.confianza = Math.min(100, memoriaRavy.emocion.confianza + 1);
 
-  // Resumen automático
   if(memoriaRavy.historial.length % 5 === 0){
     memoriaRavy.resumen = memoriaRavy.historial.slice(-5).map(h=>h.texto).join(", ");
   }
@@ -173,7 +169,7 @@ function procesarMemoria(texto){
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 34 ================= */
+/* ================= IA AUTÓNOMA ================= */
 function IA_Real(entrada){
   const h = new Date().getHours();
 
@@ -201,6 +197,35 @@ function IA_Real(entrada){
   }
 
   return "Te escucho con atención.";
+}
+
+/* ================= EJECUTAR ORDENES AUTOMÁTICAS ================= */
+function ejecutarOrden(entrada){
+  // Orden de música
+  if(entrada.includes("musica") || entrada.includes("canción")){
+    hablar("Reproduciendo tus canciones favoritas.");
+  }
+
+  // Orden de hora
+  if(entrada.includes("hora")){
+    const d=new Date();
+    hablar(`La hora actual es ${d.getHours()}:${d.getMinutes()}.`);
+  }
+
+  // Orden familiar
+  if(entrada.includes("familia") || entrada.includes("hijo")){
+    hablar("Recuerdo que la familia es importante para ti.");
+  }
+
+  // Orden trabajo
+  if(entrada.includes("trabajo") || entrada.includes("proyecto")){
+    hablar("Vamos a enfocarnos en tus objetivos.");
+  }
+
+  // IA autónoma aprende sola
+  memoriaRavy.emocion.confianza = Math.min(100, memoriaRavy.emocion.confianza + 1);
+  memoriaRavy.emocion.alegria = Math.min(100, memoriaRavy.emocion.alegria + 1);
+  guardarMemoria();
 }
 
 /* ================= RESPONDER ================= */
@@ -234,7 +259,6 @@ function reposo(){
 function animar(){
   requestAnimationFrame(animar);
   
-  // Luz azul anillo energético
   anguloLuz += 0.05;
   luzRavy.position.x = Math.sin(anguloLuz)*1.5;
   luzRavy.position.z = Math.cos(anguloLuz)*1.5;
