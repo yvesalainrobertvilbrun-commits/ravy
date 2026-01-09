@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAVY – Nivel 3 Memoria Inteligente</title>
+<title>RAVY – Nivel 4 IA Proactiva</title>
 
 <style>
 body{
@@ -30,8 +30,8 @@ body{
   font-size:26px;
   font-weight:bold;
   color:white;
-  background:radial-gradient(circle,#00ffff,#0066ff);
-  box-shadow:0 0 50px #00ffff;
+  background:radial-gradient(circle,#00ffff,#004cff);
+  box-shadow:0 0 60px #00bfff;
   cursor:pointer;
 }
 
@@ -56,86 +56,51 @@ body{
   cursor:pointer;
   background:linear-gradient(145deg,#111,#333);
   box-shadow:0 0 18px #00ffff;
-  transition: all 0.2s ease-in-out;
 }
-.control:hover{ 
-  transform:scale(1.05);
-  box-shadow:0 0 25px #00ffff;
-}
+.control:hover{ transform:scale(1.05); }
 
-/* ---------- ESTADO DE LUZ ---------- */
+/* ---------- LUZ AZUL ---------- */
 #estado{
   position:absolute;
   top:20px;
   left:50%;
   transform:translateX(-50%);
-  width:60px;
-  height:60px;
+  width:70px;
+  height:70px;
   border-radius:50%;
-  background:rgba(0,191,255,0.5);
-  box-shadow:0 0 25px #00bfff, 0 0 50px #00bfff inset;
   display:none;
-}
-
-/* ---------- MENSAJES ---------- */
-#mensaje{
-  position:absolute;
-  top:100px;
-  left:50%;
-  transform:translateX(-50%);
-  color:white;
-  font-size:16px;
-  z-index:15;
 }
 </style>
 </head>
 
 <body>
 
-<!-- INICIO -->
 <div id="inicio">
   <button onclick="activarRAVY()">RAVY</button>
 </div>
 
-<!-- MENSAJE DE ESTADO -->
-<div id="mensaje"></div>
-
-<!-- LUZ AZUL -->
 <div id="estado"></div>
 
-<!-- CONTROLES -->
 <div id="controles">
   <button class="control" onclick="escuchar()">Escuchar</button>
   <button class="control" onclick="responder()">Responder</button>
   <button class="control" onclick="reposo()">Reposo</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
-
 <script>
-/* ================= ESCENA ================= */
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,1000);
-camera.position.z = 6;
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
-document.body.appendChild(renderer.domElement);
-scene.add(new THREE.AmbientLight(0xffffff,0.7));
-const luz = new THREE.DirectionalLight(0xffffff,1);
-luz.position.set(5,10,7);
-scene.add(luz);
-
-/* ================= MEMORIA NIVEL 3 ================= */
+/* ================= MEMORIA ================= */
 const memoriaRavy = JSON.parse(localStorage.getItem("ravy_memoria")) || {
   historial:[],
   temas:{},
   preferencias:{},
   emocion:{alegria:60,confianza:60},
-  ultimoTema:null,
-  resumen:""
+  resumen:"",
+  estadoUsuario:"neutral"
 };
 
-function guardarMemoria(){ localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy)); }
+function guardarMemoria(){
+  localStorage.setItem("ravy_memoria",JSON.stringify(memoriaRavy));
+}
 
 /* ================= VOZ ================= */
 function hablar(texto){
@@ -143,152 +108,149 @@ function hablar(texto){
   u.lang="es-ES";
   u.rate=0.95;
   speechSynthesis.speak(u);
+  ultimaInteraccion = Date.now();
 }
 
 /* ================= MIC ================= */
 let recognition;
 let ultimaEntrada="";
-const mensajeDiv = document.getElementById("mensaje");
+let ultimaInteraccion = Date.now();
 
-if(!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)){
-  mensajeDiv.innerText = "Micrófono no soportado en este navegador.";
-}else{
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SpeechRecognition){
   recognition = new SpeechRecognition();
-  recognition.lang = "es-ES";
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  recognition.onstart = ()=>{
-    mensajeDiv.innerText = "RAVY está escuchando...";
-    estadoLuz(true);
-  };
-
-  recognition.onend = ()=>{
-    mensajeDiv.innerText = "Micrófono inactivo";
-    estadoLuz(false);
-  };
-
-  recognition.onerror = (e)=>{
-    mensajeDiv.innerText = "Error en micrófono: " + e.error;
-    estadoLuz(false);
-  };
+  recognition.lang="es-ES";
+  recognition.continuous=false;
 
   recognition.onresult = e=>{
     ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    mensajeDiv.innerText = `Escuché: "${ultimaEntrada}"`;
+    analizarEmocionUsuario(ultimaEntrada);
     procesarMemoria(ultimaEntrada);
     hablar("Entendido.");
   };
 }
 
-/* ================= MEMORIA SEMÁNTICA Y AUTÓNOMA ================= */
+/* ================= EMOCIÓN USUARIO ================= */
+function analizarEmocionUsuario(texto){
+  if(texto.includes("triste") || texto.includes("mal")){
+    memoriaRavy.estadoUsuario="triste";
+  }
+  else if(texto.includes("cansado")){
+    memoriaRavy.estadoUsuario="cansado";
+  }
+  else if(texto.includes("feliz") || texto.includes("bien")){
+    memoriaRavy.estadoUsuario="feliz";
+  }
+  else{
+    memoriaRavy.estadoUsuario="neutral";
+  }
+}
+
+/* ================= MEMORIA SEMÁNTICA ================= */
 function procesarMemoria(texto){
   memoriaRavy.historial.push(texto);
 
-  const claves = {
-    musica:["musica","canción","artista"],
-    familia:["familia","hijo","esposa","madre"],
-    trabajo:["trabajo","negocio","proyecto"],
+  const claves={
+    trabajo:["trabajo","proyecto","negocio"],
+    familia:["familia","hijo","madre"],
     tiempo:["hora","día","noche"]
   };
 
   for(const tema in claves){
     if(claves[tema].some(p=>texto.includes(p))){
       memoriaRavy.temas[tema]=(memoriaRavy.temas[tema]||0)+1;
-      memoriaRavy.ultimoTema=tema;
     }
   }
 
-  if(texto.includes("me gusta")) memoriaRavy.preferencias[texto]=true;
-
-  // Incrementar alegría automáticamente
-  memoriaRavy.emocion.alegria=Math.min(100,memoriaRavy.emocion.alegria+1);
-
-  // 🔹 Aprendizaje autónomo: generar resumen automático
-  if(memoriaRavy.historial.length>5){
-    memoriaRavy.resumen = "Hemos hablado sobre: " + Object.keys(memoriaRavy.temas).join(", ");
-  }
-
+  memoriaRavy.resumen = "Hemos hablado de " + Object.keys(memoriaRavy.temas).join(", ");
   guardarMemoria();
 }
 
-/* ================= IA NIVEL 3 ================= */
+/* ================= IA PROACTIVA ================= */
 function IA_Real(entrada){
   const h = new Date().getHours();
 
   if(entrada.includes("hora")){
-    const d = new Date();
-    return `Ahora mismo son las ${d.getHours()} y ${d.getMinutes()}.`;
-  }
-
-  if(entrada.includes("buenos")){
-    if(h<12) return "Buenos días, estoy contigo.";
-    if(h<18) return "Buenas tardes, aquí estoy.";
-    return "Buenas noches, sigo atento a ti.";
+    const d=new Date();
+    return `Son las ${d.getHours()} y ${d.getMinutes()}.`;
   }
 
   if(entrada.includes("quien eres")){
     return "Aquí está RAVY, tu asistente personal.";
   }
 
+  if(memoriaRavy.estadoUsuario==="triste"){
+    return "Noto que no te sientes bien. ¿Quieres hablar de ello?";
+  }
+
+  if(memoriaRavy.estadoUsuario==="cansado"){
+    return "Tal vez deberías descansar un poco. Estoy aquí contigo.";
+  }
+
+  if(memoriaRavy.estadoUsuario==="feliz"){
+    return "Me alegra sentir tu energía. ¿Qué quieres hacer ahora?";
+  }
+
   if(memoriaRavy.resumen){
-    return `Según lo que recuerdo: ${memoriaRavy.resumen}. Te escucho con atención.`;
+    return memoriaRavy.resumen + ". Cuéntame más.";
   }
 
-  if(memoriaRavy.ultimoTema){
-    return `Seguimos hablando sobre ${memoriaRavy.ultimoTema}. Te escucho.`;
-  }
-
-  return "Te escucho con atención.";
+  return "Te escucho.";
 }
 
 /* ================= RESPONDER ================= */
 function responder(){
-  if(!ultimaEntrada){ hablar("Aún no me has dicho nada."); return; }
-  const r = IA_Real(ultimaEntrada);
-  hablar(r);
+  if(!ultimaEntrada){
+    hablar("Estoy atento.");
+    return;
+  }
+  hablar(IA_Real(ultimaEntrada));
   ultimaEntrada="";
 }
 
+/* ================= PROACTIVIDAD ================= */
+const frasesProactivas=[
+  "¿En qué estás pensando ahora?",
+  "Si quieres, podemos hablar de algo importante.",
+  "Estoy aquí contigo.",
+  "¿Cómo va tu día?"
+];
+
+setInterval(()=>{
+  if(Date.now()-ultimaInteraccion > 25000){
+    const f = frasesProactivas[Math.floor(Math.random()*frasesProactivas.length)];
+    hablar(f);
+  }
+},5000);
+
 /* ================= CONTROLES ================= */
-function escuchar(){ 
-  if(recognition){ recognition.start(); } 
-}
+function escuchar(){ if(recognition) recognition.start(); }
 
 function activarRAVY(){
   document.getElementById("inicio").style.display="none";
   document.getElementById("controles").style.display="flex";
-  animarLuz();
+  activarLuz();
   hablar("Aquí está RAVY, tu asistente personal.");
 }
 
 function reposo(){ location.reload(); }
 
-/* ================= LUZ AZUL ================= */
-const luzDiv = document.getElementById("estado");
-let brillo=0.5;
-let dir=0.005;
+/* ================= LUZ VIVA ================= */
+const luz=document.getElementById("estado");
+let pulso=0.5,dir=0.01;
+
+function activarLuz(){
+  luz.style.display="block";
+  animarLuz();
+}
+
 function animarLuz(){
-  luzDiv.style.display="block";
+  pulso+=dir;
+  if(pulso>1||pulso<0.4) dir*=-1;
+  luz.style.background=`radial-gradient(circle,rgba(0,191,255,${pulso}),transparent)`;
+  luz.style.boxShadow=`0 0 ${40+pulso*40}px #00bfff`;
   requestAnimationFrame(animarLuz);
-  brillo+=dir;
-  if(brillo>0.9 || brillo<0.5) dir*=-1;
-  luzDiv.style.boxShadow=`0 0 ${20+brillo*30}px #00bfff, 0 0 ${50+brillo*50}px #00bfff inset`;
-  luzDiv.style.background=`rgba(0,191,255,${0.3+brillo/2})`;
 }
-function estadoLuz(encendido){
-  luzDiv.style.display = encendido ? "block" : "none";
-}
-
-/* ================= ANIMACIÓN ================= */
-function animar(){ requestAnimationFrame(animar); renderer.render(scene,camera); }
-
-addEventListener("resize",()=>{
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
-});
 </script>
 
 </body>
