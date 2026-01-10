@@ -5,48 +5,120 @@
 <title>RAVY</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{margin:0;background:#000;color:#0ff;font-family:Arial, sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}
-#orb{width:240px;height:240px;border-radius:50%;background:radial-gradient(circle at top,#1aa3ff,#000);box-shadow:0 0 30px #00ccff;transition:.6s;animation:respirar 6s infinite}
-.reposo{box-shadow:0 0 30px #00ccff}
-.escuchando{animation:ondas 1.2s infinite;box-shadow:0 0 70px #00ffcc}
-.pensando{box-shadow:0 0 60px #ffff99}
-.hablando{animation:hablar .9s infinite;box-shadow:0 0 80px #3399ff}
-.feliz{box-shadow:0 0 80px #00ff99}
-.triste{box-shadow:0 0 80px #3399ff}
-.miedo{box-shadow:0 0 80px #ff9933}
-.enojo{box-shadow:0 0 80px #ff3333}
-.calma{box-shadow:0 0 80px #66ccff}
-@keyframes respirar{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-@keyframes hablar{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-@keyframes ondas{0%{box-shadow:0 0 30px #00ffcc}50%{box-shadow:0 0 90px #00ffcc}100%{box-shadow:0 0 30px #00ffcc}}
-button{margin:12px;padding:14px 30px;font-size:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#00ccff,#0033ff);color:#fff;cursor:pointer}
+body{
+  margin:0;
+  background:#000;
+  color:#0ff;
+  font-family:Arial, sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+
+/* ===== ORB ===== */
+#orb{
+  width:240px;
+  height:240px;
+  border-radius:50%;
+  background:radial-gradient(circle at top,#1a9cff,#001933);
+  box-shadow:0 0 35px #00ccff;
+  transition:all .6s ease;
+}
+
+/* ===== ESTADOS ===== */
+.reposo{ animation:respirar 6s infinite; }
+.escuchando{ animation:ondas 1.2s infinite; box-shadow:0 0 90px #00ffcc; }
+.pensando{ animation:giro 3s linear infinite; box-shadow:0 0 70px #ffff99; }
+.hablando{ animation:hablar .9s infinite; box-shadow:0 0 100px #3399ff; }
+
+/* ===== EMOCIONES ===== */
+.feliz{ box-shadow:0 0 90px #00ff99; }
+.triste{ box-shadow:0 0 90px #3399ff; }
+.miedo{ box-shadow:0 0 90px #ff9933; }
+.enojo{ box-shadow:0 0 90px #ff3333; }
+.calma{ box-shadow:0 0 90px #66ccff; }
+
+/* ===== ANIMACIONES ===== */
+@keyframes respirar{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.05)}
+}
+@keyframes hablar{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.1)}
+}
+@keyframes ondas{
+  0%{box-shadow:0 0 30px #00ffcc}
+  50%{box-shadow:0 0 120px #00ffcc}
+  100%{box-shadow:0 0 30px #00ffcc}
+}
+@keyframes giro{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+
+/* ===== TEXTO ESTADO ===== */
+#estadoTexto{
+  margin-top:14px;
+  font-size:16px;
+  opacity:.8;
+  min-height:20px;
+}
+
+/* ===== BOTONES ===== */
+button{
+  margin:14px;
+  padding:14px 30px;
+  font-size:16px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#00ccff,#0033ff);
+  color:#fff;
+  cursor:pointer;
+}
 </style>
 </head>
+
 <body>
 
 <h1>RAVY</h1>
 <div id="orb" class="reposo"></div>
+<div id="estadoTexto">En reposo</div>
+
 <div>
   <button onclick="escuchar()">🎙 Escuchar</button>
   <button onclick="responder()">🧠 Responder</button>
 </div>
 
 <script>
-/* ================= ORB ================= */
+/* ===== REFERENCIAS ===== */
 const orb=document.getElementById("orb");
-const estado=e=>orb.className=e;
+const estadoTexto=document.getElementById("estadoTexto");
 
-/* ================= VOZ ================= */
-function hablar(t){
-  estado("hablando "+ultimaEmocion);
-  const u=new SpeechSynthesisUtterance(t);
+/* ===== ESTADO VISUAL ===== */
+function setEstado(estado,emocion=""){
+  orb.className=estado+" "+emocion;
+  const textos={
+    reposo:"En reposo",
+    escuchando:"Escuchando…",
+    pensando:"Pensando…",
+    hablando:"Hablando…"
+  };
+  estadoTexto.innerText=textos[estado]||"";
+}
+
+/* ===== VOZ ===== */
+function hablar(texto){
+  setEstado("hablando",ultimaEmocion);
+  const u=new SpeechSynthesisUtterance(texto);
   u.lang="es-ES";
-  u.rate=perfil.personalidad==="calida"?0.95:1;
-  u.onend=()=>estado("reposo "+ultimaEmocion);
+  u.onend=()=>setEstado("reposo",ultimaEmocion);
   speechSynthesis.speak(u);
 }
 
-/* ================= MEMORIA ================= */
+/* ===== MEMORIA ===== */
 let memoria=JSON.parse(localStorage.getItem("ravy_memoria"))||[];
 let perfil=JSON.parse(localStorage.getItem("ravy_perfil"))||{
   emociones:{feliz:0,triste:0,miedo:0,enojo:0,calma:0},
@@ -58,7 +130,6 @@ let perfil=JSON.parse(localStorage.getItem("ravy_perfil"))||{
 let ultimaEntrada="",ultimaEmocion="calma";
 let ultimaInteraccion=Date.now();
 
-/* ======= GUARDAR + PRIORIDAD ======= */
 function guardar(texto,emocion){
   memoria.push({texto,emocion,fecha:Date.now()});
   perfil.emociones[emocion]++;
@@ -74,7 +145,7 @@ function persistir(){
   localStorage.setItem("ravy_perfil",JSON.stringify(perfil));
 }
 
-/* ================= EMOCIONES ================= */
+/* ===== EMOCIÓN ===== */
 function detectarEmocion(t){
   if(/feliz|bien|alegre|genial/.test(t)) return "feliz";
   if(/triste|mal|solo|cansado/.test(t)) return "triste";
@@ -83,14 +154,13 @@ function detectarEmocion(t){
   return "calma";
 }
 
-/* ================= TEMAS ================= */
+/* ===== TEMA ===== */
 function extraerTema(t){
   const claves=["familia","trabajo","proyecto","salud","dinero","tiempo","estudio"];
-  const f=claves.find(k=>t.includes(k));
-  return f||perfil.ultimoTema;
+  return claves.find(k=>t.includes(k))||perfil.ultimoTema;
 }
 
-/* ================= PERSONALIDAD ================= */
+/* ===== PERSONALIDAD ===== */
 function actualizarPersonalidad(){
   const e=perfil.emociones;
   if(e.triste+e.miedo>e.feliz) perfil.personalidad="calida";
@@ -98,35 +168,31 @@ function actualizarPersonalidad(){
   else perfil.personalidad="neutral";
 }
 
-/* ================= RESUMEN ================= */
+/* ===== RESUMEN ===== */
 function actualizarResumen(){
-  const recientes=memoria.slice(-10).map(m=>m.texto).join(" ");
-  perfil.resumen=recientes.slice(0,160);
+  perfil.resumen=memoria.slice(-10).map(m=>m.texto).join(" ").slice(0,160);
 }
 
-/* ================= IA ================= */
+/* ===== IA ===== */
 function IA(texto,emocion){
-  if(emocion==="triste")
-    return "Siento que esto es importante para ti. Si quieres, lo vemos juntos con calma.";
-  if(emocion==="feliz")
-    return "Me alegra acompañarte cuando te sientes así. ¿Seguimos por ahí?";
-  if(emocion==="miedo")
-    return "Respira. Estoy contigo y podemos ir paso a paso.";
-  if(perfil.resumen)
-    return `Por lo que hemos hablado, noto que te importa ${perfil.ultimoTema||"esto"}. ¿Continuamos?`;
-  return "Te escucho con atención.";
+  if(emocion==="triste") return "Estoy contigo. Si quieres, lo vemos con calma.";
+  if(emocion==="feliz") return "Me gusta sentir esa energía. Seguimos.";
+  if(emocion==="miedo") return "Respira. No estás solo.";
+  if(perfil.resumen) return `Por lo que hablamos antes sobre ${perfil.ultimoTema||"esto"}, te escucho.`;
+  return "Aquí estoy.";
 }
 
-/* ================= MIC ================= */
+/* ===== MIC ===== */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const rec=new SR(); rec.lang="es-ES";
-rec.onstart=()=>estado("escuchando");
+
+rec.onstart=()=>setEstado("escuchando");
 rec.onresult=e=>{
-  estado("pensando");
+  setEstado("pensando");
   ultimaEntrada=e.results[0][0].transcript.toLowerCase();
   ultimaEmocion=detectarEmocion(ultimaEntrada);
   guardar(ultimaEntrada,ultimaEmocion);
-  estado("reposo "+ultimaEmocion);
+  setEstado("reposo",ultimaEmocion);
 };
 rec.onerror=()=>hablar("No pude escucharte.");
 
@@ -137,12 +203,12 @@ function responder(){
   ultimaEntrada="";
 }
 
-/* ================= IA PROACTIVA ================= */
+/* ===== PROACTIVA ===== */
 setInterval(()=>{
   if(Date.now()-ultimaInteraccion>60000){
     hablar(perfil.personalidad==="calida"
-      ?"Hace un rato no hablamos. Si quieres, te escucho."
-      :"Si te parece, retomamos la conversación.");
+      ?"Hace un rato no hablamos. Te escucho."
+      :"¿Seguimos?");
     ultimaInteraccion=Date.now();
   }
 },20000);
