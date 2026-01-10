@@ -1,16 +1,11 @@
-/RAVY
+ravy-app/
 │
-├── index.html        ✅ COMPLETO
-├── manifest.json     ✅ COMPLETO
-├── service-worker.js ✅ COMPLETO
-│
+├── index.html
 ├── /js
-│   ├── app.js        ✅ COMPLETO
-│   ├── ravy-core.js  ✅ COMPLETO
-│   ├── voice.js      ✅ COMPLETO
-│   ├── memory.js     ✅ COMPLETO
-│   ├── emotions.js   ✅ COMPLETO
-│   └── proactive.js  ✅ COMPLETO
+│   ├── ravy-core.js
+│   ├── memory.js
+│   ├── emotions.js
+│   └── voice.js
 │
-├── icon-192.png
-└── icon-512.png
+├── /css
+│   └── style.css
