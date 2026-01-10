@@ -1,70 +1,33 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>RAVY – Asistente Inteligente</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: radial-gradient(circle at center, #050b1e, #000000);
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    .ravy-container {
-      text-align: center;
-    }
-
-    /* Globo energético azul */
-    .ravy-orb {
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      margin: auto;
-      background: radial-gradient(circle, #3aa0ff, #0b1e4d);
-      box-shadow:
-        0 0 25px #3aa0ff,
-        0 0 60px #1f6cff,
-        inset 0 0 20px #7cc7ff;
-      animation: pulse 3s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0% { box-shadow: 0 0 25px #3aa0ff; }
-      50% { box-shadow: 0 0 60px #1f6cff; }
-      100% { box-shadow: 0 0 25px #3aa0ff; }
-    }
-
-    button {
-      margin-top: 30px;
-      padding: 15px 40px;
-      font-size: 18px;
-      border-radius: 30px;
-      border: none;
-      background: linear-gradient(135deg, #1f6cff, #3aa0ff);
-      color: white;
-      cursor: pointer;
-      box-shadow: 0 0 20px #1f6cff;
-      transition: transform 0.2s ease;
-    }
-
-    button:hover {
-      transform: scale(1.05);
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RAVY</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
-  <div class="ravy-container">
-    <div class="ravy-orb" id="ravyOrb"></div>
-    <button id="btnRavy">Hablar con RAVY</button>
+
+  <!-- PANTALLA INICIAL -->
+  <div id="inicio">
+    <button id="btnInicio">RAVY</button>
+  </div>
+
+  <!-- INTERFAZ PRINCIPAL -->
+  <div id="interfaz" class="oculto">
+
+    <!-- AVATAR ENERGÉTICO -->
+    <div id="avatar">
+      <div id="energia"></div>
+    </div>
+
+    <!-- BOTONES -->
+    <div id="controles">
+      <button id="btnEscuchar">Escuchar</button>
+      <button id="btnResponder">Responder</button>
+      <button id="btnReposo">Reposo</button>
+    </div>
+
   </div>
 
   <script type="module" src="js/app.js"></script>
