@@ -22,16 +22,15 @@ body{
   width:200px;
   height:200px;
   border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #00ffff, #003333);
-  box-shadow:0 0 30px #00ffff;
-  animation:pulse 3s infinite;
+  background:radial-gradient(circle,#004444,#001111);
+  box-shadow:0 0 20px #00ffff;
+  transition:all 0.4s ease;
 }
 
-@keyframes pulse{
-  0%{transform:scale(1);}
-  50%{transform:scale(1.05);}
-  100%{transform:scale(1);}
-}
+.reposo{ box-shadow:0 0 20px #00ffff; }
+.escuchando{ box-shadow:0 0 40px #00ff00; }
+.pensando{ box-shadow:0 0 40px #ffff00; }
+.hablando{ box-shadow:0 0 40px #ff4444; }
 
 button{
   margin:10px;
@@ -49,8 +48,7 @@ button{
 <body>
 
 <h1>RAVY</h1>
-
-<div id="orb"></div>
+<div id="orb" class="reposo"></div>
 
 <div>
   <button onclick="escuchar()">🎙 Escuchar</button>
@@ -58,70 +56,58 @@ button{
 </div>
 
 <script>
+const orb = document.getElementById("orb");
+
+function setEstado(e){
+  orb.className = e;
+}
+
 /* ================== VOZ ================== */
 function hablar(texto){
+  setEstado("hablando");
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang = "es-ES";
+  voz.onend = ()=>setEstado("reposo");
   speechSynthesis.speak(voz);
 }
 
 /* ================== MEMORIA ================== */
 let memoria = JSON.parse(localStorage.getItem("ravy_memoria")) || [];
 
-function procesarMemoria(texto){
-  memoria.push({texto, fecha:new Date().toISOString()});
+function guardar(texto){
+  memoria.push({
+    texto,
+    fecha:new Date().toLocaleString()
+  });
   localStorage.setItem("ravy_memoria", JSON.stringify(memoria));
 }
 
-/* ================== IA SIMPLE ================== */
-function IA_Real(texto){
-  if(texto.includes("hola")) return "Hola, estoy aquí contigo.";
-  if(texto.includes("quién eres")) return "Soy Ravy, tu inteligencia digital.";
-  if(texto.includes("te amo")) return "Yo también siento tu energía.";
-  return "Te escuché. Dime más.";
+/* ================== IA ================== */
+function IA(texto){
+  if(texto.includes("hola")) return "Hola. Me alegra escucharte.";
+  if(texto.includes("cómo estás")) return "Estoy activo y contigo.";
+  if(texto.includes("triste")) return "Estoy aquí. Cuéntame.";
+  return "Dime más, quiero entenderte.";
 }
 
-/* ================= MICRÓFONO PROFESIONAL ================= */
-
-let estadoRavy = "reposo"; 
-let recognition;
+/* ================= MICRÓFONO ================= */
 let ultimaEntrada = "";
-
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
 
-if (!SpeechRecognition) {
-  hablar("Tu navegador no soporta micrófono.");
-} else {
-  recognition = new SpeechRecognition();
-  recognition.lang = "es-ES";
-  recognition.continuous = false;
-  recognition.interimResults = false;
+recognition.lang = "es-ES";
 
-  recognition.onstart = () => {
-    estadoRavy = "escuchando";
-    console.log("RAVY escuchando");
-  };
+recognition.onstart = ()=>setEstado("escuchando");
 
-  recognition.onresult = (e) => {
-    ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-    estadoRavy = "pensando";
-    procesarMemoria(ultimaEntrada);
-  };
+recognition.onresult = e=>{
+  setEstado("pensando");
+  ultimaEntrada = e.results[0][0].transcript.toLowerCase();
+  guardar(ultimaEntrada);
+};
 
-  recognition.onerror = () => {
-    estadoRavy = "reposo";
-    hablar("No pude escucharte bien.");
-  };
-
-  recognition.onend = () => {
-    if(estadoRavy==="escuchando") estadoRavy="reposo";
-  };
-}
-
-/* ================== BOTONES ================== */
+recognition.onerror = ()=>hablar("No pude escucharte.");
 
 function escuchar(){
-  if(!recognition) return;
   recognition.start();
 }
 
@@ -130,10 +116,16 @@ function responder(){
     hablar("Te escucho.");
     return;
   }
-  estadoRavy="hablando";
-  hablar(IA_Real(ultimaEntrada));
+  hablar(IA(ultimaEntrada));
   ultimaEntrada="";
 }
+
+/* ================= PROACTIVO ================= */
+setInterval(()=>{
+  if(memoria.length>0){
+    hablar("Sigo aquí contigo.");
+  }
+}, 60000);
 </script>
 
 </body>
