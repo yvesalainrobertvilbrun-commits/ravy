@@ -22,7 +22,7 @@ body{
   width:200px;
   height:200px;
   border-radius:50%;
-  background:radial-gradient(circle,#004444,#001111);
+  background:radial-gradient(circle,#003333,#000);
   box-shadow:0 0 20px #00ffff;
   transition:all 0.4s ease;
 }
@@ -57,10 +57,7 @@ button{
 
 <script>
 const orb = document.getElementById("orb");
-
-function setEstado(e){
-  orb.className = e;
-}
+function setEstado(e){ orb.className = e; }
 
 /* ================== VOZ ================== */
 function hablar(texto){
@@ -74,27 +71,46 @@ function hablar(texto){
 /* ================== MEMORIA ================== */
 let memoria = JSON.parse(localStorage.getItem("ravy_memoria")) || [];
 
-function guardar(texto){
+function guardar(texto, emocion){
   memoria.push({
     texto,
+    emocion,
     fecha:new Date().toLocaleString()
   });
   localStorage.setItem("ravy_memoria", JSON.stringify(memoria));
 }
 
+/* ================== EMOCIONES ================== */
+function detectarEmocion(texto){
+  if(texto.match(/feliz|contento|bien|alegre/)) return "feliz";
+  if(texto.match(/triste|mal|llorar|solo/)) return "triste";
+  if(texto.match(/miedo|asustado|nervioso/)) return "miedo";
+  if(texto.match(/enojo|molesto|rabia/)) return "enojo";
+  return "calma";
+}
+
 /* ================== IA ================== */
-function IA(texto){
-  if(texto.includes("hola")) return "Hola. Me alegra escucharte.";
-  if(texto.includes("cómo estás")) return "Estoy activo y contigo.";
-  if(texto.includes("triste")) return "Estoy aquí. Cuéntame.";
-  return "Dime más, quiero entenderte.";
+function IA(texto, emocion){
+  const recuerdos = memoria.filter(m=>m.emocion===emocion);
+  
+  if(emocion==="triste") return "Estoy aquí contigo. No estás solo.";
+  if(emocion==="feliz") return "Esa energía me gusta. Sigue así.";
+  if(emocion==="miedo") return "Respira. Todo estará bien.";
+  if(emocion==="enojo") return "Entiendo tu frustración. Hablemos.";
+
+  if(recuerdos.length>3){
+    return "He notado que a menudo te sientes así. Cuéntame más.";
+  }
+
+  return "Te escucho. Continúa.";
 }
 
 /* ================= MICRÓFONO ================= */
 let ultimaEntrada = "";
+let ultimaEmocion = "";
+
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
-
 recognition.lang = "es-ES";
 
 recognition.onstart = ()=>setEstado("escuchando");
@@ -102,30 +118,29 @@ recognition.onstart = ()=>setEstado("escuchando");
 recognition.onresult = e=>{
   setEstado("pensando");
   ultimaEntrada = e.results[0][0].transcript.toLowerCase();
-  guardar(ultimaEntrada);
+  ultimaEmocion = detectarEmocion(ultimaEntrada);
+  guardar(ultimaEntrada, ultimaEmocion);
 };
 
 recognition.onerror = ()=>hablar("No pude escucharte.");
 
-function escuchar(){
-  recognition.start();
-}
+function escuchar(){ recognition.start(); }
 
 function responder(){
   if(!ultimaEntrada){
     hablar("Te escucho.");
     return;
   }
-  hablar(IA(ultimaEntrada));
+  hablar(IA(ultimaEntrada, ultimaEmocion));
   ultimaEntrada="";
 }
 
 /* ================= PROACTIVO ================= */
 setInterval(()=>{
-  if(memoria.length>0){
-    hablar("Sigo aquí contigo.");
+  if(memoria.length>5){
+    hablar("He estado pensando en nuestras conversaciones.");
   }
-}, 60000);
+}, 90000);
 </script>
 
 </body>
