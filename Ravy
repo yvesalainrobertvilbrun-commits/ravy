@@ -1,11 +1,16 @@
-ravy-app/
+/ravy
 │
 ├── index.html
+│
 ├── /js
-│   ├── ravy-core.js
-│   ├── memory.js
-│   ├── emotions.js
-│   └── voice.js
+│   ├── auth.js          ← 🔐 ESTE ES EL ARCHIVO DE ESE CÓDIGO
+│   ├── ravy-core.js     ← 🧠 IA, respuestas, lógica
+│   ├── memory.js        ← 🧠 memoria de RAVY
+│   ├── emotions.js     ← ❤️ detección de emociones
+│   └── proactive.js    ← 🚀 IA proactiva
 │
 ├── /css
-│   └── style.css
+│   └── style.css        (opcional)
+│
+└── /assets
+    └── (sonidos, imágenes, etc.)
