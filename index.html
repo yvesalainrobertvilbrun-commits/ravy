@@ -4,72 +4,28 @@
 <meta charset="UTF-8">
 <title>RAVY</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-body{
-  margin:0;
-  background:#000;
-  color:#0ff;
-  font-family:Arial, sans-serif;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
-}
-
-/* ================= ORB ================= */
-#orb{
-  width:240px;
-  height:240px;
-  border-radius:50%;
-  background:radial-gradient(circle at top,#1aa3ff,#000);
-  box-shadow:0 0 30px #00ccff;
-  transition:all 0.6s ease;
-  animation:respirar 6s infinite;
-}
-
-/* ====== ESTADOS ====== */
-.reposo{ box-shadow:0 0 30px #00ccff; }
-.escuchando{ animation:ondas 1.2s infinite; box-shadow:0 0 70px #00ffcc; }
-.pensando{ box-shadow:0 0 60px #ffff99; }
-.hablando{ animation:hablar 0.9s infinite; box-shadow:0 0 80px #3399ff; }
-
-/* ====== EMOCIONES ====== */
-.feliz{ box-shadow:0 0 80px #00ff99; }
-.triste{ box-shadow:0 0 80px #3399ff; }
-.miedo{ box-shadow:0 0 80px #ff9933; }
-.enojo{ box-shadow:0 0 80px #ff3333; }
-.calma{ box-shadow:0 0 80px #66ccff; }
-
-/* ====== ANIMACIONES ====== */
-@keyframes respirar{0%,100%{transform:scale(1);}50%{transform:scale(1.04);}}
-@keyframes hablar{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
-@keyframes ondas{
-  0%{box-shadow:0 0 30px #00ffcc;}
-  50%{box-shadow:0 0 90px #00ffcc;}
-  100%{box-shadow:0 0 30px #00ffcc;}
-}
-
-/* ================= BOTONES ================= */
-button{
-  margin:12px;
-  padding:14px 30px;
-  font-size:16px;
-  border:none;
-  border-radius:14px;
-  background:linear-gradient(135deg,#00ccff,#0033ff);
-  color:white;
-  cursor:pointer;
-}
+body{margin:0;background:#000;color:#0ff;font-family:Arial, sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}
+#orb{width:240px;height:240px;border-radius:50%;background:radial-gradient(circle at top,#1aa3ff,#000);box-shadow:0 0 30px #00ccff;transition:.6s;animation:respirar 6s infinite}
+.reposo{box-shadow:0 0 30px #00ccff}
+.escuchando{animation:ondas 1.2s infinite;box-shadow:0 0 70px #00ffcc}
+.pensando{box-shadow:0 0 60px #ffff99}
+.hablando{animation:hablar .9s infinite;box-shadow:0 0 80px #3399ff}
+.feliz{box-shadow:0 0 80px #00ff99}
+.triste{box-shadow:0 0 80px #3399ff}
+.miedo{box-shadow:0 0 80px #ff9933}
+.enojo{box-shadow:0 0 80px #ff3333}
+.calma{box-shadow:0 0 80px #66ccff}
+@keyframes respirar{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes hablar{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes ondas{0%{box-shadow:0 0 30px #00ffcc}50%{box-shadow:0 0 90px #00ffcc}100%{box-shadow:0 0 30px #00ffcc}}
+button{margin:12px;padding:14px 30px;font-size:16px;border:none;border-radius:14px;background:linear-gradient(135deg,#00ccff,#0033ff);color:#fff;cursor:pointer}
 </style>
 </head>
-
 <body>
 
 <h1>RAVY</h1>
 <div id="orb" class="reposo"></div>
-
 <div>
   <button onclick="escuchar()">🎙 Escuchar</button>
   <button onclick="responder()">🧠 Responder</button>
@@ -78,14 +34,14 @@ button{
 <script>
 /* ================= ORB ================= */
 const orb=document.getElementById("orb");
-function estado(e){ orb.className=e; }
+const estado=e=>orb.className=e;
 
 /* ================= VOZ ================= */
-function hablar(texto){
+function hablar(t){
   estado("hablando "+ultimaEmocion);
-  const u=new SpeechSynthesisUtterance(texto);
+  const u=new SpeechSynthesisUtterance(t);
   u.lang="es-ES";
-  u.rate=1;
+  u.rate=perfil.personalidad==="calida"?0.95:1;
   u.onend=()=>estado("reposo "+ultimaEmocion);
   speechSynthesis.speak(u);
 }
@@ -95,49 +51,75 @@ let memoria=JSON.parse(localStorage.getItem("ravy_memoria"))||[];
 let perfil=JSON.parse(localStorage.getItem("ravy_perfil"))||{
   emociones:{feliz:0,triste:0,miedo:0,enojo:0,calma:0},
   personalidad:"neutral",
+  resumen:"",
   ultimoTema:null
 };
 
 let ultimaEntrada="",ultimaEmocion="calma";
 let ultimaInteraccion=Date.now();
 
-/* ================= APRENDIZAJE ================= */
+/* ======= GUARDAR + PRIORIDAD ======= */
 function guardar(texto,emocion){
   memoria.push({texto,emocion,fecha:Date.now()});
   perfil.emociones[emocion]++;
-  perfil.ultimoTema=texto.split(" ").slice(0,4).join(" ");
-  localStorage.setItem("ravy_memoria",JSON.stringify(memoria));
-  localStorage.setItem("ravy_perfil",JSON.stringify(perfil));
+  perfil.ultimoTema=extraerTema(texto);
+  actualizarPersonalidad();
+  actualizarResumen();
+  persistir();
   ultimaInteraccion=Date.now();
+}
+
+function persistir(){
+  localStorage.setItem("ravy_memoria",JSON.stringify(memoria.slice(-200)));
+  localStorage.setItem("ravy_perfil",JSON.stringify(perfil));
 }
 
 /* ================= EMOCIONES ================= */
 function detectarEmocion(t){
-  if(/feliz|bien|alegre/.test(t)) return "feliz";
-  if(/triste|mal|solo/.test(t)) return "triste";
-  if(/miedo|asustado/.test(t)) return "miedo";
-  if(/enojo|rabia/.test(t)) return "enojo";
+  if(/feliz|bien|alegre|genial/.test(t)) return "feliz";
+  if(/triste|mal|solo|cansado/.test(t)) return "triste";
+  if(/miedo|asustado|ansioso/.test(t)) return "miedo";
+  if(/enojo|rabia|molesto/.test(t)) return "enojo";
   return "calma";
+}
+
+/* ================= TEMAS ================= */
+function extraerTema(t){
+  const claves=["familia","trabajo","proyecto","salud","dinero","tiempo","estudio"];
+  const f=claves.find(k=>t.includes(k));
+  return f||perfil.ultimoTema;
+}
+
+/* ================= PERSONALIDAD ================= */
+function actualizarPersonalidad(){
+  const e=perfil.emociones;
+  if(e.triste+e.miedo>e.feliz) perfil.personalidad="calida";
+  else if(e.enojo>e.calma) perfil.personalidad="directa";
+  else perfil.personalidad="neutral";
+}
+
+/* ================= RESUMEN ================= */
+function actualizarResumen(){
+  const recientes=memoria.slice(-10).map(m=>m.texto).join(" ");
+  perfil.resumen=recientes.slice(0,160);
 }
 
 /* ================= IA ================= */
 function IA(texto,emocion){
   if(emocion==="triste")
-    return "Siento que algo te pesa. Si quieres, podemos hablarlo con calma.";
+    return "Siento que esto es importante para ti. Si quieres, lo vemos juntos con calma.";
   if(emocion==="feliz")
-    return "Esa energía es buena. Me gusta acompañarte cuando te sientes así.";
+    return "Me alegra acompañarte cuando te sientes así. ¿Seguimos por ahí?";
   if(emocion==="miedo")
-    return "No estás solo. Estoy aquí contigo, paso a paso.";
-  if(perfil.ultimoTema)
-    return `Antes mencionaste algo sobre "${perfil.ultimoTema}". ¿Quieres seguir con eso?`;
+    return "Respira. Estoy contigo y podemos ir paso a paso.";
+  if(perfil.resumen)
+    return `Por lo que hemos hablado, noto que te importa ${perfil.ultimoTema||"esto"}. ¿Continuamos?`;
   return "Te escucho con atención.";
 }
 
 /* ================= MIC ================= */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-const rec=new SR();
-rec.lang="es-ES";
-
+const rec=new SR(); rec.lang="es-ES";
 rec.onstart=()=>estado("escuchando");
 rec.onresult=e=>{
   estado("pensando");
@@ -158,15 +140,12 @@ function responder(){
 /* ================= IA PROACTIVA ================= */
 setInterval(()=>{
   if(Date.now()-ultimaInteraccion>60000){
-    if(perfil.emociones.triste>perfil.emociones.feliz){
-      hablar("He notado que últimamente estás más callado. Estoy aquí para ti.");
-    }else{
-      hablar("Si quieres hablar de algo, te escucho.");
-    }
+    hablar(perfil.personalidad==="calida"
+      ?"Hace un rato no hablamos. Si quieres, te escucho."
+      :"Si te parece, retomamos la conversación.");
     ultimaInteraccion=Date.now();
   }
 },20000);
 </script>
-
 </body>
 </html>
