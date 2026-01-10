@@ -1,18 +1,16 @@
-let memory = JSON.parse(localStorage.getItem("ravyMemory")) || [];
+const KEY = "ravy_memoria";
 
-export function saveMemory(text, emotion) {
-  memory.push({
-    text,
-    emotion,
-    time: Date.now()
-  });
+let memoria = JSON.parse(localStorage.getItem(KEY)) || {
+  historial: [],
+  resumen: ""
+};
 
-  if (memory.length > 200) memory.shift();
-
-  localStorage.setItem("ravyMemory", JSON.stringify(memory));
+export function saveMemory(texto){
+  memoria.historial.push(texto);
+  memoria.resumen = memoria.historial.slice(-3).join(". ");
+  localStorage.setItem(KEY, JSON.stringify(memoria));
 }
 
-export function getMemory() {
-  if (memory.length === 0) return null;
-  return memory[memory.length - 1].text;
+export function getMemory(){
+  return memoria.resumen;
 }
