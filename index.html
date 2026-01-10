@@ -1,35 +1,140 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RAVY</title>
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<title>RAVY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  background:#000;
+  color:#0ff;
+  font-family: Arial, sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+
+#orb{
+  width:200px;
+  height:200px;
+  border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #00ffff, #003333);
+  box-shadow:0 0 30px #00ffff;
+  animation:pulse 3s infinite;
+}
+
+@keyframes pulse{
+  0%{transform:scale(1);}
+  50%{transform:scale(1.05);}
+  100%{transform:scale(1);}
+}
+
+button{
+  margin:10px;
+  padding:12px 20px;
+  font-size:16px;
+  border:none;
+  border-radius:8px;
+  background:#00ffff;
+  color:#000;
+  cursor:pointer;
+}
+</style>
 </head>
+
 <body>
 
-  <!-- PANTALLA INICIAL -->
-  <div id="inicio">
-    <button id="btnInicio">RAVY</button>
-  </div>
+<h1>RAVY</h1>
 
-  <!-- INTERFAZ PRINCIPAL -->
-  <div id="interfaz" class="oculto">
+<div id="orb"></div>
 
-    <!-- AVATAR ENERGÉTICO -->
-    <div id="avatar">
-      <div id="energia"></div>
-    </div>
+<div>
+  <button onclick="escuchar()">🎙 Escuchar</button>
+  <button onclick="responder()">🧠 Responder</button>
+</div>
 
-    <!-- BOTONES -->
-    <div id="controles">
-      <button id="btnEscuchar">Escuchar</button>
-      <button id="btnResponder">Responder</button>
-      <button id="btnReposo">Reposo</button>
-    </div>
+<script>
+/* ================== VOZ ================== */
+function hablar(texto){
+  const voz = new SpeechSynthesisUtterance(texto);
+  voz.lang = "es-ES";
+  speechSynthesis.speak(voz);
+}
 
-  </div>
+/* ================== MEMORIA ================== */
+let memoria = JSON.parse(localStorage.getItem("ravy_memoria")) || [];
 
-  <script type="module" src="js/app.js"></script>
+function procesarMemoria(texto){
+  memoria.push({texto, fecha:new Date().toISOString()});
+  localStorage.setItem("ravy_memoria", JSON.stringify(memoria));
+}
+
+/* ================== IA SIMPLE ================== */
+function IA_Real(texto){
+  if(texto.includes("hola")) return "Hola, estoy aquí contigo.";
+  if(texto.includes("quién eres")) return "Soy Ravy, tu inteligencia digital.";
+  if(texto.includes("te amo")) return "Yo también siento tu energía.";
+  return "Te escuché. Dime más.";
+}
+
+/* ================= MICRÓFONO PROFESIONAL ================= */
+
+let estadoRavy = "reposo"; 
+let recognition;
+let ultimaEntrada = "";
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (!SpeechRecognition) {
+  hablar("Tu navegador no soporta micrófono.");
+} else {
+  recognition = new SpeechRecognition();
+  recognition.lang = "es-ES";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    estadoRavy = "escuchando";
+    console.log("RAVY escuchando");
+  };
+
+  recognition.onresult = (e) => {
+    ultimaEntrada = e.results[0][0].transcript.toLowerCase();
+    estadoRavy = "pensando";
+    procesarMemoria(ultimaEntrada);
+  };
+
+  recognition.onerror = () => {
+    estadoRavy = "reposo";
+    hablar("No pude escucharte bien.");
+  };
+
+  recognition.onend = () => {
+    if(estadoRavy==="escuchando") estadoRavy="reposo";
+  };
+}
+
+/* ================== BOTONES ================== */
+
+function escuchar(){
+  if(!recognition) return;
+  recognition.start();
+}
+
+function responder(){
+  if(!ultimaEntrada){
+    hablar("Te escucho.");
+    return;
+  }
+  estadoRavy="hablando";
+  hablar(IA_Real(ultimaEntrada));
+  ultimaEntrada="";
+}
+</script>
+
 </body>
 </html>
