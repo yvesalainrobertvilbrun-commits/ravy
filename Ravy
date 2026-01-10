@@ -1,15 +1,16 @@
-ravy/
-├── index.html        ← Login / Bienvenida
-├── app.html          ← Página principal (RAVY)
-├── css/
-│   └── style.css
-├── js/
-│   ├── auth.js       ← Login simple (local)
-│   ├── ravy-core.js  ← Cerebro IA
-│   ├── memory.js     ← Memoria inteligente
-│   ├── emotions.js  ← Emociones
-│   ├── proactive.js ← IA proactiva
-│   └── voice.js     ← Voz y escucha
-├── assets/
-│   └── logo.png
-└── README.md
+/RAVY
+│
+├── index.html        ✅ COMPLETO
+├── manifest.json     ✅ COMPLETO
+├── service-worker.js ✅ COMPLETO
+│
+├── /js
+│   ├── app.js        ✅ COMPLETO
+│   ├── ravy-core.js  ✅ COMPLETO
+│   ├── voice.js      ✅ COMPLETO
+│   ├── memory.js     ✅ COMPLETO
+│   ├── emotions.js   ✅ COMPLETO
+│   └── proactive.js  ✅ COMPLETO
+│
+├── icon-192.png
+└── icon-512.png
