@@ -18,27 +18,68 @@ body{
   height:100vh;
 }
 
+/* ================= ORB ================= */
 #orb{
-  width:230px;
-  height:230px;
+  width:240px;
+  height:240px;
   border-radius:50%;
-  background:radial-gradient(circle at top,#0066aa,#000);
+  background:radial-gradient(circle at top,#1aa3ff,#000);
   box-shadow:0 0 30px #00ccff;
-  transition:all 0.4s ease;
+  transition:all 0.6s ease;
+  animation:respirar 6s infinite;
 }
 
-.reposo{ box-shadow:0 0 30px #00ccff; }
-.escuchando{ box-shadow:0 0 55px #00ff99; }
-.pensando{ box-shadow:0 0 55px #ffff88; }
-.hablando{ box-shadow:0 0 65px #3399ff; }
+/* ====== ESTADOS ====== */
+.reposo{
+  box-shadow:0 0 30px #00ccff;
+}
 
+.escuchando{
+  animation:ondas 1.2s infinite;
+  box-shadow:0 0 70px #00ffcc;
+}
+
+.pensando{
+  box-shadow:0 0 60px #ffff99;
+}
+
+.hablando{
+  animation:hablar 0.9s infinite;
+  box-shadow:0 0 80px #3399ff;
+}
+
+/* ====== EMOCIONES ====== */
+.feliz{ box-shadow:0 0 80px #00ff99; }
+.triste{ box-shadow:0 0 80px #3399ff; }
+.miedo{ box-shadow:0 0 80px #ff9933; }
+.enojo{ box-shadow:0 0 80px #ff3333; }
+.calma{ box-shadow:0 0 80px #66ccff; }
+
+/* ====== ANIMACIONES ====== */
+@keyframes respirar{
+  0%,100%{ transform:scale(1); }
+  50%{ transform:scale(1.04); }
+}
+
+@keyframes hablar{
+  0%,100%{ transform:scale(1); }
+  50%{ transform:scale(1.08); }
+}
+
+@keyframes ondas{
+  0%{ box-shadow:0 0 30px #00ffcc; }
+  50%{ box-shadow:0 0 90px #00ffcc; }
+  100%{ box-shadow:0 0 30px #00ffcc; }
+}
+
+/* ================= BOTONES ================= */
 button{
-  margin:10px;
-  padding:14px 26px;
+  margin:12px;
+  padding:14px 30px;
   font-size:16px;
   border:none;
-  border-radius:12px;
-  background:linear-gradient(135deg,#00ccff,#0044ff);
+  border-radius:14px;
+  background:linear-gradient(135deg,#00ccff,#0033ff);
   color:white;
   cursor:pointer;
 }
@@ -56,21 +97,21 @@ button{
 </div>
 
 <script>
-/* ================= ESTADO VISUAL ================= */
+/* ================= ORB ================= */
 const orb=document.getElementById("orb");
 function estado(e){ orb.className=e; }
 
 /* ================= VOZ ================= */
 function hablar(texto){
-  estado("hablando");
+  estado("hablando "+ultimaEmocion);
   const u=new SpeechSynthesisUtterance(texto);
   u.lang="es-ES";
   u.rate=1;
-  u.onend=()=>estado("reposo");
+  u.onend=()=>estado("reposo "+ultimaEmocion);
   speechSynthesis.speak(u);
 }
 
-/* ================= MEMORIA AVANZADA ================= */
+/* ================= MEMORIA ================= */
 let memoria=JSON.parse(localStorage.getItem("ravy_memoria"))||[];
 let perfil=JSON.parse(localStorage.getItem("ravy_perfil"))||{
   emociones:{feliz:0,triste:0,miedo:0,enojo:0,calma:0},
@@ -78,70 +119,35 @@ let perfil=JSON.parse(localStorage.getItem("ravy_perfil"))||{
 };
 
 let ultimaInteraccion=Date.now();
+let ultimaEntrada="",ultimaEmocion="calma";
 
+/* ================= APRENDIZAJE ================= */
 function guardar(texto,emocion){
   memoria.push({texto,emocion,fecha:Date.now()});
   perfil.emociones[emocion]++;
-  ajustarPersonalidad();
   localStorage.setItem("ravy_memoria",JSON.stringify(memoria));
   localStorage.setItem("ravy_perfil",JSON.stringify(perfil));
   ultimaInteraccion=Date.now();
 }
 
-/* ================= PERSONALIDAD ================= */
-function ajustarPersonalidad(){
-  const e=perfil.emociones;
-  if(e.triste>e.feliz && e.triste>e.calma) perfil.personalidad="protectora";
-  else if(e.feliz>e.triste) perfil.personalidad="entusiasta";
-  else perfil.personalidad="calma";
-}
-
 /* ================= EMOCIONES ================= */
 function detectarEmocion(t){
-  if(/feliz|bien|alegre|contento/.test(t)) return "feliz";
-  if(/triste|mal|solo|llorar/.test(t)) return "triste";
-  if(/miedo|asustado|nervioso/.test(t)) return "miedo";
-  if(/enojo|rabia|molesto/.test(t)) return "enojo";
+  if(/feliz|bien|alegre/.test(t)) return "feliz";
+  if(/triste|mal|solo/.test(t)) return "triste";
+  if(/miedo|asustado/.test(t)) return "miedo";
+  if(/enojo|rabia/.test(t)) return "enojo";
   return "calma";
 }
 
-/* ================= IA EVOLUTIVA ================= */
+/* ================= IA ================= */
 function IA(texto,emocion){
-  const p=perfil.personalidad;
-
-  if(p==="protectora")
-    return emocion==="triste"
-      ?"Estoy aquí contigo. No tienes que cargar esto solo."
-      :"Cuéntame, quiero entenderte mejor.";
-
-  if(p==="entusiasta")
-    return emocion==="feliz"
-      ?"Esa energía tuya es contagiosa. ¿Qué sigue?"
-      :"Hablemos, siempre hay algo bueno adelante.";
-
-  return "Te escucho con atención. Puedes hablar con confianza.";
-}
-
-/* ================= RESUMEN AUTÓNOMO ================= */
-function resumenMemoria(){
-  if(memoria.length<5) return null;
-  const ultimos=memoria.slice(-5).map(m=>m.emocion);
-  const dominante=ultimos.sort((a,b)=>
-    ultimos.filter(v=>v===a).length-
-    ultimos.filter(v=>v===b).length
-  ).pop();
-  return `He notado que últimamente te has sentido más ${dominante}.`;
-}
-
-/* ================= PROACTIVA ================= */
-function iniciar(){
-  const resumen=resumenMemoria();
-  if(resumen) hablar(resumen+" ¿Quieres hablar de eso?");
-  else hablar("Aquí estoy. ¿En qué piensas ahora?");
+  if(emocion==="triste") return "Estoy contigo. Puedes hablar sin miedo.";
+  if(emocion==="feliz") return "Me alegra sentir esa energía.";
+  if(emocion==="miedo") return "Respira, todo está bien ahora.";
+  return "Te escucho con atención.";
 }
 
 /* ================= MIC ================= */
-let ultimaEntrada="",ultimaEmocion="";
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const rec=new SR();
 rec.lang="es-ES";
@@ -152,6 +158,7 @@ rec.onresult=e=>{
   ultimaEntrada=e.results[0][0].transcript.toLowerCase();
   ultimaEmocion=detectarEmocion(ultimaEntrada);
   guardar(ultimaEntrada,ultimaEmocion);
+  estado("reposo "+ultimaEmocion);
 };
 
 rec.onerror=()=>hablar("No pude escucharte.");
@@ -164,13 +171,13 @@ function responder(){
   ultimaEntrada="";
 }
 
-/* ================= AUTONOMÍA ================= */
+/* ================= PROACTIVA ================= */
 setInterval(()=>{
-  if(Date.now()-ultimaInteraccion>60000){
-    iniciar();
+  if(Date.now()-ultimaInteraccion>70000){
+    hablar("Aquí estoy contigo.");
     ultimaInteraccion=Date.now();
   }
-},15000);
+},20000);
 </script>
 
 </body>
