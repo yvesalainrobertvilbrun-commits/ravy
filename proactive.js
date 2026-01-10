@@ -1,12 +1,5 @@
-export function proactiveMessage() {
-  const frases = [
-    "Sigo aquí contigo.",
-    "¿En qué estás pensando ahora?",
-    "Me gusta escucharte.",
-    "Podemos hablar de lo que quieras.",
-    "Estoy aprendiendo de ti."
-  ];
+import { hablar } from "./voice.js";
 
-  const mensaje = frases[Math.floor(Math.random() * frases.length)];
-  hablar(mensaje);
+export function proactiveMessage(){
+  hablar("Sigo aquí contigo.");
 }
