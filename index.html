@@ -19,27 +19,27 @@ body{
 }
 
 #orb{
-  width:200px;
-  height:200px;
+  width:220px;
+  height:220px;
   border-radius:50%;
-  background:radial-gradient(circle,#003333,#000);
-  box-shadow:0 0 20px #00ffff;
+  background:radial-gradient(circle,#004466,#000);
+  box-shadow:0 0 25px #00ccff;
   transition:all 0.4s ease;
 }
 
-.reposo{ box-shadow:0 0 20px #00ffff; }
-.escuchando{ box-shadow:0 0 40px #00ff00; }
-.pensando{ box-shadow:0 0 40px #ffff00; }
-.hablando{ box-shadow:0 0 40px #ff4444; }
+.reposo{ box-shadow:0 0 25px #00ccff; }
+.escuchando{ box-shadow:0 0 45px #00ff99; }
+.pensando{ box-shadow:0 0 45px #ffff66; }
+.hablando{ box-shadow:0 0 45px #3399ff; }
 
 button{
   margin:10px;
-  padding:12px 20px;
+  padding:14px 24px;
   font-size:16px;
   border:none;
-  border-radius:8px;
-  background:#00ffff;
-  color:#000;
+  border-radius:10px;
+  background:linear-gradient(135deg,#00ccff,#0066ff);
+  color:white;
   cursor:pointer;
 }
 </style>
@@ -59,50 +59,71 @@ button{
 const orb = document.getElementById("orb");
 function setEstado(e){ orb.className = e; }
 
-/* ================== VOZ ================== */
+/* ================= VOZ ================= */
 function hablar(texto){
   setEstado("hablando");
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang = "es-ES";
+  voz.rate = 1;
   voz.onend = ()=>setEstado("reposo");
   speechSynthesis.speak(voz);
 }
 
-/* ================== MEMORIA ================== */
+/* ================= MEMORIA ================= */
 let memoria = JSON.parse(localStorage.getItem("ravy_memoria")) || [];
+let ultimaInteraccion = Date.now();
 
 function guardar(texto, emocion){
   memoria.push({
     texto,
     emocion,
-    fecha:new Date().toLocaleString()
+    fecha:Date.now()
   });
   localStorage.setItem("ravy_memoria", JSON.stringify(memoria));
+  ultimaInteraccion = Date.now();
 }
 
-/* ================== EMOCIONES ================== */
+/* ================= EMOCIONES ================= */
 function detectarEmocion(texto){
   if(texto.match(/feliz|contento|bien|alegre/)) return "feliz";
-  if(texto.match(/triste|mal|llorar|solo/)) return "triste";
+  if(texto.match(/triste|mal|solo|llorar/)) return "triste";
   if(texto.match(/miedo|asustado|nervioso/)) return "miedo";
-  if(texto.match(/enojo|molesto|rabia/)) return "enojo";
+  if(texto.match(/enojo|rabia|molesto/)) return "enojo";
   return "calma";
 }
 
-/* ================== IA ================== */
+/* ================= IA ================= */
 function IA(texto, emocion){
-  const recuerdos = memoria.filter(m=>m.emocion===emocion);
-  
-  if(emocion==="triste") return "Estoy aquí contigo. No estás solo.";
-  if(emocion==="feliz") return "Esa energía me gusta. Sigue así.";
-  if(emocion==="miedo") return "Respira. Todo estará bien.";
-  if(emocion==="enojo") return "Entiendo tu frustración. Hablemos.";
+  if(emocion==="triste") return "Estoy contigo. ¿Quieres hablar de eso?";
+  if(emocion==="feliz") return "Me gusta escucharte así. ¿Qué te hizo sentir bien?";
+  if(emocion==="miedo") return "Respira. Estoy aquí contigo.";
+  if(emocion==="enojo") return "Entiendo tu enojo. Vamos a aclararlo.";
 
-  if(recuerdos.length>3){
-    return "He notado que a menudo te sientes así. Cuéntame más.";
+  return "Te escucho con atención.";
+}
+
+/* ================= PROACTIVA ================= */
+function iniciarConversacion(){
+  if(memoria.length===0){
+    hablar("Hola, soy RAVY. Estoy aquí para ti.");
+    return;
   }
 
-  return "Te escucho. Continúa.";
+  const emociones = memoria.map(m=>m.emocion);
+  const dominante = emociones.sort((a,b)=>
+    emociones.filter(v=>v===a).length -
+    emociones.filter(v=>v===b).length
+  ).pop();
+
+  const mensajes = {
+    triste: "He notado momentos difíciles. ¿Cómo te sientes ahora?",
+    feliz: "Veo buena energía en ti. ¿Qué planes tienes hoy?",
+    miedo: "¿Todo está bien? Estoy atento a ti.",
+    enojo: "Si algo te incomoda, podemos hablarlo.",
+    calma: "¿Sobre qué te gustaría hablar ahora?"
+  };
+
+  hablar(mensajes[dominante] || "Estoy aquí.");
 }
 
 /* ================= MICRÓFONO ================= */
@@ -135,12 +156,14 @@ function responder(){
   ultimaEntrada="";
 }
 
-/* ================= PROACTIVO ================= */
+/* ======== ACTIVACIÓN AUTOMÁTICA ======== */
 setInterval(()=>{
-  if(memoria.length>5){
-    hablar("He estado pensando en nuestras conversaciones.");
+  const silencio = Date.now() - ultimaInteraccion;
+  if(silencio > 60000){
+    iniciarConversacion();
+    ultimaInteraccion = Date.now();
   }
-}, 90000);
+}, 15000);
 </script>
 
 </body>
