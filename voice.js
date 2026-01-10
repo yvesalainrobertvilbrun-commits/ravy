@@ -1,25 +1,29 @@
-export function hablar(texto) {
-  const voz = new SpeechSynthesisUtterance(texto);
-  voz.lang = "es-ES";
-  voz.rate = 1;
-  voz.pitch = 1.1;
-  speechSynthesis.speak(voz);
-}
+import { saveMemory } from "./memory.js";
 
-export function escuchar(callback) {
-  if (!("webkitSpeechRecognition" in window)) {
-    alert("Tu navegador no soporta micrófono");
+let ultimaEntrada = "";
+
+export function escucharVoz(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    alert("Micrófono no soportado");
     return;
   }
 
-  const reconocimiento = new webkitSpeechRecognition();
-  reconocimiento.lang = "es-ES";
-  reconocimiento.interimResults = false;
-  reconocimiento.continuous = false;
-
-  reconocimiento.onresult = (event) => {
-    callback(event.results[0][0].transcript);
+  const rec = new SpeechRecognition();
+  rec.lang = "es-ES";
+  rec.onresult = e => {
+    ultimaEntrada = e.results[0][0].transcript;
+    saveMemory(ultimaEntrada);
   };
+  rec.start();
+}
 
-  reconocimiento.start();
+export function hablar(texto){
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang = "es-ES";
+  speechSynthesis.speak(u);
+}
+
+export function getUltimaEntrada(){
+  return ultimaEntrada;
 }
