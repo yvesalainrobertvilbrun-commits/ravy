@@ -1,217 +1,135 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>RAVY</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body{
-  margin:0;
-  background:#000;
-  color:#0ff;
-  font-family:Arial, sans-serif;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAVY – Tu asistente personal</title>
 
-/* ===== ORB ===== */
-#orb{
-  width:240px;
-  height:240px;
-  border-radius:50%;
-  background:radial-gradient(circle at top,#1a9cff,#001933);
-  box-shadow:0 0 35px #00ccff;
-  transition:all .6s ease;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: black;
+      color: white;
+      overflow: hidden;
+    }
 
-/* ===== ESTADOS ===== */
-.reposo{ animation:respirar 6s infinite; }
-.escuchando{ animation:ondas 1.2s infinite; box-shadow:0 0 90px #00ffcc; }
-.pensando{ animation:giro 3s linear infinite; box-shadow:0 0 70px #ffff99; }
-.hablando{ animation:hablar .9s infinite; box-shadow:0 0 100px #3399ff; }
+    /* ================= LOGIN ================= */
+    #login {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 20px;
+      background: radial-gradient(circle, #001122, #000);
+    }
 
-/* ===== EMOCIONES ===== */
-.feliz{ box-shadow:0 0 90px #00ff99; }
-.triste{ box-shadow:0 0 90px #3399ff; }
-.miedo{ box-shadow:0 0 90px #ff9933; }
-.enojo{ box-shadow:0 0 90px #ff3333; }
-.calma{ box-shadow:0 0 90px #66ccff; }
+    #login h1 {
+      font-size: 28px;
+      letter-spacing: 2px;
+    }
 
-/* ===== ANIMACIONES ===== */
-@keyframes respirar{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(1.05)}
-}
-@keyframes hablar{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(1.1)}
-}
-@keyframes ondas{
-  0%{box-shadow:0 0 30px #00ffcc}
-  50%{box-shadow:0 0 120px #00ffcc}
-  100%{box-shadow:0 0 30px #00ffcc}
-}
-@keyframes giro{
-  from{transform:rotate(0deg)}
-  to{transform:rotate(360deg)}
-}
+    #login button {
+      padding: 14px 26px;
+      font-size: 16px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(145deg, #00cfff, #0044ff);
+      color: white;
+      box-shadow: 0 0 20px #00cfff;
+    }
 
-/* ===== TEXTO ESTADO ===== */
-#estadoTexto{
-  margin-top:14px;
-  font-size:16px;
-  opacity:.8;
-  min-height:20px;
-}
+    /* ================= RAVY ================= */
+    #ravy {
+      display: none;
+      position: absolute;
+      inset: 0;
+    }
 
-/* ===== BOTONES ===== */
-button{
-  margin:14px;
-  padding:14px 30px;
-  font-size:16px;
-  border:none;
-  border-radius:14px;
-  background:linear-gradient(135deg,#00ccff,#0033ff);
-  color:#fff;
-  cursor:pointer;
-}
-</style>
+    /* Botón inicio */
+    #inicio {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 5;
+    }
+
+    #inicio button {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      font-size: 26px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      color: white;
+      background: radial-gradient(circle, #00ffff, #0044ff);
+      box-shadow: 0 0 60px #00ffff;
+    }
+
+    /* Controles */
+    #controles {
+      position: absolute;
+      bottom: 25px;
+      width: 100%;
+      display: none;
+      justify-content: center;
+      gap: 20px;
+      z-index: 5;
+    }
+
+    .control {
+      width: 130px;
+      height: 46px;
+      border-radius: 30px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(145deg, #111, #333);
+      box-shadow: 0 0 15px #00cfff;
+    }
+
+    .control:hover {
+      transform: scale(1.05);
+    }
+  </style>
 </head>
 
 <body>
 
-<h1>RAVY</h1>
-<div id="orb" class="reposo"></div>
-<div id="estadoTexto">En reposo</div>
+  <!-- ================= LOGIN ================= -->
+  <div id="login">
+    <h1>Bienvenido a RAVY</h1>
+    <button onclick="loginGoogle()">Entrar con Google</button>
+  </div>
 
-<div>
-  <button onclick="escuchar()">🎙 Escuchar</button>
-  <button onclick="responder()">🧠 Responder</button>
-</div>
+  <!-- ================= RAVY ================= -->
+  <div id="ravy">
+    <!-- Botón inicio -->
+    <div id="inicio">
+      <button onclick="activarRAVY()">RAVY</button>
+    </div>
 
-<script>
-/* ===== REFERENCIAS ===== */
-const orb=document.getElementById("orb");
-const estadoTexto=document.getElementById("estadoTexto");
+    <!-- Controles -->
+    <div id="controles">
+      <button class="control" onclick="escuchar()">Escuchar</button>
+      <button class="control" onclick="responder()">Responder</button>
+      <button class="control" onclick="reposo()">Reposo</button>
+    </div>
+  </div>
 
-/* ===== ESTADO VISUAL ===== */
-function setEstado(estado,emocion=""){
-  orb.className=estado+" "+emocion;
-  const textos={
-    reposo:"En reposo",
-    escuchando:"Escuchando…",
-    pensando:"Pensando…",
-    hablando:"Hablando…"
-  };
-  estadoTexto.innerText=textos[estado]||"";
-}
+  <!-- ================= LIBRERÍAS ================= -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
 
-/* ===== VOZ ===== */
-function hablar(texto){
-  setEstado("hablando",ultimaEmocion);
-  const u=new SpeechSynthesisUtterance(texto);
-  u.lang="es-ES";
-  u.onend=()=>setEstado("reposo",ultimaEmocion);
-  speechSynthesis.speak(u);
-}
+  <!-- ================= MÓDULOS ================= -->
+  <script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/ravy-core.js"></script>
 
-/* ===== MEMORIA ===== */
-let memoria=JSON.parse(localStorage.getItem("ravy_memoria"))||[];
-let perfil=JSON.parse(localStorage.getItem("ravy_perfil"))||{
-  emociones:{feliz:0,triste:0,miedo:0,enojo:0,calma:0},
-  personalidad:"neutral",
-  resumen:"",
-  ultimoTema:null
-};
-
-let ultimaEntrada="",ultimaEmocion="calma";
-let ultimaInteraccion=Date.now();
-
-function guardar(texto,emocion){
-  memoria.push({texto,emocion,fecha:Date.now()});
-  perfil.emociones[emocion]++;
-  perfil.ultimoTema=extraerTema(texto);
-  actualizarPersonalidad();
-  actualizarResumen();
-  persistir();
-  ultimaInteraccion=Date.now();
-}
-
-function persistir(){
-  localStorage.setItem("ravy_memoria",JSON.stringify(memoria.slice(-200)));
-  localStorage.setItem("ravy_perfil",JSON.stringify(perfil));
-}
-
-/* ===== EMOCIÓN ===== */
-function detectarEmocion(t){
-  if(/feliz|bien|alegre|genial/.test(t)) return "feliz";
-  if(/triste|mal|solo|cansado/.test(t)) return "triste";
-  if(/miedo|asustado|ansioso/.test(t)) return "miedo";
-  if(/enojo|rabia|molesto/.test(t)) return "enojo";
-  return "calma";
-}
-
-/* ===== TEMA ===== */
-function extraerTema(t){
-  const claves=["familia","trabajo","proyecto","salud","dinero","tiempo","estudio"];
-  return claves.find(k=>t.includes(k))||perfil.ultimoTema;
-}
-
-/* ===== PERSONALIDAD ===== */
-function actualizarPersonalidad(){
-  const e=perfil.emociones;
-  if(e.triste+e.miedo>e.feliz) perfil.personalidad="calida";
-  else if(e.enojo>e.calma) perfil.personalidad="directa";
-  else perfil.personalidad="neutral";
-}
-
-/* ===== RESUMEN ===== */
-function actualizarResumen(){
-  perfil.resumen=memoria.slice(-10).map(m=>m.texto).join(" ").slice(0,160);
-}
-
-/* ===== IA ===== */
-function IA(texto,emocion){
-  if(emocion==="triste") return "Estoy contigo. Si quieres, lo vemos con calma.";
-  if(emocion==="feliz") return "Me gusta sentir esa energía. Seguimos.";
-  if(emocion==="miedo") return "Respira. No estás solo.";
-  if(perfil.resumen) return `Por lo que hablamos antes sobre ${perfil.ultimoTema||"esto"}, te escucho.`;
-  return "Aquí estoy.";
-}
-
-/* ===== MIC ===== */
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-const rec=new SR(); rec.lang="es-ES";
-
-rec.onstart=()=>setEstado("escuchando");
-rec.onresult=e=>{
-  setEstado("pensando");
-  ultimaEntrada=e.results[0][0].transcript.toLowerCase();
-  ultimaEmocion=detectarEmocion(ultimaEntrada);
-  guardar(ultimaEntrada,ultimaEmocion);
-  setEstado("reposo",ultimaEmocion);
-};
-rec.onerror=()=>hablar("No pude escucharte.");
-
-function escuchar(){ rec.start(); }
-function responder(){
-  if(!ultimaEntrada){ hablar("Aquí estoy."); return; }
-  hablar(IA(ultimaEntrada,ultimaEmocion));
-  ultimaEntrada="";
-}
-
-/* ===== PROACTIVA ===== */
-setInterval(()=>{
-  if(Date.now()-ultimaInteraccion>60000){
-    hablar(perfil.personalidad==="calida"
-      ?"Hace un rato no hablamos. Te escucho."
-      :"¿Seguimos?");
-    ultimaInteraccion=Date.now();
-  }
-},20000);
-</script>
 </body>
 </html>
