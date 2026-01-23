@@ -17,6 +17,7 @@ window.hablar = function () {
   const responseEl = document.getElementById("response");
 
   const text = inputEl.value.trim();
+
   if (!text) {
     responseEl.innerText = "Estoy aquí, cuando quieras.";
     return;
@@ -27,7 +28,7 @@ window.hablar = function () {
   setTimeout(() => {
     const reply = ravyRespond(text);
     responseEl.innerText = reply;
-  }, 600);
+  }, 500);
 
   inputEl.value = "";
 };
