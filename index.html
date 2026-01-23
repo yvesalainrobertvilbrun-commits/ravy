@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAVY</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at center, #0b1c2d, #000814);
+      color: #e0e0e0;
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 400px;
+      padding: 20px;
+    }
+
+    .orb {
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #4fc3f7, #0288d1);
+      box-shadow: 0 0 30px rgba(79, 195, 247, 0.6);
+      animation: breathe 4s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+      0% { transform: scale(1); box-shadow: 0 0 30px rgba(79,195,247,0.6); }
+      50% { transform: scale(1.05); box-shadow: 0 0 45px rgba(79,195,247,0.9); }
+      100% { transform: scale(1); box-shadow: 0 0 30px rgba(79,195,247,0.6); }
+    }
+
+    .message {
+      font-size: 18px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      outline: none;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #0288d1;
+      color: white;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="orb"></div>
+
+    <div class="message" id="message">
+      Hola… ya estoy aquí.  
+      <br />
+      Tómate tu tiempo. Cuando quieras, te escucho.
+    </div>
+
+    <input
+      type="text"
+      id="userInput"
+      placeholder="Escribe aquí..."
+    />
+
+    <button onclick="ravyRespond()">Hablar con RAVY</button>
+  </div>
+
+  <script>
+    function ravyRespond() {
+      const input = document.getElementById("userInput");
+      const message = document.getElementById("message");
+
+      if (input.value.trim() === "") return;
+
+      message.innerHTML = "Te escucho…";
+      
+      setTimeout(() => {
+        message.innerHTML = "Gracias por decírmelo. Estoy contigo.";
+      }, 800);
+
+      input.value = "";
+    }
+  </script>
+</body>
+</html>
