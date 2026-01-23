@@ -1,6 +1,6 @@
 import { ravyRespond } from "./ravy-core.js";
 
-// Control de pantallas
+// Mostrar pantallas
 window.entrar = function () {
   document.getElementById("login").style.display = "none";
   document.getElementById("ravy").style.display = "block";
@@ -23,8 +23,10 @@ window.hablar = function () {
   }
 
   responseEl.innerText = "…";
+
   setTimeout(() => {
-    responseEl.innerText = ravyRespond(text);
+    const reply = ravyRespond(text);
+    responseEl.innerText = reply;
   }, 600);
 
   inputEl.value = "";
