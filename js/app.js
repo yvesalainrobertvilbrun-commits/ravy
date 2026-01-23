@@ -1,24 +1,31 @@
-// Control básico de pantallas
+import { ravyRespond } from "./ravy-core.js";
 
-function entrar() {
+// Control de pantallas
+window.entrar = function () {
   document.getElementById("login").style.display = "none";
   document.getElementById("ravy").style.display = "block";
-}
+};
 
-function salir() {
+window.salir = function () {
   document.getElementById("login").style.display = "block";
   document.getElementById("ravy").style.display = "none";
-}
+};
 
-// Respuesta temporal de RAVY
-function hablar() {
-  const input = document.getElementById("userInput").value;
-  const response = document.getElementById("response");
+// Hablar con RAVY
+window.hablar = function () {
+  const inputEl = document.getElementById("userInput");
+  const responseEl = document.getElementById("response");
 
-  if (input.trim() === "") {
-    response.innerText = "Dime algo, estoy escuchando.";
+  const text = inputEl.value.trim();
+  if (!text) {
+    responseEl.innerText = "Estoy aquí, cuando quieras.";
     return;
   }
 
-  response.innerText = "Te escuché: " + input;
-}
+  responseEl.innerText = "…";
+  setTimeout(() => {
+    responseEl.innerText = ravyRespond(text);
+  }, 600);
+
+  inputEl.value = "";
+};
