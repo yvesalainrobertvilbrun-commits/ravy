@@ -1,10 +1,10 @@
-export let memory = []; // mensajes y aprendizajes
-export let userInfo = { name: null, creator: "Yves" }; // guardamos info fija y del usuario
+export let memory = [];
+export let userInfo = { name: null, creator: "Yves" };
 
-// Guardar mensaje simple
+// Guardar mensaje del usuario
 export function saveMessage(msg) {
   memory.push(msg);
-  if(memory.length > 100) memory.shift(); // último 100 mensajes
+  if(memory.length > 100) memory.shift();
 }
 
 // Aprendizaje de frases
