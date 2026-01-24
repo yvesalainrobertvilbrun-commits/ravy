@@ -1,27 +1,29 @@
-// js/ravy.js
-
-import { ravyRespond } from "./ravy-core.js";
-
-const input = document.getElementById("ravy-input");
-const sendBtn = document.getElementById("ravy-send");
-const chatBox = document.getElementById("ravy-chat");
-
-function addMessage(text, sender = "user") {
+// Modificado addMessage para aceptar color opcional
+function addMessage(content, sender = "user", bubbleColor = null) {
   const div = document.createElement("div");
   div.className = sender;
-  div.textContent = text;
+  div.textContent = typeof content === "object" ? content.text : content;
+
+  // Si es mensaje de RAVY con color personalizado
+  if(sender === "ravy" && typeof content === "object" && content.color){
+    div.style.backgroundColor = content.color;
+  } else if(bubbleColor){
+    div.style.backgroundColor = bubbleColor;
+  }
+
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 sendBtn.addEventListener("click", () => {
   const text = input.value.trim();
-  if (!text) return;
+  if(!text) return;
+
   addMessage(text, "user");
   ravyRespond(text, res => addMessage(res, "ravy"));
   input.value = "";
 });
 
 input.addEventListener("keypress", e => {
-  if (e.key === "Enter") sendBtn.click();
+  if(e.key === "Enter") sendBtn.click();
 });
