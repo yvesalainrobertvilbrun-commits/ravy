@@ -1,39 +1,20 @@
 // js/ravy-core.js
 
+import { saveMemory, loadMemory } from "./memory.js";
 import { startProactive, stopProactive } from "./proactive.js";
 
-const MEMORY_KEY = "ravy_memory";
-const STATE_KEY = "ravy_state";
-
-/* ========= MEMORIA ========= */
-
-function loadMemory() {
-  const data = localStorage.getItem(MEMORY_KEY);
-  return data ? JSON.parse(data) : [];
-}
-
-function saveMemory(memory) {
-  localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
-}
-
-/* ========= ESTADO ========= */
+const STATE_KEY = "ravy_state_v1.1";
 
 function loadState() {
   const data = localStorage.getItem(STATE_KEY);
   return data
     ? JSON.parse(data)
-    : {
-        mood: "neutral",
-        lastReply: "",
-        awaiting: null // 👈 CONTEXTO ESPERADO
-      };
+    : { lastReply: "", awaiting: null, mood: "neutral" };
 }
 
 function saveState(state) {
   localStorage.setItem(STATE_KEY, JSON.stringify(state));
 }
-
-/* ========= UTIL ========= */
 
 function randomFrom(list, last) {
   let pick;
@@ -43,22 +24,18 @@ function randomFrom(list, last) {
   return pick;
 }
 
-/* ========= CEREBRO ========= */
-
 export function ravyRespond(userText, replyCallback) {
   stopProactive();
 
   const text = userText.toLowerCase().trim();
-  let memory = loadMemory();
-  let state = loadState();
+  const memory = loadMemory(50);
+  const state = loadState();
 
-  memory.push(userText);
-  saveMemory(memory);
+  saveMemory(userText, "user");
 
   let response = "";
 
-  /* ===== RESPUESTA A CONTEXTO ===== */
-
+  // RESPUESTAS CON CONTEXTO
   if (state.awaiting === "cansancio") {
     if (text.includes("mental")) {
       response =
@@ -66,71 +43,48 @@ export function ravyRespond(userText, replyCallback) {
       state.mood = "calm";
     } else if (text.includes("fisico")) {
       response =
-        "El cuerpo también pide pausa. ¿Has podido descansar algo últimamente?";
+        "El cansancio físico pide descanso. ¿Has podido descansar algo últimamente?";
       state.mood = "calm";
     } else {
-      response =
-        "Entiendo. Cuéntame un poco más de ese cansancio.";
+      response = "Entiendo. Cuéntame más sobre tu cansancio.";
     }
-
     state.awaiting = null;
   }
 
-  /* ===== DETECCIÓN EMOCIONAL ===== */
-
+  // DETECCIÓN EMOCIONAL
   else if (text.includes("cansado") || text.includes("agotado")) {
+    response = "Suena a que llevas mucho encima. ¿Es cansancio físico o mental?";
+    state.awaiting = "cansancio";
     state.mood = "calm";
-    response =
-      "Suena a que llevas mucho encima. ¿Es cansancio físico o mental?";
-    state.awaiting = "cansancio"; // 👈 guarda contexto
-  }
-
-  else if (text.includes("triste")) {
+  } else if (text.includes("triste")) {
+    response = "Siento que te sientas así. ¿Qué es lo que más te pesa ahora?";
     state.mood = "calm";
-    response =
-      "Gracias por decirlo. ¿Qué es lo que más te está afectando ahora?";
-  }
-
-  else if (text.includes("feliz") || text.includes("bien")) {
+  } else if (text.includes("feliz") || text.includes("bien")) {
+    response = "Me alegra leerte así 🙂 ¿Qué te hizo sentir bien?";
     state.mood = "warm";
-    response =
-      "Me alegra leerte así 🙂 ¿Qué te hizo sentir bien?";
-  }
-
-  else if (text.includes("miedo") || text.includes("ansioso")) {
+  } else if (text.includes("miedo") || text.includes("ansioso")) {
+    response = "Respira conmigo un segundo. ¿Qué es lo que más te preocupa?";
     state.mood = "tense";
-    response =
-      "Respira conmigo un segundo. ¿Qué es lo que más te preocupa?";
-  }
-
-  /* ===== PREGUNTAS DIRECTAS ===== */
-
-  else if (text.includes("quien eres")) {
-    response =
-      "Soy RAVY. Estoy aquí para acompañarte, no para apurarte.";
-  }
-
-  else if (text.includes("recuerdas")) {
+  } else if (text.includes("quien eres")) {
+    response = "Soy RAVY, tu asistente personal, aquí para escucharte.";
+  } else if (text.includes("recuerdas")) {
     response =
       memory.length > 1
-        ? "Recuerdo lo que compartes conmigo en esta conversación."
+        ? "Recuerdo lo que compartiste recientemente."
         : "Aún estoy empezando a conocerte.";
-  }
-
-  /* ===== RESPUESTA GENERAL ===== */
-
-  else {
-    const neutral = [
-      "Cuéntame un poco más.",
-      "Te escucho.",
+  } else {
+    // RESPUESTAS GENERALES
+    const neutrals = [
+      "Cuéntame más.",
       "Sigo contigo.",
+      "Estoy aquí.",
       "¿Qué pasó después?",
-      "Estoy aquí."
+      "Te escucho atentamente."
     ];
-
-    response = randomFrom(neutral, state.lastReply);
+    response = randomFrom(neutrals, state.lastReply);
   }
 
+  saveMemory(response, "ravy");
   state.lastReply = response;
   saveState(state);
 
