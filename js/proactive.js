@@ -1,29 +1,5 @@
-// js/proactive.js
+import { addMessage } from './ravy.js';
 
-let proactiveTimer = null;
-
-const proactiveMessages = [
-  "¿Sigues ahí?",
-  "Si quieres, podemos seguir.",
-  "A veces el silencio también dice cosas.",
-  "Estoy presente.",
-  "No tienes que escribir perfecto."
-];
-
-export function startProactive(callback, delay = 15000) {
-  stopProactive();
-  proactiveTimer = setTimeout(() => {
-    const msg =
-      proactiveMessages[
-        Math.floor(Math.random() * proactiveMessages.length)
-      ];
-    callback(msg);
-  }, delay);
-}
-
-export function stopProactive() {
-  if (proactiveTimer) {
-    clearTimeout(proactiveTimer);
-    proactiveTimer = null;
-  }
-}
+let timer = setInterval(() => {
+  addMessage({text: "RAVY: ¿Sigues ahí?", color: "#81C784"}, "ravy");
+}, 60000); // cada 60s
