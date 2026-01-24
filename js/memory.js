@@ -1,14 +1,13 @@
-export let memory = []; // memoria general
+export let memory = [];
 
-// Guardar mensaje o respuesta
+// Guardar mensaje simple
 export function saveMessage(msg) {
   memory.push(msg);
   if(memory.length > 100) memory.shift(); // último 100 mensajes
 }
 
-// Recuperar información aprendida
+// Aprendizaje de frases
 export function learnResponse(key, answer) {
-  // Guardamos como objeto clave-respuesta
   memory.push({ key: key.toLowerCase(), answer });
 }
 
