@@ -1,4 +1,5 @@
 // js/ravy.js
+
 import { ravyRespond } from "./ravy-core.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -14,24 +15,23 @@ document.addEventListener("DOMContentLoaded", () => {
     chat.scrollTop = chat.scrollHeight;
   }
 
-  function send() {
+  function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
 
     addMessage(text, "user");
-    const response = ravyRespond(text);
 
-    setTimeout(() => {
-      addMessage(response, "ravy");
-    }, 400);
+    ravyRespond(text, (reply) => {
+      addMessage(reply, "ravy");
+    });
 
     input.value = "";
   }
 
-  button.onclick = send;
+  button.onclick = sendMessage;
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") send();
+    if (e.key === "Enter") sendMessage();
   });
 
-  addMessage("Hola. Soy RAVY.", "ravy");
+  addMessage("Hola. Estoy aquí.", "ravy");
 });
