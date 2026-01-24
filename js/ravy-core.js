@@ -22,7 +22,11 @@ function loadState() {
   const data = localStorage.getItem(STATE_KEY);
   return data
     ? JSON.parse(data)
-    : { mood: "neutral", lastReply: "" };
+    : {
+        mood: "neutral",
+        lastReply: "",
+        awaiting: null // 👈 CONTEXTO ESPERADO
+      };
 }
 
 function saveState(state) {
@@ -53,32 +57,57 @@ export function ravyRespond(userText, replyCallback) {
 
   let response = "";
 
-  /* ===== DETECCIÓN CLARA DE EMOCIÓN (RESPUESTA INMEDIATA) ===== */
+  /* ===== RESPUESTA A CONTEXTO ===== */
 
-  if (text.includes("cansado") || text.includes("agotado")) {
+  if (state.awaiting === "cansancio") {
+    if (text.includes("mental")) {
+      response =
+        "El cansancio mental pesa mucho. ¿Sientes presión, preocupación o saturación?";
+      state.mood = "calm";
+    } else if (text.includes("fisico")) {
+      response =
+        "El cuerpo también pide pausa. ¿Has podido descansar algo últimamente?";
+      state.mood = "calm";
+    } else {
+      response =
+        "Entiendo. Cuéntame un poco más de ese cansancio.";
+    }
+
+    state.awaiting = null;
+  }
+
+  /* ===== DETECCIÓN EMOCIONAL ===== */
+
+  else if (text.includes("cansado") || text.includes("agotado")) {
     state.mood = "calm";
-    response = "Suena a que llevas mucho encima. ¿Es cansancio físico o mental?";
+    response =
+      "Suena a que llevas mucho encima. ¿Es cansancio físico o mental?";
+    state.awaiting = "cansancio"; // 👈 guarda contexto
   }
 
   else if (text.includes("triste")) {
     state.mood = "calm";
-    response = "Siento que te sientas así. ¿Qué es lo que más te pesa ahora?";
+    response =
+      "Gracias por decirlo. ¿Qué es lo que más te está afectando ahora?";
   }
 
   else if (text.includes("feliz") || text.includes("bien")) {
     state.mood = "warm";
-    response = "Me alegra leerte así 🙂 ¿Qué te hizo sentir bien?";
+    response =
+      "Me alegra leerte así 🙂 ¿Qué te hizo sentir bien?";
   }
 
   else if (text.includes("miedo") || text.includes("ansioso")) {
     state.mood = "tense";
-    response = "Gracias por decirlo. Respira un segundo conmigo. ¿Qué te preocupa?";
+    response =
+      "Respira conmigo un segundo. ¿Qué es lo que más te preocupa?";
   }
 
   /* ===== PREGUNTAS DIRECTAS ===== */
 
   else if (text.includes("quien eres")) {
-    response = "Soy RAVY. Estoy aquí para acompañarte y escucharte con calma.";
+    response =
+      "Soy RAVY. Estoy aquí para acompañarte, no para apurarte.";
   }
 
   else if (text.includes("recuerdas")) {
@@ -88,19 +117,15 @@ export function ravyRespond(userText, replyCallback) {
         : "Aún estoy empezando a conocerte.";
   }
 
-  else if (text.includes("vas a saber todo")) {
-    response = "No todo. Solo lo que tú decidas compartir conmigo.";
-  }
-
-  /* ===== RESPUESTAS GENERALES (SI NO HUBO EMOCIÓN CLARA) ===== */
+  /* ===== RESPUESTA GENERAL ===== */
 
   else {
     const neutral = [
       "Cuéntame un poco más.",
-      "Te sigo.",
-      "Estoy aquí contigo.",
+      "Te escucho.",
+      "Sigo contigo.",
       "¿Qué pasó después?",
-      "Sigo atento."
+      "Estoy aquí."
     ];
 
     response = randomFrom(neutral, state.lastReply);
@@ -110,7 +135,5 @@ export function ravyRespond(userText, replyCallback) {
   saveState(state);
 
   replyCallback(response);
-
-  // 🔥 PROACTIVIDAD
   startProactive(replyCallback);
 }
