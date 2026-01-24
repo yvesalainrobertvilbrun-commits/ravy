@@ -1,23 +1,17 @@
-const KEY = "ravy_memory";
+export function getEmotion(text) {
+  const t = text.toLowerCase();
 
-export function saveMemory(text, emotion) {
-  const data = {
-    text,
-    emotion,
-    time: Date.now()
-  };
-
-  localStorage.setItem(KEY, JSON.stringify(data));
-}
-
-export function getMemory() {
-  const raw = localStorage.getItem(KEY);
-  if (!raw) return null;
-
-  try {
-    const data = JSON.parse(raw);
-    return data.text;
-  } catch {
-    return null;
+  if (t.includes("triste") || t.includes("solo") || t.includes("mal")) {
+    return "triste";
   }
+
+  if (t.includes("feliz") || t.includes("bien") || t.includes("contento")) {
+    return "feliz";
+  }
+
+  if (t.includes("miedo") || t.includes("ansioso") || t.includes("nervioso")) {
+    return "miedo";
+  }
+
+  return "neutral";
 }
