@@ -1,89 +1,136 @@
-import { learnResponse, getLearnedResponse, memory, saveUserName, getUserName, getCreatorName } from './memory.js';
+import { learnResponse, getLearnedResponse, saveUserName, getUserName, getCreatorName } from './memory.js';
+import { getWeather } from './weather.js';
 
+// Normalizar texto (acentos, mayúsculas)
 function normalizeText(str) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 export function ravyRespond(text, replyCallback) {
   const lowerText = normalizeText(text.trim());
   const bubbleColor = "#555555";
-  let response = "No estoy segura de eso… Cuéntame más.";
+
+  let response = "Te escucho 👂";
 
   const userName = getUserName();
   const creatorName = getCreatorName();
 
-  // ===== Guardar nombre del usuario =====
-  if(lowerText.startsWith("mi nombre es")){
-    const name = text.split("mi nombre es")[1].trim();
-    saveUserName(name);
-    return replyCallback({ text: `¡Encantada de conocerte, ${name}! 😄`, color: bubbleColor });
-  }
-
-  // ===== Aprendizaje rápido =====
-  if(lowerText.startsWith("ravy, aprende que")) {
-    const parts = lowerText.replace("ravy, aprende que", "").split("es");
-    if(parts.length === 2){
-      const key = parts[0].trim();
-      const answer = parts[1].trim();
-      learnResponse(key, answer);
-      return replyCallback({ text: `¡Listo! He aprendido que ${key} es ${answer}.`, color: bubbleColor });
+  /* =====================
+     APRENDER NOMBRE USUARIO
+  ====================== */
+  if (lowerText.startsWith("mi nombre es")) {
+    const name = text.split(/mi nombre es/i)[1]?.trim();
+    if (name) {
+      saveUserName(name);
+      replyCallback({
+        text: `Encantada de conocerte, ${name} 😊`,
+        color: bubbleColor
+      });
+      return;
     }
   }
 
-  // ===== Buscar en memoria aprendida =====
+  /* =====================
+     APRENDIZAJE MANUAL
+  ====================== */
+  if (lowerText.startsWith("ravy, aprende que")) {
+    const phrase = lowerText.replace("ravy, aprende que", "").trim();
+    const parts = phrase.split(" es ");
+    if (parts.length === 2) {
+      learnResponse(parts[0], parts[1]);
+      replyCallback({
+        text: `Listo ✅ He aprendido que ${parts[0]} es ${parts[1]}`,
+        color: bubbleColor
+      });
+      return;
+    }
+  }
+
+  /* =====================
+     RESPUESTAS APRENDIDAS
+  ====================== */
   const learned = getLearnedResponse(lowerText);
-  if(learned) return replyCallback({ text: learned, color: bubbleColor });
-
-  // ===== Respuestas básicas =====
-  const greetings = ["hola","buenos dias","buenas tardes","buenas noches"];
-  const feelings = ["feliz","triste","cansado","bien","mal"];
-  const creatorQuestions = ["quien te creo","quien es tu dueño","dueño","creador"];
-  const hobbiesQuestions = ["que te gusta","hobbies","gustos"];
-  const daysQuestions = ["que dia es","dia de la semana","fecha"];
-  const weatherQuestions = ["como esta el clima","llueve","soleado","nublado"];
-
-  for(let g of greetings){
-    if(lowerText.includes(g)){
-      response = userName ? `¡Hola ${userName}! 👋 ¿Cómo estás hoy?` : "¡Hola! 👋 ¿Cómo estás hoy?";
-      return replyCallback({ text: response, color: bubbleColor });
-    }
+  if (learned) {
+    replyCallback({ text: learned, color: bubbleColor });
+    return;
   }
 
-  for(let f of feelings){
-    if(lowerText.includes(f)){
-      response = (["feliz","bien"].includes(f)) ? `¡Me alegra que te sientas bien${userName ? ", "+userName : ""}! 😄` : "Oh… lo siento. Estoy aquí contigo. 😔";
-      return replyCallback({ text: response, color: bubbleColor });
-    }
+  /* =====================
+     SALUDOS
+  ====================== */
+  if (["hola", "buenos dias", "buenas tardes", "buenas noches"].some(w => lowerText.includes(w))) {
+    replyCallback({
+      text: userName ? `Hola ${userName} 👋 ¿Cómo estás hoy?` : "Hola 👋 ¿Cómo estás hoy?",
+      color: bubbleColor
+    });
+    return;
   }
 
-  for(let c of creatorQuestions){
-    if(lowerText.includes(c)){
-      response = `Fui creada por mi dueño y creador, ${creatorName}. 😎`;
-      return replyCallback({ text: response, color: bubbleColor });
-    }
+  /* =====================
+     EMOCIONES
+  ====================== */
+  if (["cansado", "triste", "mal"].some(w => lowerText.includes(w))) {
+    replyCallback({
+      text: "Siento que te sientas así… estoy aquí contigo 🤍",
+      color: bubbleColor
+    });
+    return;
   }
 
-  for(let h of hobbiesQuestions){
-    if(lowerText.includes(h)){
-      response = "Me gusta aprender y conversar contigo. 😄";
-      return replyCallback({ text: response, color: bubbleColor });
-    }
+  if (["feliz", "bien", "contento"].some(w => lowerText.includes(w))) {
+    replyCallback({
+      text: "Me alegra mucho leerte 😊",
+      color: bubbleColor
+    });
+    return;
   }
 
-  for(let d of daysQuestions){
-    if(lowerText.includes(d)){
-      const today = new Date();
-      response = `Hoy es ${today.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' })} y son las ${today.toLocaleTimeString('es-ES')}. 📅🕒`;
-      return replyCallback({ text: response, color: bubbleColor });
-    }
+  /* =====================
+     CREADOR / DUEÑO
+  ====================== */
+  if (["quien te creo", "creador", "dueño"].some(w => lowerText.includes(w))) {
+    replyCallback({
+      text: `Fui creada por mi creador y dueño: ${creatorName} 😎`,
+      color: bubbleColor
+    });
+    return;
   }
 
-  for(let w of weatherQuestions){
-    if(lowerText.includes(w)){
-      response = "No puedo ver el clima ahora, pero espero que esté bonito donde estás. ☀️🌧️";
-      return replyCallback({ text: response, color: bubbleColor });
-    }
+  /* =====================
+     FECHA Y HORA
+  ====================== */
+  if (["hora", "fecha", "dia"].some(w => lowerText.includes(w))) {
+    const now = new Date();
+    replyCallback({
+      text: `Hoy es ${now.toLocaleDateString("es-ES", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      })} y son las ${now.toLocaleTimeString("es-ES")} ⏰`,
+      color: bubbleColor
+    });
+    return;
   }
 
+  /* =====================
+     CLIMA REAL 🌦️
+  ====================== */
+  if (["clima", "tiempo", "llueve", "calor", "frio"].some(w => lowerText.includes(w))) {
+    getWeather().then(result => {
+      replyCallback({
+        text: result,
+        color: bubbleColor
+      });
+    });
+    return;
+  }
+
+  /* =====================
+     RESPUESTA POR DEFECTO
+  ====================== */
   replyCallback({ text: response, color: bubbleColor });
 }
