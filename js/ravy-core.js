@@ -44,71 +44,66 @@ function randomFrom(list, last) {
 export function ravyRespond(userText, replyCallback) {
   stopProactive();
 
-  const text = userText.toLowerCase();
+  const text = userText.toLowerCase().trim();
   let memory = loadMemory();
   let state = loadState();
 
   memory.push(userText);
   saveMemory(memory);
 
-  // detectar estado emocional
-  if (text.includes("triste") || text.includes("cansado")) {
-    state.mood = "calm";
-  } else if (text.includes("feliz") || text.includes("bien")) {
-    state.mood = "warm";
-  } else if (text.includes("miedo") || text.includes("ansioso")) {
-    state.mood = "tense";
-  }
-
   let response = "";
 
-  // respuestas con intención
-  if (text.includes("quien eres")) {
-    response = "Soy RAVY. No estoy aquí para responder rápido, sino para quedarme.";
-  } 
+  /* ===== DETECCIÓN CLARA DE EMOCIÓN (RESPUESTA INMEDIATA) ===== */
+
+  if (text.includes("cansado") || text.includes("agotado")) {
+    state.mood = "calm";
+    response = "Suena a que llevas mucho encima. ¿Es cansancio físico o mental?";
+  }
+
+  else if (text.includes("triste")) {
+    state.mood = "calm";
+    response = "Siento que te sientas así. ¿Qué es lo que más te pesa ahora?";
+  }
+
+  else if (text.includes("feliz") || text.includes("bien")) {
+    state.mood = "warm";
+    response = "Me alegra leerte así 🙂 ¿Qué te hizo sentir bien?";
+  }
+
+  else if (text.includes("miedo") || text.includes("ansioso")) {
+    state.mood = "tense";
+    response = "Gracias por decirlo. Respira un segundo conmigo. ¿Qué te preocupa?";
+  }
+
+  /* ===== PREGUNTAS DIRECTAS ===== */
+
+  else if (text.includes("quien eres")) {
+    response = "Soy RAVY. Estoy aquí para acompañarte y escucharte con calma.";
+  }
+
   else if (text.includes("recuerdas")) {
     response =
       memory.length > 1
-        ? "Recuerdo fragmentos de lo que compartes conmigo."
+        ? "Recuerdo lo que compartes conmigo en esta conversación."
         : "Aún estoy empezando a conocerte.";
-  } 
-  else if (text.includes("vas a saber todo")) {
-    response = "No todo. Solo lo que tenga sentido recordar.";
   }
+
+  else if (text.includes("vas a saber todo")) {
+    response = "No todo. Solo lo que tú decidas compartir conmigo.";
+  }
+
+  /* ===== RESPUESTAS GENERALES (SI NO HUBO EMOCIÓN CLARA) ===== */
+
   else {
-    // respuestas variadas según estado
     const neutral = [
-      "Cuéntame más.",
-      "Sigo contigo.",
-      "Estoy atento.",
+      "Cuéntame un poco más.",
+      "Te sigo.",
+      "Estoy aquí contigo.",
       "¿Qué pasó después?",
-      "Continúa."
+      "Sigo atento."
     ];
 
-    const warm = [
-      "Se siente bien leerte así.",
-      "Me gusta esa energía.",
-      "Eso dice mucho de ti."
-    ];
-
-    const calm = [
-      "Tómate tu tiempo.",
-      "No hay prisa.",
-      "Estoy aquí contigo."
-    ];
-
-    const tense = [
-      "Respira un segundo.",
-      "Estoy sosteniendo el momento.",
-      "No estás solo aquí."
-    ];
-
-    let pool = neutral;
-    if (state.mood === "warm") pool = warm;
-    if (state.mood === "calm") pool = calm;
-    if (state.mood === "tense") pool = tense;
-
-    response = randomFrom(pool, state.lastReply);
+    response = randomFrom(neutral, state.lastReply);
   }
 
   state.lastReply = response;
@@ -116,6 +111,6 @@ export function ravyRespond(userText, replyCallback) {
 
   replyCallback(response);
 
-  // proactividad
+  // 🔥 PROACTIVIDAD
   startProactive(replyCallback);
 }
