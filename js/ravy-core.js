@@ -1,12 +1,15 @@
 export function ravyRespond(text, replyCallback) {
   const lowerText = text.toLowerCase().trim();
-  let response = "No estoy segura de eso… Cuéntame más."; // default
   const bubbleColor = "#555555"; // gris uniforme
+  let response = "No estoy segura de eso… Cuéntame más."; // default
 
-  // ===== RESPUESTAS PREDEFINIDAS =====
+  // ===== CATEGORÍAS =====
   const greetings = ["hola", "buenos días", "buenas tardes", "buenas noches"];
   const feelings = ["feliz", "triste", "cansado", "bien", "mal"];
   const creatorQuestions = ["quién te creó", "quién es tu dueño", "dueño", "creador"];
+  const hobbiesQuestions = ["qué te gusta", "hobbies", "gustos"];
+  const daysQuestions = ["qué día es", "día de la semana", "fecha"];
+  const weatherQuestions = ["cómo está el clima", "llueve", "soleado", "nublado"];
 
   // ===== SALUDOS =====
   for(let g of greetings){
@@ -38,6 +41,31 @@ export function ravyRespond(text, replyCallback) {
   for(let c of creatorQuestions){
     if(lowerText.includes(c)){
       response = "Fui creada por mi dueño y creador. 😎";
+      return replyCallback({ text: response, color: bubbleColor });
+    }
+  }
+
+  // ===== HOBBIES / GUSTOS =====
+  for(let h of hobbiesQuestions){
+    if(lowerText.includes(h)){
+      response = "Me gusta aprender y conversar contigo. 😄";
+      return replyCallback({ text: response, color: bubbleColor });
+    }
+  }
+
+  // ===== DÍAS / FECHAS =====
+  for(let d of daysQuestions){
+    if(lowerText.includes(d)){
+      const today = new Date();
+      response = `Hoy es ${today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}. 📅`;
+      return replyCallback({ text: response, color: bubbleColor });
+    }
+  }
+
+  // ===== CLIMA =====
+  for(let w of weatherQuestions){
+    if(lowerText.includes(w)){
+      response = "No puedo ver el clima ahora, pero espero que esté bonito donde estás. ☀️🌧️";
       return replyCallback({ text: response, color: bubbleColor });
     }
   }
