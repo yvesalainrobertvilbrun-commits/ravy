@@ -35,7 +35,7 @@ export function ravyRespond(userText, replyCallback) {
 
   let response = "";
 
-  // RESPUESTAS CON CONTEXTO
+  // RESPUESTA SEGÚN CONTEXTO
   if (state.awaiting === "cansancio") {
     if (text.includes("mental")) {
       response =
@@ -73,7 +73,6 @@ export function ravyRespond(userText, replyCallback) {
         ? "Recuerdo lo que compartiste recientemente."
         : "Aún estoy empezando a conocerte.";
   } else {
-    // RESPUESTAS GENERALES
     const neutrals = [
       "Cuéntame más.",
       "Sigo contigo.",
