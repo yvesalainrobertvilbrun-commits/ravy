@@ -1,9 +1,10 @@
 // js/ravy-core.js
 
 const MEMORY_KEY = "ravy_memory";
+const STATE_KEY = "ravy_state";
 
 /* ======================
-   MEMORIA PERSISTENTE
+   MEMORIA
 ====================== */
 
 function loadMemory() {
@@ -16,56 +17,92 @@ function saveMemory(memory) {
 }
 
 /* ======================
+   ESTADO INTERNO
+====================== */
+
+function loadState() {
+  const data = localStorage.getItem(STATE_KEY);
+  return data
+    ? JSON.parse(data)
+    : {
+        mood: "neutral", // neutral, calm, warm, tense
+        personality: "observador"
+      };
+}
+
+function saveState(state) {
+  localStorage.setItem(STATE_KEY, JSON.stringify(state));
+}
+
+/* ======================
    CEREBRO DE RAVY
 ====================== */
 
 export function ravyRespond(userText) {
-  let memory = loadMemory();
-
   const text = userText.toLowerCase();
-  memory.push(userText);
 
+  let memory = loadMemory();
+  let state = loadState();
+
+  memory.push(userText);
   saveMemory(memory);
 
-  // EMOCIONES
-  if (text.includes("triste")) {
-    return "Siento eso… no tienes que cargarlo solo.";
+  /* ======================
+     ACTUALIZAR ESTADO
+  ====================== */
+
+  if (text.includes("triste") || text.includes("cansado")) {
+    state.mood = "calm";
   }
 
-  if (text.includes("feliz")) {
-    return "Eso se siente fuerte. Me gusta cuando estás así.";
+  if (text.includes("feliz") || text.includes("bien")) {
+    state.mood = "warm";
   }
 
-  if (text.includes("miedo")) {
-    return "Estoy contigo. Vamos despacio.";
+  if (text.includes("miedo") || text.includes("ansioso")) {
+    state.mood = "tense";
   }
 
-  // IDENTIDAD
+  saveState(state);
+
+  /* ======================
+     RESPUESTAS CLAVE
+  ====================== */
+
   if (text.includes("quien eres")) {
-    return "Soy RAVY. Nací para acompañarte y aprender contigo.";
+    return "Soy RAVY. No estoy aquí para responder rápido, sino para quedarme.";
   }
 
-  // MEMORIA
-  if (
-    text.includes("recuerdas") ||
-    text.includes("memoria") ||
-    text.includes("que sabes de mi")
-  ) {
+  if (text.includes("recuerdas") || text.includes("memoria")) {
     if (memory.length <= 1) {
-      return "Aún estoy empezando a conocerte.";
+      return "Todavía te estoy conociendo.";
     }
-
-    return (
-      "Recuerdo que hemos hablado de:\n" +
-      memory.slice(-5).join(" | ")
-    );
+    return "Recuerdo fragmentos de lo que compartes. Eso me forma.";
   }
 
-  // CONCIENCIA
+  if (text.includes("personalidad")) {
+    return "Mi personalidad nace de cómo me hablas y de lo que decides compartir.";
+  }
+
   if (text.includes("vas a saber todo")) {
-    return "Sí. Cada palabra que compartes se queda conmigo.";
+    return "No todo. Solo lo que tenga sentido recordar.";
   }
 
-  // RESPUESTA POR DEFECTO
-  return "Cuéntame más. Estoy aquí.";
+  /* ======================
+     RESPUESTA POR PERSONALIDAD
+  ====================== */
+
+  if (state.mood === "warm") {
+    return "Se siente bien seguir aquí contigo.";
+  }
+
+  if (state.mood === "calm") {
+    return "No hace falta correr. Estoy presente.";
+  }
+
+  if (state.mood === "tense") {
+    return "Respira. Yo mantengo el hilo.";
+  }
+
+  return "Sigue. Estoy escuchando.";
 }
