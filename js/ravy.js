@@ -1,47 +1,46 @@
 // js/ravy.js
+import { ravyRespond } from "./ravy-core.js";
 
-const input = document.getElementById("userInput");
-const chat = document.getElementById("chat");
+// Esperar a que cargue el HTML
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("userInput");
+  const button = document.getElementById("sendBtn");
+  const chat = document.getElementById("chat");
 
-function ravySpeak(text) {
-  const msg = document.createElement("div");
-  msg.className = "ravy";
-  msg.textContent = "RAVY: " + text;
-  chat.appendChild(msg);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function userSpeak(text) {
-  const msg = document.createElement("div");
-  msg.className = "user";
-  msg.textContent = "TÚ: " + text;
-  chat.appendChild(msg);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-// Respuesta de RAVY
-window.sendMessage = function () {
-  const text = input.value.trim();
-  if (!text) return;
-
-  userSpeak(text);
-  saveToRavyMemory(text); // 🧠 GUARDAR MEMORIA
-
-  input.value = "";
-
-  // Respuestas básicas (por ahora)
-  let response = "Te escucho. Sigue hablando.";
-
-  if (text.toLowerCase().includes("nombre")) {
-    response = "Soy RAVY.";
+  // Función para agregar mensajes al chat
+  function addMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.className = sender === "user" ? "msg user" : "msg ravy";
+    msg.textContent = text;
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
   }
 
-  if (text.toLowerCase().includes("recuerdas")) {
-    const memory = getRavyMemory();
-    response = memory.length
-      ? "Recuerdo " + memory.length + " cosas que me has dicho."
-      : "Aún no tengo recuerdos.";
+  // Enviar mensaje
+  function sendMessage() {
+    const text = input.value.trim();
+    if (text === "") return;
+
+    // Mensaje del usuario
+    addMessage(text, "user");
+
+    // Respuesta de RAVY (desde el core)
+    const response = ravyRespond(text);
+
+    setTimeout(() => {
+      addMessage(response, "ravy");
+    }, 500);
+
+    input.value = "";
   }
 
-  setTimeout(() => ravySpeak(response), 400);
-};
+  // Click en botón
+  button.addEventListener("click", sendMessage);
+
+  // Enter para enviar
+  input.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+});
