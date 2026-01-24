@@ -1,21 +1,139 @@
-let waitingForCity = false;
+import {
+  learnResponse,
+  getLearnedResponse,
+  saveUserName,
+  getUserName,
+  getCreatorName,
+  saveUserCity,
+  getUserCity
+} from "./memory.js";
 
-if (["clima", "tiempo", "llueve", "calor", "frio"].some(w => lowerText.includes(w))) {
-  waitingForCity = true;
-  replyCallback({
-    text: "¿En qué ciudad estás? 🌍",
-    color: bubbleColor
-  });
-  return;
+import { getWeather } from "./weather.js";
+
+function normalizeText(str) {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
-if (waitingForCity) {
-  waitingForCity = false;
-  getWeather(text).then(result => {
+let waitingForCity = false;
+
+export function ravyRespond(text, replyCallback) {
+  const lowerText = normalizeText(text.trim());
+  const bubbleColor = "#555555";
+
+  const userName = getUserName();
+  const creatorName = getCreatorName();
+  const userCity = getUserCity();
+
+  /* ===== APRENDER NOMBRE ===== */
+  if (lowerText.startsWith("mi nombre es")) {
+    const name = text.split(/mi nombre es/i)[1]?.trim();
+    if (name) {
+      saveUserName(name);
+      replyCallback({
+        text: `Encantada de conocerte, ${name} 😊`,
+        color: bubbleColor
+      });
+      return;
+    }
+  }
+
+  /* ===== APRENDIZAJE ===== */
+  if (lowerText.startsWith("ravy aprende que")) {
+    const phrase = lowerText.replace("ravy aprende que", "").trim();
+    const parts = phrase.split(" es ");
+    if (parts.length === 2) {
+      learnResponse(parts[0], parts[1]);
+      replyCallback({
+        text: `Listo ✅ He aprendido que ${parts[0]} es ${parts[1]}`,
+        color: bubbleColor
+      });
+      return;
+    }
+  }
+
+  const learned = getLearnedResponse(lowerText);
+  if (learned) {
+    replyCallback({ text: learned, color: bubbleColor });
+    return;
+  }
+
+  /* ===== SALUDOS ===== */
+  if (["hola", "buenos dias", "buenas tardes", "buenas noches"].some(w => lowerText.includes(w))) {
     replyCallback({
-      text: result,
+      text: userName ? `Hola ${userName} 👋 ¿Cómo estás hoy?` : "Hola 👋 ¿Cómo estás hoy?",
       color: bubbleColor
     });
+    return;
+  }
+
+  /* ===== EMOCIONES ===== */
+  if (["cansado", "triste", "mal"].some(w => lowerText.includes(w))) {
+    replyCallback({
+      text: "Siento que te sientas así… estoy aquí contigo 🤍",
+      color: bubbleColor
+    });
+    return;
+  }
+
+  /* ===== CREADOR ===== */
+  if (["quien te creo", "creador", "dueño"].some(w => lowerText.includes(w))) {
+    replyCallback({
+      text: `Fui creada por mi creador y dueño: ${creatorName} 😎`,
+      color: bubbleColor
+    });
+    return;
+  }
+
+  /* ===== FECHA Y HORA ===== */
+  if (["hora", "fecha", "dia"].some(w => lowerText.includes(w))) {
+    const now = new Date();
+    replyCallback({
+      text: `Hoy es ${now.toLocaleDateString("es-ES", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      })} y son las ${now.toLocaleTimeString("es-ES")} ⏰`,
+      color: bubbleColor
+    });
+    return;
+  }
+
+  /* ===== CLIMA CON MEMORIA ===== */
+  if (["clima", "tiempo", "llueve", "calor", "frio"].some(w => lowerText.includes(w))) {
+    if (!userCity) {
+      waitingForCity = true;
+      replyCallback({
+        text: "¿En qué ciudad estás? 🌍",
+        color: bubbleColor
+      });
+      return;
+    }
+
+    getWeather(userCity).then(result => {
+      replyCallback({ text: result, color: bubbleColor });
+    });
+    return;
+  }
+
+  if (waitingForCity) {
+    waitingForCity = false;
+    saveUserCity(text.trim());
+    getWeather(text.trim()).then(result => {
+      replyCallback({
+        text: `Perfecto 👍 Guardé tu ciudad.\n${result}`,
+        color: bubbleColor
+      });
+    });
+    return;
+  }
+
+  /* ===== RESPUESTA BASE ===== */
+  replyCallback({
+    text: "Te escucho 👂",
+    color: bubbleColor
   });
-  return;
 }
