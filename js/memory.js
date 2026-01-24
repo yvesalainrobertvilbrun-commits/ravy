@@ -1,24 +1,26 @@
 // js/memory.js
 
-const RAVY_MEMORY_KEY = "ravy_memory";
+const MEMORY_KEY = "ravy_memory_v1.1";
 
-// Obtener memoria
-window.getRavyMemory = function () {
-  const memory = localStorage.getItem(RAVY_MEMORY_KEY);
-  return memory ? JSON.parse(memory) : [];
-};
+export function loadMemory(limit = 10) {
+  const data = localStorage.getItem(MEMORY_KEY);
+  if (!data) return [];
+  const memory = JSON.parse(data);
+  // Solo guardar las últimas 'limit' interacciones
+  return memory.slice(-limit);
+}
 
-// Guardar memoria
-window.saveToRavyMemory = function (text) {
-  const memory = getRavyMemory();
+export function saveMemory(message, type = "user") {
+  const memory = loadMemory(50); // guarda máximo 50 para no saturar
   memory.push({
-    text,
-    date: new Date().toISOString()
+    text: message,
+    type,
+    timestamp: new Date().toISOString()
   });
-  localStorage.setItem(RAVY_MEMORY_KEY, JSON.stringify(memory));
-};
+  localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
+}
 
-// Limpiar memoria (por si acaso)
-window.clearRavyMemory = function () {
-  localStorage.removeItem(RAVY_MEMORY_KEY);
-};
+export function getMemorySummary() {
+  const memory = loadMemory();
+  return memory.map(m => `${m.type}: ${m.text}`).join("\n");
+}
