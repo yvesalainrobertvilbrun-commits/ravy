@@ -1,14 +1,23 @@
+const KEY = "ravy_memory";
+
 export function saveMemory(text, emotion) {
-  const memory = {
+  const data = {
     text,
     emotion,
-    time: new Date().toISOString()
+    time: Date.now()
   };
-  localStorage.setItem("ravy_last_memory", JSON.stringify(memory));
+
+  localStorage.setItem(KEY, JSON.stringify(data));
 }
 
 export function getMemory() {
-  const mem = localStorage.getItem("ravy_last_memory");
-  if (!mem) return null;
-  return JSON.parse(mem);
+  const raw = localStorage.getItem(KEY);
+  if (!raw) return null;
+
+  try {
+    const data = JSON.parse(raw);
+    return data.text;
+  } catch {
+    return null;
+  }
 }
