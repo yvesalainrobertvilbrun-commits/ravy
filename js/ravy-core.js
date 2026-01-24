@@ -1,31 +1,47 @@
 export function ravyRespond(text, replyCallback) {
-  const lowerText = text.toLowerCase();
+  const lowerText = text.toLowerCase().trim();
+  let response = "No estoy segura de eso… Cuéntame más."; // default
+  const bubbleColor = "#555555"; // gris uniforme
 
-  // Detectar emociones simples
-  let emotion = "neutral"; // default
-  if(lowerText.includes("feliz") || lowerText.includes("genial") || lowerText.includes("bien")) emotion = "happy";
-  if(lowerText.includes("triste") || lowerText.includes("cansado") || lowerText.includes("mal")) emotion = "sad";
-  if(lowerText.includes("enojado") || lowerText.includes("frustrado")) emotion = "angry";
+  // ===== RESPUESTAS PREDEFINIDAS =====
+  const greetings = ["hola", "buenos días", "buenas tardes", "buenas noches"];
+  const feelings = ["feliz", "triste", "cansado", "bien", "mal"];
+  const creatorQuestions = ["quién te creó", "quién es tu dueño", "dueño", "creador"];
 
-  // Generar respuesta diferente según emoción
-  let response = "";
-  switch(emotion){
-    case "happy":
-      response = `¡Me alegra que te sientas bien! 😄`;
-      break;
-    case "sad":
-      response = `Oh… lo siento. Estoy aquí contigo. 😔`;
-      break;
-    case "angry":
-      response = `Respira profundo, todo va a estar bien. 😐`;
-      break;
-    default:
-      response = `Entiendo… Cuéntame más.`;
+  // ===== SALUDOS =====
+  for(let g of greetings){
+    if(lowerText.includes(g)){
+      response = "¡Hola! 👋 ¿Cómo estás hoy?";
+      return replyCallback({ text: response, color: bubbleColor });
+    }
   }
 
-  // Color gris uniforme
-  const bubbleColor = "#555555";
+  // ===== EMOCIONES =====
+  for(let f of feelings){
+    if(lowerText.includes(f)){
+      switch(f){
+        case "feliz":
+        case "bien":
+          response = "¡Me alegra que te sientas bien! 😄";
+          break;
+        case "triste":
+        case "mal":
+        case "cansado":
+          response = "Oh… lo siento. Estoy aquí contigo. 😔";
+          break;
+      }
+      return replyCallback({ text: response, color: bubbleColor });
+    }
+  }
 
-  // Devolver respuesta
+  // ===== CREADOR / DUEÑO =====
+  for(let c of creatorQuestions){
+    if(lowerText.includes(c)){
+      response = "Fui creada por mi dueño y creador. 😎";
+      return replyCallback({ text: response, color: bubbleColor });
+    }
+  }
+
+  // ===== RESPUESTA POR DEFECTO =====
   replyCallback({ text: response, color: bubbleColor });
 }
