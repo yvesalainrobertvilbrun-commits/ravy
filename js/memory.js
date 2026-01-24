@@ -1,4 +1,5 @@
-export let memory = [];
+export let memory = []; // mensajes y aprendizajes
+export let userInfo = { name: null, creator: "Yves" }; // guardamos info fija y del usuario
 
 // Guardar mensaje simple
 export function saveMessage(msg) {
@@ -15,4 +16,19 @@ export function learnResponse(key, answer) {
 export function getLearnedResponse(text) {
   const found = memory.find(m => m.key && text.toLowerCase().includes(m.key));
   return found ? found.answer : null;
+}
+
+// Guardar nombre del usuario
+export function saveUserName(name) {
+  userInfo.name = name;
+}
+
+// Obtener nombre del usuario
+export function getUserName() {
+  return userInfo.name;
+}
+
+// Obtener nombre del creador
+export function getCreatorName() {
+  return userInfo.creator;
 }
