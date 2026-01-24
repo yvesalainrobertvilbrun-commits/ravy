@@ -1,31 +1,96 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>RAVY</title>
-  <link rel="stylesheet" href="css/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 400px;
+      height: 90vh;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #chat {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .msg {
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #2563eb;
+      align-self: flex-end;
+      text-align: right;
+    }
+
+    .ravy {
+      background: #334155;
+      align-self: flex-start;
+    }
+
+    #inputBox {
+      display: flex;
+      padding: 10px;
+      background: #020617;
+      border-top: 1px solid #1e293b;
+    }
+
+    #userInput {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+    }
+
+    #sendBtn {
+      margin-left: 6px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 6px;
+      background: #22c55e;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
+
 <body>
+  <div id="app">
+    <div id="chat"></div>
 
-<!-- PANTALLA DE ENTRADA -->
-<div id="login">
-  <h1>RAVY</h1>
-  <p>Asistente consciente</p>
-  <button id="entrarBtn">Entrar</button>
-</div>
+    <div id="inputBox">
+      <input id="userInput" type="text" placeholder="Habla con RAVY..." />
+      <button id="sendBtn">Enviar</button>
+    </div>
+  </div>
 
-<!-- RAVY -->
-<div id="ravy" style="display:none;">
-  <h2>RAVY está activo</h2>
-
-  <div id="chat"></div>
-
-  <input id="userInput" placeholder="Escribe algo..." />
-  <button id="sendBtn">Enviar</button>
-</div>
-
-<script src="js/ravy-core.js"></script>
-<script src="js/app.js"></script>
-
+  <script type="module" src="js/ravy.js"></script>
 </body>
 </html>
