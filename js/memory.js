@@ -6,12 +6,11 @@ export function loadMemory(limit = 10) {
   const data = localStorage.getItem(MEMORY_KEY);
   if (!data) return [];
   const memory = JSON.parse(data);
-  // Solo guardar las últimas 'limit' interacciones
   return memory.slice(-limit);
 }
 
 export function saveMemory(message, type = "user") {
-  const memory = loadMemory(50); // guarda máximo 50 para no saturar
+  const memory = loadMemory(50);
   memory.push({
     text: message,
     type,
