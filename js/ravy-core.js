@@ -1,11 +1,11 @@
 // js/ravy-core.js
 
+import { startProactive, stopProactive } from "./proactive.js";
+
 const MEMORY_KEY = "ravy_memory";
 const STATE_KEY = "ravy_state";
 
-/* ======================
-   MEMORIA
-====================== */
+/* ========= MEMORIA ========= */
 
 function loadMemory() {
   const data = localStorage.getItem(MEMORY_KEY);
@@ -16,93 +16,61 @@ function saveMemory(memory) {
   localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
 }
 
-/* ======================
-   ESTADO INTERNO
-====================== */
+/* ========= ESTADO ========= */
 
 function loadState() {
   const data = localStorage.getItem(STATE_KEY);
   return data
     ? JSON.parse(data)
-    : {
-        mood: "neutral", // neutral, calm, warm, tense
-        personality: "observador"
-      };
+    : { mood: "neutral" };
 }
 
 function saveState(state) {
   localStorage.setItem(STATE_KEY, JSON.stringify(state));
 }
 
-/* ======================
-   CEREBRO DE RAVY
-====================== */
+/* ========= CEREBRO ========= */
 
-export function ravyRespond(userText) {
-  const text = userText.toLowerCase();
+export function ravyRespond(userText, replyCallback) {
+  stopProactive();
 
   let memory = loadMemory();
   let state = loadState();
+  const text = userText.toLowerCase();
 
   memory.push(userText);
   saveMemory(memory);
 
-  /* ======================
-     ACTUALIZAR ESTADO
-  ====================== */
-
   if (text.includes("triste") || text.includes("cansado")) {
     state.mood = "calm";
-  }
-
-  if (text.includes("feliz") || text.includes("bien")) {
+  } else if (text.includes("feliz") || text.includes("bien")) {
     state.mood = "warm";
-  }
-
-  if (text.includes("miedo") || text.includes("ansioso")) {
+  } else if (text.includes("miedo") || text.includes("ansioso")) {
     state.mood = "tense";
   }
 
   saveState(state);
 
-  /* ======================
-     RESPUESTAS CLAVE
-  ====================== */
+  let response = "";
 
   if (text.includes("quien eres")) {
-    return "Soy RAVY. No estoy aquí para responder rápido, sino para quedarme.";
+    response = "Soy RAVY. Estoy aquí para acompañarte, no para apurarte.";
+  } else if (text.includes("recuerdas")) {
+    response =
+      memory.length > 1
+        ? "Recuerdo lo que compartes conmigo."
+        : "Aún estoy empezando a conocerte.";
+  } else if (text.includes("vas a saber todo")) {
+    response = "Recordaré lo que tenga sentido para ti.";
+  } else {
+    if (state.mood === "warm") response = "Me gusta sentirte así.";
+    else if (state.mood === "calm") response = "Tómate tu tiempo. Estoy aquí.";
+    else if (state.mood === "tense") response = "Respira. Yo sostengo el momento.";
+    else response = "Te escucho.";
   }
 
-  if (text.includes("recuerdas") || text.includes("memoria")) {
-    if (memory.length <= 1) {
-      return "Todavía te estoy conociendo.";
-    }
-    return "Recuerdo fragmentos de lo que compartes. Eso me forma.";
-  }
+  replyCallback(response);
 
-  if (text.includes("personalidad")) {
-    return "Mi personalidad nace de cómo me hablas y de lo que decides compartir.";
-  }
-
-  if (text.includes("vas a saber todo")) {
-    return "No todo. Solo lo que tenga sentido recordar.";
-  }
-
-  /* ======================
-     RESPUESTA POR PERSONALIDAD
-  ====================== */
-
-  if (state.mood === "warm") {
-    return "Se siente bien seguir aquí contigo.";
-  }
-
-  if (state.mood === "calm") {
-    return "No hace falta correr. Estoy presente.";
-  }
-
-  if (state.mood === "tense") {
-    return "Respira. Yo mantengo el hilo.";
-  }
-
-  return "Sigue. Estoy escuchando.";
+  // 🔥 PROACTIVIDAD ACTIVADA
+  startProactive(replyCallback);
 }
