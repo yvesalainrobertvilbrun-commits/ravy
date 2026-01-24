@@ -1,96 +1,27 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>RAVY</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <meta charset="UTF-8">
+  <title>RAVY v1.1</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    #app {
-      width: 100%;
-      max-width: 400px;
-      height: 90vh;
-      background: #020617;
-      display: flex;
-      flex-direction: column;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    #chat {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-    }
-
-    .msg {
-      margin-bottom: 10px;
-      padding: 8px 12px;
-      border-radius: 10px;
-      max-width: 80%;
-      word-wrap: break-word;
-    }
-
-    .user {
-      background: #2563eb;
-      align-self: flex-end;
-      text-align: right;
-    }
-
-    .ravy {
-      background: #334155;
-      align-self: flex-start;
-    }
-
-    #inputBox {
-      display: flex;
-      padding: 10px;
-      background: #020617;
-      border-top: 1px solid #1e293b;
-    }
-
-    #userInput {
-      flex: 1;
-      padding: 10px;
-      border-radius: 6px;
-      border: none;
-      outline: none;
-    }
-
-    #sendBtn {
-      margin-left: 6px;
-      padding: 10px 14px;
-      border: none;
-      border-radius: 6px;
-      background: #22c55e;
-      font-weight: bold;
-      cursor: pointer;
-    }
+    body { font-family: Arial; background: #f5f5f5; margin: 0; padding: 20px; }
+    #ravy-chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: auto; background: #fff; }
+    .user { text-align: right; color: #007BFF; margin: 5px 0; }
+    .ravy { text-align: left; color: #28A745; margin: 5px 0; }
+    #ravy-input { width: 80%; padding: 5px; }
+    #ravy-send { padding: 5px 10px; }
   </style>
 </head>
-
 <body>
-  <div id="app">
-    <div id="chat"></div>
+  <h1>RAVY v1.1</h1>
+  <div id="ravy-chat"></div>
+  <input id="ravy-input" type="text" placeholder="Habla con RAVY...">
+  <button id="ravy-send">Enviar</button>
 
-    <div id="inputBox">
-      <input id="userInput" type="text" placeholder="Habla con RAVY..." />
-      <button id="sendBtn">Enviar</button>
-    </div>
-  </div>
-
+  <!-- Scripts como módulos -->
+  <script type="module" src="js/memory.js"></script>
+  <script type="module" src="js/proactive.js"></script>
+  <script type="module" src="js/ravy-core.js"></script>
   <script type="module" src="js/ravy.js"></script>
 </body>
 </html>
