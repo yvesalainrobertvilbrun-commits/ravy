@@ -1,17 +1,24 @@
-export function getEmotion(text) {
-  const t = text.toLowerCase();
+// js/memory.js
 
-  if (t.includes("triste") || t.includes("solo") || t.includes("mal")) {
-    return "triste";
-  }
+const RAVY_MEMORY_KEY = "ravy_memory";
 
-  if (t.includes("feliz") || t.includes("bien") || t.includes("contento")) {
-    return "feliz";
-  }
+// Obtener memoria
+window.getRavyMemory = function () {
+  const memory = localStorage.getItem(RAVY_MEMORY_KEY);
+  return memory ? JSON.parse(memory) : [];
+};
 
-  if (t.includes("miedo") || t.includes("ansioso") || t.includes("nervioso")) {
-    return "miedo";
-  }
+// Guardar memoria
+window.saveToRavyMemory = function (text) {
+  const memory = getRavyMemory();
+  memory.push({
+    text,
+    date: new Date().toISOString()
+  });
+  localStorage.setItem(RAVY_MEMORY_KEY, JSON.stringify(memory));
+};
 
-  return "neutral";
-}
+// Limpiar memoria (por si acaso)
+window.clearRavyMemory = function () {
+  localStorage.removeItem(RAVY_MEMORY_KEY);
+};
