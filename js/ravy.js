@@ -25,7 +25,7 @@ function sendMessage() {
   if(!text) return;
 
   addMessage(text, "user");
-  saveMessage({ text }); // guardar mensaje del usuario
+  saveMessage({ text });
 
   ravyRespond(text, res => addMessage(res, "ravy"));
   input.value = "";
