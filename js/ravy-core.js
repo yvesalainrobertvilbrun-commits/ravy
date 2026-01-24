@@ -1,26 +1,17 @@
-import { getEmotion } from "./emotions.js";
-import { saveMemory, getMemory } from "./memory.js";
+function ravyResponder(texto) {
+  texto = texto.toLowerCase();
 
-export function ravyRespond(userText) {
-  const emotion = getEmotion(userText);
-  saveMemory(userText, emotion);
-
-  if (emotion === "triste") {
-    return "Estoy aquí contigo. Puedes tomarte tu tiempo.";
+  if (texto.includes("hola")) {
+    return "Hola. Estoy aquí contigo.";
   }
 
-  if (emotion === "feliz") {
-    return "Me alegra sentir tu energía. Cuéntame más.";
+  if (texto.includes("quién eres") || texto.includes("quien eres")) {
+    return "Soy RAVY. Un sistema en crecimiento.";
   }
 
-  if (emotion === "miedo") {
-    return "Respira conmigo. No estás solo.";
+  if (texto.includes("te repites")) {
+    return "Estoy aprendiendo. Gracias por notarlo.";
   }
 
-  const last = getMemory();
-  if (last) {
-    return "Te escucho. Antes mencionaste algo importante.";
-  }
-
-  return "Cuéntame más, estoy atento.";
+  return "Te escucho. Continúa.";
 }
