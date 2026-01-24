@@ -1,4 +1,5 @@
 import { ravyRespond } from './ravy-core.js';
+import { saveMessage } from './memory.js';
 
 const chatBox = document.getElementById("ravy-chat");
 const input = document.getElementById("ravy-input");
@@ -24,6 +25,8 @@ function sendMessage() {
   if(!text) return;
 
   addMessage(text, "user");
+  saveMessage({ text }); // guardar mensaje del usuario
+
   ravyRespond(text, res => addMessage(res, "ravy"));
   input.value = "";
 }
