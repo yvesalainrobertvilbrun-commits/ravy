@@ -1,34 +1,21 @@
-import { ravyRespond } from "./ravy-core.js";
-
-// Mostrar pantallas
-window.entrar = function () {
+// ENTRAR
+document.getElementById("entrarBtn").onclick = () => {
   document.getElementById("login").style.display = "none";
   document.getElementById("ravy").style.display = "block";
 };
 
-window.salir = function () {
-  document.getElementById("login").style.display = "block";
-  document.getElementById("ravy").style.display = "none";
-};
+// CHAT
+document.getElementById("sendBtn").onclick = () => {
+  const input = document.getElementById("userInput");
+  const chat = document.getElementById("chat");
 
-// Hablar con RAVY
-window.hablar = function () {
-  const inputEl = document.getElementById("userInput");
-  const responseEl = document.getElementById("response");
+  const mensaje = input.value;
+  if (!mensaje) return;
 
-  const text = inputEl.value.trim();
+  chat.innerHTML += "<p><b>Tú:</b> " + mensaje + "</p>";
 
-  if (!text) {
-    responseEl.innerText = "Estoy aquí, cuando quieras.";
-    return;
-  }
+  const respuesta = ravyResponder(mensaje);
+  chat.innerHTML += "<p><b>RAVY:</b> " + respuesta + "</p>";
 
-  responseEl.innerText = "…";
-
-  setTimeout(() => {
-    const reply = ravyRespond(text);
-    responseEl.innerText = reply;
-  }, 500);
-
-  inputEl.value = "";
+  input.value = "";
 };
