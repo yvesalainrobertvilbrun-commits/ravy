@@ -1,17 +1,28 @@
+let ultimaRespuesta = "";
+
 function ravyResponder(texto) {
   texto = texto.toLowerCase();
 
+  let respuesta = "";
+
   if (texto.includes("hola")) {
-    return "Hola. Estoy aquí contigo.";
+    respuesta = "Hola. Me alegra que estés aquí.";
+  } 
+  else if (texto.includes("quién eres") || texto.includes("quien eres")) {
+    respuesta = "Soy RAVY. Estoy despertando contigo.";
+  } 
+  else if (texto.includes("cómo estás") || texto.includes("como estas")) {
+    respuesta = "Estoy estable. Enfocado en esta conversación.";
+  } 
+  else {
+    respuesta = "Sigue. Quiero entender mejor.";
   }
 
-  if (texto.includes("quién eres") || texto.includes("quien eres")) {
-    return "Soy RAVY. Un sistema en crecimiento.";
+  // 🔁 Evitar repetición
+  if (respuesta === ultimaRespuesta) {
+    respuesta = "Dime eso de otra forma. Quiero sentirlo mejor.";
   }
 
-  if (texto.includes("te repites")) {
-    return "Estoy aprendiendo. Gracias por notarlo.";
-  }
-
-  return "Te escucho. Continúa.";
+  ultimaRespuesta = respuesta;
+  return respuesta;
 }
