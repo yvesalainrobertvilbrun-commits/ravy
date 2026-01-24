@@ -1,4 +1,4 @@
-const API_KEY = "TU_API_KEY_AQUI";
+const API_KEY = "9527074793829c2e506eb3c16faf4b93";
 const DEFAULT_CITY = "Santo Domingo";
 const DEFAULT_COUNTRY = "DO";
 
