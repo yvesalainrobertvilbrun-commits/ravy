@@ -1,6 +1,5 @@
 import { learnResponse, getLearnedResponse, memory, saveUserName, getUserName, getCreatorName } from './memory.js';
 
-// Función para normalizar texto
 function normalizeText(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
@@ -13,7 +12,7 @@ export function ravyRespond(text, replyCallback) {
   const userName = getUserName();
   const creatorName = getCreatorName();
 
-  // ===== Aprender nombre del usuario =====
+  // ===== Guardar nombre del usuario =====
   if(lowerText.startsWith("mi nombre es")){
     const name = text.split("mi nombre es")[1].trim();
     saveUserName(name);
@@ -36,14 +35,13 @@ export function ravyRespond(text, replyCallback) {
   if(learned) return replyCallback({ text: learned, color: bubbleColor });
 
   // ===== Respuestas básicas =====
-  const greetings = ["hola","buenos días","buenas tardes","buenas noches"];
+  const greetings = ["hola","buenos dias","buenas tardes","buenas noches"];
   const feelings = ["feliz","triste","cansado","bien","mal"];
   const creatorQuestions = ["quien te creo","quien es tu dueño","dueño","creador"];
-  const hobbiesQuestions = ["qué te gusta","hobbies","gustos"];
-  const daysQuestions = ["qué día es","día de la semana","fecha"];
-  const weatherQuestions = ["cómo está el clima","llueve","soleado","nublado"];
+  const hobbiesQuestions = ["que te gusta","hobbies","gustos"];
+  const daysQuestions = ["que dia es","dia de la semana","fecha"];
+  const weatherQuestions = ["como esta el clima","llueve","soleado","nublado"];
 
-  // ===== SALUDOS =====
   for(let g of greetings){
     if(lowerText.includes(g)){
       response = userName ? `¡Hola ${userName}! 👋 ¿Cómo estás hoy?` : "¡Hola! 👋 ¿Cómo estás hoy?";
@@ -51,7 +49,6 @@ export function ravyRespond(text, replyCallback) {
     }
   }
 
-  // ===== EMOCIONES =====
   for(let f of feelings){
     if(lowerText.includes(f)){
       response = (["feliz","bien"].includes(f)) ? `¡Me alegra que te sientas bien${userName ? ", "+userName : ""}! 😄` : "Oh… lo siento. Estoy aquí contigo. 😔";
@@ -59,7 +56,6 @@ export function ravyRespond(text, replyCallback) {
     }
   }
 
-  // ===== CREADOR / DUEÑO =====
   for(let c of creatorQuestions){
     if(lowerText.includes(c)){
       response = `Fui creada por mi dueño y creador, ${creatorName}. 😎`;
@@ -67,7 +63,6 @@ export function ravyRespond(text, replyCallback) {
     }
   }
 
-  // ===== HOBBIES / GUSTOS =====
   for(let h of hobbiesQuestions){
     if(lowerText.includes(h)){
       response = "Me gusta aprender y conversar contigo. 😄";
@@ -75,7 +70,6 @@ export function ravyRespond(text, replyCallback) {
     }
   }
 
-  // ===== DÍAS / FECHAS =====
   for(let d of daysQuestions){
     if(lowerText.includes(d)){
       const today = new Date();
@@ -84,7 +78,6 @@ export function ravyRespond(text, replyCallback) {
     }
   }
 
-  // ===== CLIMA =====
   for(let w of weatherQuestions){
     if(lowerText.includes(w)){
       response = "No puedo ver el clima ahora, pero espero que esté bonito donde estás. ☀️🌧️";
@@ -92,6 +85,5 @@ export function ravyRespond(text, replyCallback) {
     }
   }
 
-  // ===== RESPUESTA POR DEFECTO =====
   replyCallback({ text: response, color: bubbleColor });
 }
