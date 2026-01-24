@@ -1,34 +1,34 @@
-export let memory = [];
-export let userInfo = { name: null, creator: "Yves" };
-
-// Guardar mensaje del usuario
-export function saveMessage(msg) {
-  memory.push(msg);
-  if(memory.length > 100) memory.shift();
+// ===== RESPUESTAS APRENDIDAS =====
+export function learnResponse(question, answer) {
+  const memory = JSON.parse(localStorage.getItem("ravy_memory") || "{}");
+  memory[question] = answer;
+  localStorage.setItem("ravy_memory", JSON.stringify(memory));
 }
 
-// Aprendizaje de frases
-export function learnResponse(key, answer) {
-  memory.push({ key: key.toLowerCase(), answer });
+export function getLearnedResponse(question) {
+  const memory = JSON.parse(localStorage.getItem("ravy_memory") || "{}");
+  return memory[question];
 }
 
-// Buscar respuesta aprendida
-export function getLearnedResponse(text) {
-  const found = memory.find(m => m.key && text.toLowerCase().includes(m.key));
-  return found ? found.answer : null;
-}
-
-// Guardar nombre del usuario
+// ===== NOMBRE DEL USUARIO =====
 export function saveUserName(name) {
-  userInfo.name = name;
+  localStorage.setItem("ravy_user_name", name);
 }
 
-// Obtener nombre del usuario
 export function getUserName() {
-  return userInfo.name;
+  return localStorage.getItem("ravy_user_name");
 }
 
-// Obtener nombre del creador
+// ===== CREADOR =====
 export function getCreatorName() {
-  return userInfo.creator;
+  return "Yves";
+}
+
+// ===== CIUDAD DEL USUARIO =====
+export function saveUserCity(city) {
+  localStorage.setItem("ravy_city", city);
+}
+
+export function getUserCity() {
+  return localStorage.getItem("ravy_city");
 }
