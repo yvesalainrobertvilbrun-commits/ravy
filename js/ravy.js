@@ -1,63 +1,66 @@
-const chat = document.getElementById("chat");
-const input = document.getElementById("userInput");
+document.addEventListener("DOMContentLoaded", function () {
 
-let userName = null;
+  const chat = document.getElementById("chat");
+  const input = document.getElementById("userInput");
+  const button = document.getElementById("sendBtn");
 
-function addMessage(text, className) {
-  const div = document.createElement("div");
-  div.className = className;
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
+  let userName = null;
 
-function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
+  function addMessage(text, type) {
+    const div = document.createElement("div");
+    div.className = type;
+    div.textContent = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
-  addMessage(text, "user");
-  input.value = "";
-
-  setTimeout(() => {
-    respond(text.toLowerCase());
-  }, 300);
-}
-
-function respond(text) {
-  try {
-
+  function getResponse(text) {
     if (text.includes("hola")) {
-      addMessage("Hola 👋 estoy aquí contigo.", "ravy");
-      return;
-    }
-
-    if (text.includes("como estas")) {
-      addMessage("Estoy bien, gracias por preguntar. ¿Y tú?", "ravy");
-      return;
+      return "Hola 👋 estoy aquí contigo.";
     }
 
     if (text.includes("me llamo")) {
       userName = text.replace("me llamo", "").trim();
-      addMessage(`Encantado de conocerte, ${userName}.`, "ravy");
-      return;
+      return `Encantado de conocerte, ${userName}.`;
+    }
+
+    if (text.includes("como estas")) {
+      return "Gracias por preguntar. Estoy bien y atento a ti.";
     }
 
     if (text.includes("quien te creo")) {
-      addMessage("Fui creado por Yves.", "ravy");
-      return;
+      return "Fui creado por Yves.";
     }
 
     if (text.includes("hora")) {
-      const now = new Date();
-      addMessage(`Son las ${now.toLocaleTimeString()}.`, "ravy");
-      return;
+      return `Son las ${new Date().toLocaleTimeString()}.`;
     }
 
-    addMessage("Te escucho 👂", "ravy");
-
-  } catch (e) {
-    addMessage("Algo falló, pero sigo contigo.", "ravy");
+    return "Te escucho 👂";
   }
-}
 
-addMessage("Hola, soy RAVY. ¿Cómo te llamas?", "ravy");
+  function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    setTimeout(() => {
+      try {
+        const reply = getResponse(text.toLowerCase());
+        addMessage(reply, "ravy");
+      } catch {
+        addMessage("Algo falló, pero sigo contigo.", "ravy");
+      }
+    }, 200);
+  }
+
+  button.addEventListener("click", sendMessage);
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  addMessage("Hola, soy RAVY. ¿Cómo te llamas?", "ravy");
+});
