@@ -83,7 +83,7 @@ async function getWeather(city="Santo Domingo") {
 }
 
 // =========================
-// 🧠 CEREBRO H1 + H2 – COMPLETO
+// 🧠 CEREBRO H1 + H2 – COMPLETO FIX IDENTIDAD FINAL
 // =========================
 async function ravyThink(rawText) {
   const text = normalize(rawText);
@@ -111,7 +111,12 @@ async function ravyThink(rawText) {
 
   // ---------- IDENTIDAD ----------
   else if (/me llamo|mi nombre es|recuerdas mi nombre|como me llamo/.test(text)) { intent="identidad"; subIntent="nombre"; }
-  else if (/quien eres|cual es tu proposito|que eres/.test(text)) { intent="identidad"; subIntent="presentacion"; }
+
+  // 🔹 FIX FINAL: capturar todas formas de preguntar por RAVY
+  else if (/(quien eres|quién eres|que eres|cual es tu proposito|cuál es tu propósito)/.test(text)) { 
+      intent = "identidad"; subIntent = "presentacion"; 
+  }
+
   else if (/quien te creo|quien es tu dueño/.test(text)) { intent="identidad"; subIntent="creador"; }
 
   // ---------- MEMORIA ----------
