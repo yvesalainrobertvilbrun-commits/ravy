@@ -98,7 +98,7 @@ async function getWeather(city="Santo Domingo") {
 }
 
 // =========================
-// 🧠 CEREBRO H1 + H2 + H3 – COMPLETO
+// 🧠 CEREBRO H3+ AVANZADO – PERSONALIDAD + SUGERENCIAS
 // =========================
 async function ravyThink(rawText) {
   const text = normalize(rawText);
@@ -111,14 +111,15 @@ async function ravyThink(rawText) {
   let intent = "fallback";
   let subIntent = null;
   let detectedMood = null;
+  let suggestion = "";
 
   // ---------- SALUDOS ----------
   if (/hola|buenos dias|buenas tardes|buenas noches/.test(text)) intent="saludo";
 
   // ---------- EMOCIONES ----------
-  else if (/cansad|agotad/.test(text)) { intent="emocion"; subIntent="cansado"; detectedMood="cansado"; }
-  else if (/bien|contento|feliz/.test(text)) { intent="emocion"; subIntent="feliz"; detectedMood="feliz"; }
-  else if (/trist|deprimid/.test(text)) { intent="emocion"; subIntent="triste"; detectedMood="triste"; }
+  else if (/cansad|agotad/.test(text)) { intent="emocion"; subIntent="cansado"; detectedMood="cansado"; suggestion="Tal vez sería bueno descansar un poco para recuperar energía."; }
+  else if (/bien|contento|feliz/.test(text)) { intent="emocion"; subIntent="feliz"; detectedMood="feliz"; suggestion="Sigue así y aprovecha esta energía positiva para tus proyectos."; }
+  else if (/trist|deprimid/.test(text)) { intent="emocion"; subIntent="triste"; detectedMood="triste"; suggestion="Recuerda que está bien descansar y pedir ayuda si lo necesitas."; }
 
   // ---------- INFORMACIÓN OBJETIVA ----------
   else if (/hora/.test(text)) { intent="informacion"; subIntent="hora"; }
@@ -152,7 +153,8 @@ async function ravyThink(rawText) {
     setLongMemory(longMemory);
     const map = {cansado:`Lo noto${name}. Estás cansado.`, feliz:`Me alegra saberlo${name}.`, triste:`Siento que te sientas así${name}. Estoy contigo.`, neutral:`Te escucho${name}.`};
     const reply = map[subIntent||"neutral"];
-    state.lastRavyMessage = applyPersonality(reply,longMemory.personality);
+    const finalReply = suggestion ? `${reply}\n${suggestion}` : reply;
+    state.lastRavyMessage = applyPersonality(finalReply,longMemory.personality);
     setRavyState(state); return state.lastRavyMessage;
   }
 
