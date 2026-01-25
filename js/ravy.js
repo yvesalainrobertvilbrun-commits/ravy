@@ -1,36 +1,30 @@
-import { ravyRespond } from "./ravy-core.js";
+import { processMessage } from "./ravy-core.js";
+import { resetMemory } from "./memory.js";
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("userInput");
-const btn = document.getElementById("sendBtn");
+const sendBtn = document.getElementById("sendBtn");
 
-function addMessage(text, who) {
+function addMessage(text, type) {
   const div = document.createElement("div");
-  div.className = `message ${who}`;
+  div.className = `msg ${type}`;
   div.textContent = text;
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
 
-function send() {
+sendBtn.onclick = () => {
   const text = input.value.trim();
   if (!text) return;
 
   addMessage(text, "user");
   input.value = "";
 
-  // ⛑️ Protección total
-  try {
-    ravyRespond(text, res => {
-      addMessage(res.text || "…", "ravy");
-    });
-  } catch (e) {
-    addMessage("Tuve un error interno 😵‍💫", "ravy");
-    console.error(e);
-  }
-}
+  const reply = processMessage(text);
+  setTimeout(() => addMessage(reply, "ravy"), 300);
+};
 
-btn.addEventListener("click", send);
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter") send();
-});
+document.getElementById("resetRavy").onclick = () => {
+  resetMemory();
+  location.reload();
+};
