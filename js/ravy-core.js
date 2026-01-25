@@ -38,6 +38,7 @@ function getLongMemory() {
   memory.learning = memory.learning || { moodCount: {}, personalityUsage: {}, interactions: 0 };
   memory.moodHistory = memory.moodHistory || [];
   memory.contextualMemory = memory.contextualMemory || [];
+  memory.predictions = memory.predictions || [];
   return memory;
 }
 
@@ -67,7 +68,7 @@ function applyPersonality(text, personality) {
 }
 
 // =========================
-// 📈 APRENDIZAJE AVANZADO
+// 📈 APRENDIZAJE AVANZADO & PREDICCIONES
 // =========================
 function learn(memory, mood=null, userMessage=null) {
   memory.learning.interactions++;
@@ -77,9 +78,20 @@ function learn(memory, mood=null, userMessage=null) {
   }
   if (userMessage) {
     memory.contextualMemory.push({ message: userMessage, date: new Date(), mood });
-    if (memory.contextualMemory.length > 50) memory.contextualMemory.shift();
+    if (memory.contextualMemory.length > 100) memory.contextualMemory.shift(); // hasta 100 mensajes
   }
   memory.learning.personalityUsage[memory.personality] = (memory.learning.personalityUsage[memory.personality]||0)+1;
+
+  // Generar predicción simple: si usuario repite estado, sugerencia proactiva
+  if (mood) {
+    let recentSameMood = memory.moodHistory.filter(m=>m.mood===mood).length;
+    if (recentSameMood > 2) {
+      if (mood==="cansado") memory.predictions.push("Quizá necesites descansar pronto.");
+      if (mood==="feliz") memory.predictions.push("Aprovecha tu energía positiva en tus proyectos.");
+      if (mood==="triste") memory.predictions.push("Recuerda tomar un momento para relajarte y cuidar tu ánimo.");
+      if (memory.predictions.length>5) memory.predictions.shift();
+    }
+  }
   return memory;
 }
 
@@ -98,7 +110,7 @@ async function getWeather(city="Santo Domingo") {
 }
 
 // =========================
-// 🧠 CEREBRO H3+ AVANZADO – PERSONALIDAD + SUGERENCIAS
+// 🧠 CEREBRO H4 – COMPLETO & PREDICTIVO
 // =========================
 async function ravyThink(rawText) {
   const text = normalize(rawText);
@@ -152,9 +164,13 @@ async function ravyThink(rawText) {
     longMemory=learn(longMemory, subIntent, rawText);
     setLongMemory(longMemory);
     const map = {cansado:`Lo noto${name}. Estás cansado.`, feliz:`Me alegra saberlo${name}.`, triste:`Siento que te sientas así${name}. Estoy contigo.`, neutral:`Te escucho${name}.`};
-    const reply = map[subIntent||"neutral"];
-    const finalReply = suggestion ? `${reply}\n${suggestion}` : reply;
-    state.lastRavyMessage = applyPersonality(finalReply,longMemory.personality);
+    let reply = map[subIntent||"neutral"];
+    if (suggestion) reply += `\n${suggestion}`;
+    // Añadir predicciones si existen
+    if (longMemory.predictions.length) {
+      reply += `\n💡 Sugerencia proactiva: ${longMemory.predictions[longMemory.predictions.length-1]}`;
+    }
+    state.lastRavyMessage = applyPersonality(reply,longMemory.personality);
     setRavyState(state); return state.lastRavyMessage;
   }
 
