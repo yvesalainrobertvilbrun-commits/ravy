@@ -52,10 +52,12 @@ function setLongMemory(memory) {
 // =========================
 function adjustPersonalityBasedOnMood(memory, mood) {
   if (!mood) return memory.personality;
-  if (mood === "cansado") memory.personality = "calma";
-  else if (mood === "feliz") memory.personality = "motivadora";
-  else if (mood === "triste") memory.personality = "calma";
-  else memory.personality = "amigable";
+  switch (mood) {
+    case "cansado": case "ansioso": case "frustrado": memory.personality = "calma"; break;
+    case "feliz": case "motivado": case "creativo": case "confiado": memory.personality = "motivadora"; break;
+    case "aburrido": case "relajado": memory.personality = "amigable"; break;
+    default: memory.personality = "amigable"; break;
+  }
   return memory.personality;
 }
 
@@ -75,11 +77,11 @@ function learn(memory, mood=null, userMessage=null) {
   memory.learning.interactions++;
   if (mood) {
     memory.learning.moodCount[mood] = (memory.learning.moodCount[mood]||0)+1;
-    memory.moodHistory.push({ mood, date: new Date() });
+    memory.moodHistory.push({ mood, date: new Date(), hour: new Date().getHours() });
   }
   if (userMessage) {
-    memory.contextualMemory.push({ message: userMessage, date: new Date(), mood });
-    if (memory.contextualMemory.length > 200) memory.contextualMemory.shift(); // hasta 200 mensajes
+    memory.contextualMemory.push({ message: userMessage, date: new Date(), mood, hour: new Date().getHours() });
+    if (memory.contextualMemory.length > 300) memory.contextualMemory.shift(); // hasta 300 mensajes
   }
   memory.learning.personalityUsage[memory.personality] = (memory.learning.personalityUsage[memory.personality]||0)+1;
 
@@ -87,17 +89,24 @@ function learn(memory, mood=null, userMessage=null) {
   if (mood) {
     let recentSameMood = memory.moodHistory.filter(m=>m.mood===mood).length;
     if (recentSameMood > 2) {
-      if (mood==="cansado") memory.predictions.push("Quizá necesites descansar pronto.");
-      if (mood==="feliz") memory.predictions.push("Aprovecha tu energía positiva en tus proyectos.");
-      if (mood==="triste") memory.predictions.push("Recuerda tomar un momento para relajarte y cuidar tu ánimo.");
+      switch(mood) {
+        case "cansado": memory.predictions.push("Quizá necesites descansar pronto."); break;
+        case "feliz": memory.predictions.push("Aprovecha tu energía positiva en tus proyectos."); break;
+        case "triste": memory.predictions.push("Recuerda tomar un momento para relajarte y cuidar tu ánimo."); break;
+        case "ansioso": memory.predictions.push("Respira profundo y toma un pequeño descanso."); break;
+        case "motivado": memory.predictions.push("Es un buen momento para avanzar en tus metas."); break;
+        case "creativo": memory.predictions.push("Aprovecha esta creatividad en tus proyectos."); break;
+        case "aburrido": memory.predictions.push("Quizá sea buen momento para cambiar de actividad."); break;
+        case "relajado": memory.predictions.push("Disfruta tu momento de tranquilidad."); break;
+      }
       if (memory.predictions.length>10) memory.predictions.shift();
     }
   }
 
-  // Recordatorios inteligentes
-  if (memory.predictions.length > 0 && Math.random() < 0.2) { // 20% de chance de sugerir proactivamente
+  // Recordatorios inteligentes con probabilidad
+  if (memory.predictions.length > 0 && Math.random() < 0.25) { // 25% de chance de sugerir proactivamente
     memory.reminders.push({ date:new Date(), reminder: memory.predictions[memory.predictions.length-1] });
-    if (memory.reminders.length > 10) memory.reminders.shift();
+    if (memory.reminders.length > 15) memory.reminders.shift();
   }
 
   return memory;
@@ -118,7 +127,7 @@ async function getWeather(city="Santo Domingo") {
 }
 
 // =========================
-// 🧠 CEREBRO H5H – ULTRA PREDICTIVO
+// 🧠 CEREBRO H6 – EMOCIONES COMPLEJAS + PREDICCIÓN DIARIA
 // =========================
 async function ravyThink(rawText) {
   const text = normalize(rawText);
@@ -136,10 +145,15 @@ async function ravyThink(rawText) {
   // ---------- SALUDOS ----------
   if (/hola|buenos dias|buenas tardes|buenas noches/.test(text)) intent="saludo";
 
-  // ---------- EMOCIONES ----------
+  // ---------- EMOCIONES COMPLEJAS ----------
   else if (/cansad|agotad/.test(text)) { intent="emocion"; subIntent="cansado"; detectedMood="cansado"; suggestion="Tal vez sería bueno descansar un poco para recuperar energía."; }
   else if (/bien|contento|feliz/.test(text)) { intent="emocion"; subIntent="feliz"; detectedMood="feliz"; suggestion="Sigue así y aprovecha esta energía positiva para tus proyectos."; }
   else if (/trist|deprimid/.test(text)) { intent="emocion"; subIntent="triste"; detectedMood="triste"; suggestion="Recuerda que está bien descansar y pedir ayuda si lo necesitas."; }
+  else if (/ansios|preocupad/.test(text)) { intent="emocion"; subIntent="ansioso"; detectedMood="ansioso"; suggestion="Respira profundo y toma un pequeño descanso."; }
+  else if (/motivad/.test(text)) { intent="emocion"; subIntent="motivado"; detectedMood="motivado"; suggestion="Es un buen momento para avanzar en tus metas."; }
+  else if (/creativ/.test(text)) { intent="emocion"; subIntent="creativo"; detectedMood="creativo"; suggestion="Aprovecha esta creatividad en tus proyectos."; }
+  else if (/aburrid/.test(text)) { intent="emocion"; subIntent="aburrido"; detectedMood="aburrido"; suggestion="Quizá sea buen momento para cambiar de actividad."; }
+  else if (/relajad/.test(text)) { intent="emocion"; subIntent="relajado"; detectedMood="relajado"; suggestion="Disfruta tu momento de tranquilidad."; }
 
   // ---------- INFORMACIÓN OBJETIVA ----------
   else if (/hora/.test(text)) { intent="informacion"; subIntent="hora"; }
@@ -171,27 +185,25 @@ async function ravyThink(rawText) {
   if (intent==="emocion") {
     longMemory=learn(longMemory, subIntent, rawText);
     setLongMemory(longMemory);
-    const map = {cansado:`Lo noto${name}. Estás cansado.`, feliz:`Me alegra saberlo${name}.`, triste:`Siento que te sientas así${name}. Estoy contigo.`, neutral:`Te escucho${name}.`};
+    const map = {cansado:`Lo noto${name}. Estás cansado.`, feliz:`Me alegra saberlo${name}.`, triste:`Siento que te sientas así${name}. Estoy contigo.`, ansioso:`Te escucho${name}.`, motivado:`Genial${name}!`, creativo:`Excelente${name}!`, aburrido:`Te escucho${name}.`, relajado:`Disfruta${name}.`, neutral:`Te escucho${name}.`};
     let reply = map[subIntent||"neutral"];
     if (suggestion) reply += `\n${suggestion}`;
     // Añadir predicciones si existen
-    if (longMemory.predictions.length) {
-      reply += `\n💡 Sugerencia proactiva: ${longMemory.predictions[longMemory.predictions.length-1]}`;
-    }
+    if (longMemory.predictions.length) reply += `\n💡 Sugerencia proactiva: ${longMemory.predictions[longMemory.predictions.length-1]}`;
     // Añadir recordatorios inteligentes
-    if (longMemory.reminders.length) {
-      reply += `\n🔔 Recordatorio: ${longMemory.reminders[longMemory.reminders.length-1].reminder}`;
-    }
+    if (longMemory.reminders.length) reply += `\n🔔 Recordatorio: ${longMemory.reminders[longMemory.reminders.length-1].reminder}`;
     state.lastRavyMessage = applyPersonality(reply,longMemory.personality);
     setRavyState(state); return state.lastRavyMessage;
   }
 
+  // ---------- INFORMACIÓN ----------
   if (intent==="informacion") {
     if(subIntent==="hora") { const reply=`Son las ${new Date().toLocaleTimeString()}.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
     if(subIntent==="fecha") { const d=new Date(); const days=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"]; const months=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]; const reply=`Hoy es ${days[d.getDay()]} ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
     if(subIntent==="clima") { const w=await getWeather(); state.lastRavyMessage=applyPersonality(w,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
   }
 
+  // ---------- IDENTIDAD ----------
   if (intent==="identidad") {
     if(subIntent==="nombre") {
       if(/me llamo|mi nombre es/.test(text) && !(/como|cual/.test(text))) {
@@ -205,6 +217,7 @@ async function ravyThink(rawText) {
     if(subIntent==="creador"){ const reply=`Fui creado por ${longMemory.creator}.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
   }
 
+  // ---------- MEMORIA ----------
   if (intent==="memoria") {
     if(/recuerda que|no olvides que/.test(text)){ const fact=rawText.replace(/recuerda que|no olvides que/i,"").trim(); if(fact){ longMemory.facts.push(fact); setLongMemory(longMemory); const reply="Lo recordaré."; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; } }
     if(/que recuerdas de mi|que sabes de mi/.test(text)){ let reply="Esto es lo que recuerdo de ti:"; if(longMemory.userName) reply+=`\n• Tu nombre es ${longMemory.userName}`; if(longMemory.facts.length) longMemory.facts.forEach(f=>reply+=`\n• ${f}`); reply+=`\n• Hemos interactuado ${longMemory.learning.interactions} veces`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage;}
