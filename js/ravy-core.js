@@ -1,5 +1,3 @@
-// js/ravy-core.js
-
 function normalize(text) {
   return text
     .toLowerCase()
@@ -12,32 +10,22 @@ function ravyThink(rawText) {
   const userName = localStorage.getItem("ravy_user_name");
   const name = userName ? ` ${userName}` : "";
 
-  // 😴 CANSANCIO
   if (/cansad|agotad/.test(text)) {
-    return `Lo siento${name}. Descansar también es parte del progreso. Estoy contigo.`;
+    return `Lo siento${name}. Descansar también es avanzar.`;
   }
 
-  // 😔 TRISTEZA
   if (/trist/.test(text)) {
-    return `Siento que te sientas así${name}. Puedes hablar conmigo.`;
+    return `Siento que te sientas así${name}. Estoy contigo.`;
   }
 
-  // 😡 ENOJO
-  if (/enoj|molest/.test(text)) {
-    return `Lo entiendo${name}. Aquí estoy contigo.`;
-  }
-
-  // 😰 ESTRÉS
   if (/estres|ansios/.test(text)) {
     return `Gracias por decirlo${name}. Vamos paso a paso.`;
   }
 
-  // 😊 BIEN
   if (/feliz|bien/.test(text)) {
-    return `Me alegra saberlo${name} 😊`;
+    return `Me alegra leer eso${name} 😊`;
   }
 
-  // 🕒 HORA
   if (text.includes("hora")) {
     return `Son las ${new Date().toLocaleTimeString()}.`;
   }
