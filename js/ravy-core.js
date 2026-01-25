@@ -36,11 +36,13 @@ function setLongMemory(memory) {
   localStorage.setItem("ravy_long_memory", JSON.stringify(memory));
 }
 
+/* =========================
+   🧠 CEREBRO DE RAVY
+========================= */
 async function ravyThink(rawText) {
   const text = normalize(rawText);
   let userName = localStorage.getItem("ravy_user_name");
   const name = userName ? ` ${userName}` : "";
-  const creatorName = "Yves";
 
   let state = getRavyState();
   let longMemory = getLongMemory();
@@ -51,7 +53,8 @@ async function ravyThink(rawText) {
      🔹 IDENTIDAD
   ========================= */
   if (/quien eres|que eres|cual es tu proposito/.test(text)) {
-    const reply = "Soy RAVY, un asistente creado por Yves para acompañarte, recordarte y evolucionar contigo.";
+    const reply =
+      "Soy RAVY, un asistente creado por Yves para acompañarte, recordarte y evolucionar contigo.";
     state.lastRavyMessage = reply;
     setRavyState(state);
     return reply;
@@ -98,7 +101,7 @@ async function ravyThink(rawText) {
   }
 
   /* =========================
-     🔹 CREADOR (MEMORIA LARGA)
+     🔹 CREADOR
   ========================= */
   if (/quien te creo|quien es tu creador|quien es tu dueno/.test(text)) {
     const reply = `Fui creado por ${longMemory.creator}.`;
@@ -132,6 +135,17 @@ async function ravyThink(rawText) {
     return reply;
   }
 
+  if (/trist/.test(text)) {
+    state.mood = "triste";
+    longMemory.baselineMood = "triste";
+    setLongMemory(longMemory);
+
+    const reply = `Siento que te sientas así${name}. Estoy contigo.`;
+    state.lastRavyMessage = reply;
+    setRavyState(state);
+    return reply;
+  }
+
   /* =========================
      🔹 RECORDAR HECHOS
   ========================= */
@@ -149,11 +163,12 @@ async function ravyThink(rawText) {
   }
 
   if (/que recuerdas de mi|que sabes de mi/.test(text)) {
-    let reply = "Esto es lo que recuerdo de ti:\n";
-    if (longMemory.userName) reply += `• Tu nombre es ${longMemory.userName}\n`;
-    if (longMemory.baselineMood) reply += `• Sueles sentirte ${longMemory.baselineMood}\n`;
+    let reply = "Esto es lo que recuerdo de ti:";
+    if (longMemory.userName) reply += `\n• Tu nombre es ${longMemory.userName}`;
+    if (longMemory.baselineMood)
+      reply += `\n• Te has sentido ${longMemory.baselineMood}`;
     if (longMemory.facts.length) {
-      longMemory.facts.forEach(f => reply += `• ${f}\n`);
+      longMemory.facts.forEach(f => (reply += `\n• ${f}`));
     }
     state.lastRavyMessage = reply;
     setRavyState(state);
@@ -193,11 +208,13 @@ async function ravyThink(rawText) {
   }
 
   /* =========================
-     🔹 FALLBACK CON CONTEXTO
+     🔹 FALLBACK INTELIGENTE (CORREGIDO)
   ========================= */
-  const reply = longMemory.baselineMood
-    ? `Te escucho${name}. Recuerdo que sueles sentirte ${longMemory.baselineMood}.`
-    : "Te escucho 👂";
+  let reply = "Te escucho 👂";
+
+  if (longMemory.baselineMood) {
+    reply = `Te escucho${name}. Recuerdo que te has sentido ${longMemory.baselineMood}.`;
+  }
 
   state.lastRavyMessage = reply;
   setRavyState(state);
