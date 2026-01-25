@@ -39,6 +39,7 @@ function getLongMemory() {
   memory.moodHistory = memory.moodHistory || [];
   memory.contextualMemory = memory.contextualMemory || [];
   memory.predictions = memory.predictions || [];
+  memory.reminders = memory.reminders || [];
   return memory;
 }
 
@@ -78,20 +79,27 @@ function learn(memory, mood=null, userMessage=null) {
   }
   if (userMessage) {
     memory.contextualMemory.push({ message: userMessage, date: new Date(), mood });
-    if (memory.contextualMemory.length > 100) memory.contextualMemory.shift(); // hasta 100 mensajes
+    if (memory.contextualMemory.length > 200) memory.contextualMemory.shift(); // hasta 200 mensajes
   }
   memory.learning.personalityUsage[memory.personality] = (memory.learning.personalityUsage[memory.personality]||0)+1;
 
-  // Generar predicción simple: si usuario repite estado, sugerencia proactiva
+  // Predicción avanzada
   if (mood) {
     let recentSameMood = memory.moodHistory.filter(m=>m.mood===mood).length;
     if (recentSameMood > 2) {
       if (mood==="cansado") memory.predictions.push("Quizá necesites descansar pronto.");
       if (mood==="feliz") memory.predictions.push("Aprovecha tu energía positiva en tus proyectos.");
       if (mood==="triste") memory.predictions.push("Recuerda tomar un momento para relajarte y cuidar tu ánimo.");
-      if (memory.predictions.length>5) memory.predictions.shift();
+      if (memory.predictions.length>10) memory.predictions.shift();
     }
   }
+
+  // Recordatorios inteligentes
+  if (memory.predictions.length > 0 && Math.random() < 0.2) { // 20% de chance de sugerir proactivamente
+    memory.reminders.push({ date:new Date(), reminder: memory.predictions[memory.predictions.length-1] });
+    if (memory.reminders.length > 10) memory.reminders.shift();
+  }
+
   return memory;
 }
 
@@ -110,7 +118,7 @@ async function getWeather(city="Santo Domingo") {
 }
 
 // =========================
-// 🧠 CEREBRO H4 – COMPLETO & PREDICTIVO
+// 🧠 CEREBRO H5H – ULTRA PREDICTIVO
 // =========================
 async function ravyThink(rawText) {
   const text = normalize(rawText);
@@ -169,6 +177,10 @@ async function ravyThink(rawText) {
     // Añadir predicciones si existen
     if (longMemory.predictions.length) {
       reply += `\n💡 Sugerencia proactiva: ${longMemory.predictions[longMemory.predictions.length-1]}`;
+    }
+    // Añadir recordatorios inteligentes
+    if (longMemory.reminders.length) {
+      reply += `\n🔔 Recordatorio: ${longMemory.reminders[longMemory.reminders.length-1].reminder}`;
     }
     state.lastRavyMessage = applyPersonality(reply,longMemory.personality);
     setRavyState(state); return state.lastRavyMessage;
