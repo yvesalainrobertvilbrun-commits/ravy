@@ -1,3 +1,107 @@
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+/* =========================
+   🔹 MEMORIA CORTA
+========================= */
+function getRavyState() {
+  return JSON.parse(localStorage.getItem("ravy_state")) || {
+    mood: null,
+    lastUserMessage: null,
+    lastRavyMessage: null,
+    currentIntent: null,
+    lastIntent: null
+  };
+}
+
+function setRavyState(state) {
+  localStorage.setItem("ravy_state", JSON.stringify(state));
+}
+
+/* =========================
+   🔹 MEMORIA LARGA
+========================= */
+function getLongMemory() {
+  let memory = JSON.parse(localStorage.getItem("ravy_long_memory")) || {};
+
+  memory.creator = memory.creator || "Yves";
+  memory.userName = memory.userName || localStorage.getItem("ravy_user_name") || null;
+  memory.baselineMood = memory.baselineMood || null;
+  memory.personality = memory.personality || "amigable";
+  memory.facts = memory.facts || [];
+  memory.learning = memory.learning || { moodCount: {}, personalityUsage: {}, interactions: 0 };
+  memory.moodHistory = memory.moodHistory || [];
+
+  return memory;
+}
+
+function setLongMemory(memory) {
+  localStorage.setItem("ravy_long_memory", JSON.stringify(memory));
+}
+
+/* =========================
+   🎭 PERSONALIDAD
+========================= */
+function applyPersonality(text, personality) {
+  switch (personality) {
+    case "directa":
+      return text.split(".")[0] + ".";
+    case "calma":
+      return "Con calma: " + text;
+    case "motivadora":
+      return text + " 💪";
+    default:
+      return text;
+  }
+}
+
+/* =========================
+   📈 APRENDIZAJE
+========================= */
+function learn(memory, mood = null) {
+  memory.learning.interactions++;
+
+  if (mood) {
+    memory.learning.moodCount[mood] =
+      (memory.learning.moodCount[mood] || 0) + 1;
+
+    // Guardar historial de emociones
+    memory.moodHistory.push({ mood, date: new Date() });
+  }
+
+  memory.learning.personalityUsage[memory.personality] =
+    (memory.learning.personalityUsage[memory.personality] || 0) + 1;
+
+  return memory;
+}
+
+/* =========================
+   🌦 CLIMA – Función OpenWeatherMap
+========================= */
+async function getWeather(city = "Santo Domingo") {
+  const apiKey = "9527074793829c2e506eb3c16faf4b93"; // tu key OpenWeatherMap
+  try {
+    const res = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=es&appid=${apiKey}`
+    );
+    const data = await res.json();
+    if (data && data.main && data.weather) {
+      return `En ${city} hay ${data.weather[0].description}, temperatura de ${data.main.temp}°C.`;
+    } else {
+      return "No pude obtener el clima ahora, inténtalo más tarde.";
+    }
+  } catch {
+    return "No pude obtener el clima ahora, inténtalo más tarde.";
+  }
+}
+
+/* =========================
+   🧠 CEREBRO DE RAVY – H1 Conciencia Conversacional
+========================= */
 async function ravyThink(rawText) {
   const text = normalize(rawText);
   let state = getRavyState();
@@ -7,7 +111,7 @@ async function ravyThink(rawText) {
   state.lastUserMessage = rawText;
 
   // =========================
-  // 🔹 DETECCIÓN DE INTENCIÓN
+  // 🔹 DETECCIÓN DE INTENCIÓN (H1)
   // =========================
   let intent = "fallback";
 
