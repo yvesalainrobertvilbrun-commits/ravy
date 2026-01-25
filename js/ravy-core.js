@@ -6,7 +6,7 @@ function normalize(text) {
 }
 
 /* =========================
-   🔹 MEMORIA CORTA (D)
+   🔹 MEMORIA CORTA
 ========================= */
 function getRavyState() {
   return JSON.parse(localStorage.getItem("ravy_state")) || {
@@ -21,7 +21,7 @@ function setRavyState(state) {
 }
 
 /* =========================
-   🔹 MEMORIA LARGA (E + F + G)
+   🔹 MEMORIA LARGA
 ========================= */
 function getLongMemory() {
   let memory = JSON.parse(localStorage.getItem("ravy_long_memory")) || {};
@@ -32,6 +32,7 @@ function getLongMemory() {
   memory.personality = memory.personality || "amigable";
   memory.facts = memory.facts || [];
   memory.learning = memory.learning || { moodCount: {}, personalityUsage: {}, interactions: 0 };
+  memory.moodHistory = memory.moodHistory || [];
 
   return memory;
 }
@@ -66,9 +67,8 @@ function learn(memory, mood = null) {
     memory.learning.moodCount[mood] =
       (memory.learning.moodCount[mood] || 0) + 1;
 
-    if (memory.learning.moodCount[mood] >= 3) {
-      memory.baselineMood = mood;
-    }
+    // Guardar en historial de emociones
+    memory.moodHistory.push({ mood, date: new Date() });
   }
 
   memory.learning.personalityUsage[memory.personality] =
@@ -301,12 +301,16 @@ async function ravyThink(rawText) {
   ========================= */
   let reply = "Te escucho 👂";
 
-  if (longMemory.baselineMood) {
-    reply = `Te escucho${name}. Recuerdo que sueles sentirte ${longMemory.baselineMood}.`;
+  // 🔹 Solo mencionar emociones si la pregunta es emocional
+  if (/cansad|agotad|bien|feliz|trist/.test(text)) {
+    if (longMemory.moodHistory && longMemory.moodHistory.length > 0) {
+      const lastMood = longMemory.moodHistory[longMemory.moodHistory.length - 1].mood;
+      reply = `Te escucho${longMemory.userName ? ` ${longMemory.userName}` : ""}. Recuerdo que te sentías ${lastMood}.`;
+    }
   }
 
   reply = applyPersonality(reply, longMemory.personality);
   state.lastRavyMessage = reply;
   setRavyState(state);
   return reply;
-}
+    }
