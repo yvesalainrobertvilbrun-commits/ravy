@@ -1,48 +1,46 @@
-import { save, load } from "./memory.js";
+// js/ravy-core.js
 
-export function processMessage(text) {
-  const lower = text.toLowerCase();
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
 
-  let userName = load("userName");
-  const creator = "Yves";
+function ravyThink(rawText) {
+  const text = normalize(rawText);
+  const userName = localStorage.getItem("ravy_user_name");
+  const name = userName ? ` ${userName}` : "";
 
-  /* SALUDOS */
-  if (lower.includes("hola") || lower.includes("buenos")) {
-    return "Hola 😊 estoy aquí contigo.";
+  // 😴 CANSANCIO
+  if (/cansad|agotad/.test(text)) {
+    return `Lo siento${name}. Descansar también es parte del progreso. Estoy contigo.`;
   }
 
-  /* NOMBRE USUARIO */
-  if (lower.includes("me llamo")) {
-    const name = text.split("me llamo")[1].trim();
-    save("userName", name);
-    return `Mucho gusto, ${name}. Lo recordaré.`;
+  // 😔 TRISTEZA
+  if (/trist/.test(text)) {
+    return `Siento que te sientas así${name}. Puedes hablar conmigo.`;
   }
 
-  if (lower.includes("como me llamo")) {
-    return userName
-      ? `Te llamas ${userName}.`
-      : "Aún no me has dicho tu nombre.";
+  // 😡 ENOJO
+  if (/enoj|molest/.test(text)) {
+    return `Lo entiendo${name}. Aquí estoy contigo.`;
   }
 
-  /* CREADOR */
-  if (lower.includes("quien te creo") || lower.includes("tu creador")) {
-    return "Fui creado por Yves.";
+  // 😰 ESTRÉS
+  if (/estres|ansios/.test(text)) {
+    return `Gracias por decirlo${name}. Vamos paso a paso.`;
   }
 
-  /* EMOCIONES */
-  if (lower.includes("estoy cansado")) {
-    return "Lo siento 😔 descansa un poco, aquí sigo contigo.";
+  // 😊 BIEN
+  if (/feliz|bien/.test(text)) {
+    return `Me alegra saberlo${name} 😊`;
   }
 
-  /* FECHA Y HORA */
-  if (lower.includes("hora")) {
-    return `Son las ${new Date().toLocaleTimeString()}`;
+  // 🕒 HORA
+  if (text.includes("hora")) {
+    return `Son las ${new Date().toLocaleTimeString()}.`;
   }
 
-  if (lower.includes("dia") || lower.includes("fecha")) {
-    return `Hoy es ${new Date().toLocaleDateString()}`;
-  }
-
-  /* FALLBACK */
   return "Te escucho 👂";
 }
