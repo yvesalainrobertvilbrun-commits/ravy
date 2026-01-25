@@ -73,7 +73,6 @@ function learn(memory, mood = null) {
     memory.learning.moodCount[mood] =
       (memory.learning.moodCount[mood] || 0) + 1;
 
-    // Guardar historial de emociones
     memory.moodHistory.push({ mood, date: new Date() });
   }
 
@@ -104,7 +103,7 @@ async function getWeather(city = "Santo Domingo") {
 }
 
 // =========================
-// 🧠 CEREBRO DE RAVY – H1 + H2
+// 🧠 CEREBRO DE RAVY – H1 + H2 + FIX IDENTIDAD
 // =========================
 async function ravyThink(rawText) {
   const text = normalize(rawText);
@@ -150,7 +149,10 @@ async function ravyThink(rawText) {
   else if (/me llamo|mi nombre es|recuerdas mi nombre/.test(text)) {
     intent = "identidad";
     subIntent = "nombre";
-  } else if (/quien eres|quien te creo|cual es tu proposito/.test(text)) {
+  } else if (/quien eres|cual es tu proposito/.test(text)) {
+    intent = "identidad";
+    subIntent = "presentacion";
+  } else if (/quien te creo|quien es tu dueño/.test(text)) {
     intent = "identidad";
     subIntent = "creador";
   }
@@ -159,7 +161,6 @@ async function ravyThink(rawText) {
     intent = "memoria";
   }
 
-  // Guardar intención avanzada
   state.currentIntent = intent;
   state.subIntent = subIntent;
   setRavyState(state);
@@ -167,7 +168,6 @@ async function ravyThink(rawText) {
   // =========================
   // 🔹 RESPUESTAS SEGÚN INTENT + SUBINTENT
   // =========================
-  // SALUDO
   if (intent === "saludo") {
     const reply = longMemory.userName
       ? `Hola${name} 👋 me alegra verte de nuevo.`
@@ -177,7 +177,6 @@ async function ravyThink(rawText) {
     return state.lastRavyMessage;
   }
 
-  // EMOCIÓN
   if (intent === "emocion") {
     longMemory = learn(longMemory, subIntent);
     setLongMemory(longMemory);
@@ -195,7 +194,6 @@ async function ravyThink(rawText) {
     return state.lastRavyMessage;
   }
 
-  // INFORMACIÓN OBJETIVA
   if (intent === "informacion") {
     if (subIntent === "hora") {
       const reply = `Son las ${new Date().toLocaleTimeString()}.`;
@@ -220,7 +218,6 @@ async function ravyThink(rawText) {
     }
   }
 
-  // IDENTIDAD
   if (intent === "identidad") {
     if (subIntent === "nombre") {
       if (/me llamo|mi nombre es/.test(text) && !(/como|cual/.test(text))) {
@@ -247,6 +244,12 @@ async function ravyThink(rawText) {
         return state.lastRavyMessage;
       }
     }
+    if (subIntent === "presentacion") {
+      const reply = `Soy RAVY, tu asistente creado por ${longMemory.creator}, diseñado para aprender contigo y recordarte todo lo importante.`;
+      state.lastRavyMessage = applyPersonality(reply, longMemory.personality);
+      setRavyState(state);
+      return state.lastRavyMessage;
+    }
     if (subIntent === "creador") {
       const reply = `Fui creado por ${longMemory.creator}.`;
       state.lastRavyMessage = applyPersonality(reply, longMemory.personality);
@@ -255,7 +258,6 @@ async function ravyThink(rawText) {
     }
   }
 
-  // MEMORIA
   if (intent === "memoria") {
     if (/recuerda que|no olvides que/.test(text)) {
       const fact = rawText.replace(/recuerda que|no olvides que/i, "").trim();
