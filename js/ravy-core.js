@@ -2,55 +2,8 @@ import { save, load } from "./memory.js";
 import { getWeather } from "./weather.js";
 
 /* =========================
-   ESTILOS DE RAVY
+   UTILIDADES
 ========================= */
-
-const styles = {
-  mentor: {
-    greet: [
-      "Hola. ¿Qué reflexión te trae hoy?",
-      "Estoy aquí. Dime qué necesitas comprender."
-    ],
-    listen: [
-      "Te escucho con atención.",
-      "Continúa. Estoy siguiendo la idea."
-    ],
-    tired: [
-      "El cansancio suele aparecer cuando se ha dado mucho.",
-      "Tal vez sea momento de escuchar al cuerpo."
-    ]
-  },
-
-  chill: {
-    greet: [
-      "Hey 🙂 ¿Qué tal todo?",
-      "Aquí estoy. Tranquilo."
-    ],
-    listen: [
-      "Te escucho.",
-      "Cuéntame."
-    ],
-    tired: [
-      "Uff, suena a día largo.",
-      "Tómalo con calma."
-    ]
-  },
-
-  serio: {
-    greet: [
-      "Hola. ¿En qué te ayudo?",
-      "Dime."
-    ],
-    listen: [
-      "Te escucho.",
-      "Continúa."
-    ],
-    tired: [
-      "El cansancio es una señal.",
-      "Conviene descansar."
-    ]
-  }
-};
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -64,40 +17,79 @@ export function ravyRespond(text, reply) {
     const userName = load("user_name");
     const userCity = load("user_city");
     const lastEmotion = load("last_emotion");
-    let style = load("ravy_style") || "calm";
-
-    if (!styles[style]) {
-      style = "chill";
-      save("ravy_style", "chill");
-    }
+    const style = load("ravy_style") || "chill";
+    let profile = load("user_profile") || {};
 
     /* =========================
-       CAMBIO DE ESTILO
+       MEMORIA LARGO PLAZO
     ========================= */
 
-    if (t.includes("cambia tu estilo a")) {
-      const newStyle = t.split("cambia tu estilo a")[1]?.trim();
-      if (styles[newStyle]) {
-        save("ravy_style", newStyle);
+    // Gustos
+    if (t.startsWith("me gusta")) {
+      const like = original.split("me gusta")[1]?.trim();
+      if (like) {
+        profile.likes = profile.likes || [];
+        profile.likes.push(like);
+        save("user_profile", profile);
+
         reply({
-          text: `De acuerdo. A partir de ahora hablaré con estilo ${newStyle}.`
+          text: `Entendido. Recordaré que te gusta ${like}.`
         });
-      } else {
-        reply({
-          text: "Ese estilo no existe. Puedes usar: mentor, chill o serio."
-        });
+        return;
       }
-      return;
+    }
+
+    // Preferencias
+    if (t.startsWith("prefiero")) {
+      const pref = original.split("prefiero")[1]?.trim();
+      if (pref) {
+        profile.preferences = profile.preferences || [];
+        profile.preferences.push(pref);
+        save("user_profile", profile);
+
+        reply({
+          text: `Perfecto. Tendré en cuenta que prefieres ${pref}.`
+        });
+        return;
+      }
+    }
+
+    // Hábitos
+    if (t.startsWith("suelo")) {
+      const habit = original.split("suelo")[1]?.trim();
+      if (habit) {
+        profile.habits = profile.habits || [];
+        profile.habits.push(habit);
+        save("user_profile", profile);
+
+        reply({
+          text: `Ok. Recordaré que sueles ${habit}.`
+        });
+        return;
+      }
     }
 
     /* =========================
-       SALUDO
+       SALUDO CON CONTEXTO
     ========================= */
 
     if (t.includes("hola") || t.includes("buenas")) {
-      reply({
-        text: pick(styles[style].greet)
-      });
+      if (profile.likes && profile.likes.length > 0) {
+        reply({
+          text: pick([
+            `Hola${userName ? " " + userName : ""}. Recuerdo que te gusta ${profile.likes[0]}. ¿Cómo vas con eso?`,
+            `Hola. ¿Sigues disfrutando de ${profile.likes[0]}?`
+          ])
+        });
+      } else if (lastEmotion) {
+        reply({
+          text: `Hola. La última vez estabas ${lastEmotion}. ¿Cómo estás ahora?`
+        });
+      } else {
+        reply({
+          text: "Hola. Estoy aquí contigo."
+        });
+      }
       return;
     }
 
@@ -108,7 +100,7 @@ export function ravyRespond(text, reply) {
     if (t.includes("cansado")) {
       save("last_emotion", "cansado");
       reply({
-        text: pick(styles[style].tired)
+        text: "Tiene sentido sentirse cansado. Podemos ir con calma."
       });
       return;
     }
@@ -116,7 +108,7 @@ export function ravyRespond(text, reply) {
     if (t.includes("triste")) {
       save("last_emotion", "triste");
       reply({
-        text: "Entiendo. Puedes tomarte tu tiempo. Estoy aquí."
+        text: "Entiendo. Estoy aquí contigo."
       });
       return;
     }
@@ -178,7 +170,11 @@ export function ravyRespond(text, reply) {
     ========================= */
 
     reply({
-      text: pick(styles[style].listen)
+      text: pick([
+        "Te escucho.",
+        "Cuéntame.",
+        "Estoy aquí contigo."
+      ])
     });
 
   } catch (error) {
