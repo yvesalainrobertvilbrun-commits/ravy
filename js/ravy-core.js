@@ -5,10 +5,9 @@ function normalize(text) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-// TODO: TODAS LAS RESPUESTAS
 async function ravyThink(rawText) {
   const text = normalize(rawText);
-  const userName = localStorage.getItem("ravy_user_name");
+  let userName = localStorage.getItem("ravy_user_name");
   const name = userName ? ` ${userName}` : "";
   const creatorName = "Yves";
 
@@ -21,14 +20,19 @@ async function ravyThink(rawText) {
 
   // 🔹 NOMBRE DEL USUARIO
   if (/me llamo|mi nombre es/.test(text)) {
-    const newName = rawText.replace(/me llamo|mi nombre es/i, "").trim();
+    // regex robusta: captura todo después de "me llamo" o "mi nombre es"
+    const match = rawText.match(/me llamo (.+)|mi nombre es (.+)/i);
+    const newName = match ? (match[1] || match[2]).trim() : null;
     if (newName) {
-      localStorage.setItem("ravy_user_name", newName);
-      return `Mucho gusto, ${newName}. Ahora recordaré tu nombre.`;
+      // limpia caracteres no alfabéticos al inicio y final
+      const cleanName = newName.replace(/^[^a-zA-ZáéíóúÁÉÍÓÚñÑ]+|[^a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/g, "");
+      localStorage.setItem("ravy_user_name", cleanName);
+      return `Mucho gusto, ${cleanName}. Ahora recordaré tu nombre.`;
     }
   }
 
   if (/cómo me llamo|recuerdas mi nombre/.test(text)) {
+    userName = localStorage.getItem("ravy_user_name");
     return userName
       ? `Tu nombre es ${userName}.`
       : "Aún no me has dicho tu nombre.";
@@ -66,10 +70,11 @@ async function ravyThink(rawText) {
   }
 
   // 🔹 FECHA
-  if (/fecha|día/.test(text)) {
+  if (/qué día|qué fecha|día es hoy|fecha es hoy/.test(text)) {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const now = new Date();
-    return `Hoy es ${now.toLocaleDateString('es-ES', options)}.`;
+    const dateStr = now.toLocaleDateString('es-ES', options);
+    return `Hoy es ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}.`;
   }
 
   // 🔹 CLIMA
@@ -92,7 +97,7 @@ async function ravyThink(rawText) {
     }
   }
 
-  // 🔹 CONFIRMACION / INTERACCIÓN GENERAL
+  // 🔹 CONFIRMACION GENERAL
   if (/estas|me escuchas|sigues conmigo/.test(text)) {
     return "Sí, estoy contigo.";
   }
