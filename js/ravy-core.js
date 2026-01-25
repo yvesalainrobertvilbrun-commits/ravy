@@ -17,7 +17,8 @@ function getRavyState() {
     lastUserMessage: null,
     lastRavyMessage: null,
     currentIntent: null,
-    subIntent: null
+    subIntent: null,
+    context: []
   };
 }
 
@@ -36,6 +37,7 @@ function getLongMemory() {
   memory.facts = memory.facts || [];
   memory.learning = memory.learning || { moodCount: {}, personalityUsage: {}, interactions: 0 };
   memory.moodHistory = memory.moodHistory || [];
+  memory.contextualMemory = memory.contextualMemory || [];
   return memory;
 }
 
@@ -44,8 +46,17 @@ function setLongMemory(memory) {
 }
 
 // =========================
-// 🎭 PERSONALIDAD
+// 🎭 PERSONALIDAD ADAPTATIVA
 // =========================
+function adjustPersonalityBasedOnMood(memory, mood) {
+  if (!mood) return memory.personality;
+  if (mood === "cansado") memory.personality = "calma";
+  else if (mood === "feliz") memory.personality = "motivadora";
+  else if (mood === "triste") memory.personality = "calma";
+  else memory.personality = "amigable";
+  return memory.personality;
+}
+
 function applyPersonality(text, personality) {
   switch (personality) {
     case "directa": return text.split(".")[0]+".";
@@ -56,13 +67,17 @@ function applyPersonality(text, personality) {
 }
 
 // =========================
-// 📈 APRENDIZAJE
+// 📈 APRENDIZAJE AVANZADO
 // =========================
-function learn(memory, mood=null) {
+function learn(memory, mood=null, userMessage=null) {
   memory.learning.interactions++;
   if (mood) {
     memory.learning.moodCount[mood] = (memory.learning.moodCount[mood]||0)+1;
     memory.moodHistory.push({ mood, date: new Date() });
+  }
+  if (userMessage) {
+    memory.contextualMemory.push({ message: userMessage, date: new Date(), mood });
+    if (memory.contextualMemory.length > 50) memory.contextualMemory.shift();
   }
   memory.learning.personalityUsage[memory.personality] = (memory.learning.personalityUsage[memory.personality]||0)+1;
   return memory;
@@ -83,7 +98,7 @@ async function getWeather(city="Santo Domingo") {
 }
 
 // =========================
-// 🧠 CEREBRO H1 + H2 – COMPLETO FIX IDENTIDAD FINAL
+// 🧠 CEREBRO H1 + H2 + H3 – COMPLETO
 // =========================
 async function ravyThink(rawText) {
   const text = normalize(rawText);
@@ -95,14 +110,15 @@ async function ravyThink(rawText) {
 
   let intent = "fallback";
   let subIntent = null;
+  let detectedMood = null;
 
   // ---------- SALUDOS ----------
   if (/hola|buenos dias|buenas tardes|buenas noches/.test(text)) intent="saludo";
 
   // ---------- EMOCIONES ----------
-  else if (/cansad|agotad/.test(text)) { intent="emocion"; subIntent="cansado"; }
-  else if (/bien|contento|feliz/.test(text)) { intent="emocion"; subIntent="feliz"; }
-  else if (/trist|deprimid/.test(text)) { intent="emocion"; subIntent="triste"; }
+  else if (/cansad|agotad/.test(text)) { intent="emocion"; subIntent="cansado"; detectedMood="cansado"; }
+  else if (/bien|contento|feliz/.test(text)) { intent="emocion"; subIntent="feliz"; detectedMood="feliz"; }
+  else if (/trist|deprimid/.test(text)) { intent="emocion"; subIntent="triste"; detectedMood="triste"; }
 
   // ---------- INFORMACIÓN OBJETIVA ----------
   else if (/hora/.test(text)) { intent="informacion"; subIntent="hora"; }
@@ -111,32 +127,28 @@ async function ravyThink(rawText) {
 
   // ---------- IDENTIDAD ----------
   else if (/me llamo|mi nombre es|recuerdas mi nombre|como me llamo/.test(text)) { intent="identidad"; subIntent="nombre"; }
-
-  // 🔹 FIX FINAL: capturar todas formas de preguntar por RAVY
-  else if (/(quien eres|quién eres|que eres|cual es tu proposito|cuál es tu propósito)/.test(text)) { 
-      intent = "identidad"; subIntent = "presentacion"; 
-  }
-
+  else if (/(quien eres|quién eres|que eres|cual es tu proposito|cuál es tu propósito)/.test(text)) { intent="identidad"; subIntent="presentacion"; }
   else if (/quien te creo|quien es tu dueño/.test(text)) { intent="identidad"; subIntent="creador"; }
 
   // ---------- MEMORIA ----------
   else if (/recuerda que|no olvides que|que recuerdas de mi|que sabes de mi/.test(text)) { intent="memoria"; }
+
+  // ---------- ADAPTAR PERSONALIDAD AUTOMÁTICA ----------
+  longMemory.personality = adjustPersonalityBasedOnMood(longMemory, detectedMood);
 
   state.currentIntent = intent;
   state.subIntent = subIntent;
   setRavyState(state);
 
   // ---------- RESPUESTAS ----------
-  // SALUDOS
   if (intent==="saludo") {
     const reply = longMemory.userName ? `Hola${name} 👋 me alegra verte de nuevo.` : "Hola 👋 estoy aquí contigo.";
-    state.lastRavyMessage = applyPersonality(reply, longMemory.personality);
+    state.lastRavyMessage = applyPersonality(reply,longMemory.personality);
     setRavyState(state); return state.lastRavyMessage;
   }
 
-  // EMOCIONES
   if (intent==="emocion") {
-    longMemory=learn(longMemory, subIntent);
+    longMemory=learn(longMemory, subIntent, rawText);
     setLongMemory(longMemory);
     const map = {cansado:`Lo noto${name}. Estás cansado.`, feliz:`Me alegra saberlo${name}.`, triste:`Siento que te sientas así${name}. Estoy contigo.`, neutral:`Te escucho${name}.`};
     const reply = map[subIntent||"neutral"];
@@ -144,20 +156,18 @@ async function ravyThink(rawText) {
     setRavyState(state); return state.lastRavyMessage;
   }
 
-  // INFORMACIÓN
   if (intent==="informacion") {
     if(subIntent==="hora") { const reply=`Son las ${new Date().toLocaleTimeString()}.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
     if(subIntent==="fecha") { const d=new Date(); const days=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"]; const months=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]; const reply=`Hoy es ${days[d.getDay()]} ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
     if(subIntent==="clima") { const w=await getWeather(); state.lastRavyMessage=applyPersonality(w,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
   }
 
-  // IDENTIDAD
   if (intent==="identidad") {
     if(subIntent==="nombre") {
       if(/me llamo|mi nombre es/.test(text) && !(/como|cual/.test(text))) {
         const match = rawText.match(/me llamo (.+)|mi nombre es (.+)/i); 
         const newName = match ? (match[1] || match[2]).trim():null;
-        if(newName){ localStorage.setItem("ravy_user_name",newName); longMemory.userName=newName; longMemory=learn(longMemory); setLongMemory(longMemory); const reply=`Mucho gusto, ${newName}. Ahora lo recordaré siempre.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage;}
+        if(newName){ localStorage.setItem("ravy_user_name",newName); longMemory.userName=newName; longMemory=learn(longMemory,null,rawText); setLongMemory(longMemory); const reply=`Mucho gusto, ${newName}. Ahora lo recordaré siempre.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage;}
       }
       if(/recuerdas mi nombre|como me llamo/.test(text)){ const reply = longMemory.userName?`Tu nombre es ${longMemory.userName}.`:"Aún no me has dicho tu nombre."; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage;}
     }
@@ -165,13 +175,11 @@ async function ravyThink(rawText) {
     if(subIntent==="creador"){ const reply=`Fui creado por ${longMemory.creator}.`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; }
   }
 
-  // MEMORIA
   if (intent==="memoria") {
     if(/recuerda que|no olvides que/.test(text)){ const fact=rawText.replace(/recuerda que|no olvides que/i,"").trim(); if(fact){ longMemory.facts.push(fact); setLongMemory(longMemory); const reply="Lo recordaré."; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage; } }
     if(/que recuerdas de mi|que sabes de mi/.test(text)){ let reply="Esto es lo que recuerdo de ti:"; if(longMemory.userName) reply+=`\n• Tu nombre es ${longMemory.userName}`; if(longMemory.facts.length) longMemory.facts.forEach(f=>reply+=`\n• ${f}`); reply+=`\n• Hemos interactuado ${longMemory.learning.interactions} veces`; state.lastRavyMessage=applyPersonality(reply,longMemory.personality); setRavyState(state); return state.lastRavyMessage;}
   }
 
-  // FALLBACK
   const reply = "Te escucho 👂";
   state.lastRavyMessage = applyPersonality(reply,longMemory.personality);
   setRavyState(state);
