@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chat.scrollTop = chat.scrollHeight;
   }
 
-  function sendMessage() {
+  async function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
 
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     input.value = "";
 
     try {
-      const reply = ravyThink(text);
+      const reply = await ravyThink(text);
       addMessage(reply, "ravy");
     } catch (e) {
       console.error(e);
