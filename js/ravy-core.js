@@ -78,6 +78,26 @@ function learn(memory, mood = null) {
 }
 
 /* =========================
+   🌦 CLIMA – Función OpenWeatherMap
+========================= */
+async function getWeather(city = "Santo Domingo") {
+  const apiKey = "9527074793829c2e506eb3c16faf4b93"; // tu key OpenWeatherMap
+  try {
+    const res = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=es&appid=${apiKey}`
+    );
+    const data = await res.json();
+    if (data.main) {
+      return `En ${city} hay ${data.weather[0].description}, temperatura de ${data.main.temp}°C.`;
+    } else {
+      return "No pude obtener el clima ahora, inténtalo más tarde.";
+    }
+  } catch {
+    return "Algo falló al consultar el clima.";
+  }
+}
+
+/* =========================
    🧠 CEREBRO DE RAVY
 ========================= */
 async function ravyThink(rawText) {
@@ -262,6 +282,16 @@ async function ravyThink(rawText) {
     const months = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
     const reply = `Hoy es ${days[d.getDay()]} ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}.`;
     state.lastRavyMessage = applyPersonality(reply, longMemory.personality);
+    setRavyState(state);
+    return state.lastRavyMessage;
+  }
+
+  /* =========================
+     🔹 CLIMA REAL
+  ========================= */
+  if (/clima|temperatura|llueve|sol|hace frio|hace calor/.test(text)) {
+    const weather = await getWeather(); // ciudad fija: Santo Domingo
+    state.lastRavyMessage = applyPersonality(weather, longMemory.personality);
     setRavyState(state);
     return state.lastRavyMessage;
   }
