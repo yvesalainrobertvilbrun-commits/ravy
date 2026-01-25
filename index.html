@@ -2,26 +2,23 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RAVY</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <div class="chat-container">
-    <div id="chat"></div>
+  <div id="chat"></div>
 
-    <div class="input-area">
-      <input
-        id="userInput"
-        type="text"
-        placeholder="Escribe aquí..."
-        autocomplete="off"
-      />
-      <button id="sendBtn">Enviar</button>
-    </div>
+  <div class="input-area">
+    <input id="userInput" type="text" placeholder="Escribe aquí..." />
+    <button id="sendBtn">Enviar</button>
   </div>
 
+  <!-- ⚠️ ORDEN CORRECTO -->
+  <script src="js/ravy-core.js"></script>
   <script src="js/ravy.js"></script>
+
 </body>
 </html>
