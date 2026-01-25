@@ -18,20 +18,61 @@ export function ravyRespond(text, reply) {
     const userCity = load("user_city");
     const lastEmotion = load("last_emotion");
     const style = load("ravy_style") || "chill";
-    let profile = load("user_profile") || {};
+    const profile = load("user_profile") || {};
+
+    /* =========================
+       BIENVENIDA INTELIGENTE
+       (solo si no hay memoria)
+    ========================= */
+
+    const isFirstTime =
+      !userName &&
+      !userCity &&
+      !lastEmotion &&
+      Object.keys(profile).length === 0;
+
+    if (isFirstTime && t === "") {
+      reply({
+        text:
+          "Hola, soy RAVY.\n" +
+          "Puedo conversar contigo, decirte la hora, el clima y recordar cosas simples.\n\n" +
+          "Si quieres, dime tu nombre para empezar."
+      });
+      return;
+    }
 
     /* =========================
        MEMORIA LARGO PLAZO
     ========================= */
 
-    // Gustos
+    if (t.startsWith("mi nombre es")) {
+      const name = original.split("mi nombre es")[1]?.trim();
+      if (name) {
+        save("user_name", name);
+        reply({
+          text: `Mucho gusto, ${name}. ¿Cómo te sientes hoy?`
+        });
+        return;
+      }
+    }
+
+    if (t.startsWith("vivo en") || t.startsWith("soy de")) {
+      const city = original.replace(/vivo en|soy de/i, "").trim();
+      if (city) {
+        save("user_city", city);
+        reply({
+          text: `Perfecto. Guardé que estás en ${city}.`
+        });
+        return;
+      }
+    }
+
     if (t.startsWith("me gusta")) {
       const like = original.split("me gusta")[1]?.trim();
       if (like) {
         profile.likes = profile.likes || [];
         profile.likes.push(like);
         save("user_profile", profile);
-
         reply({
           text: `Entendido. Recordaré que te gusta ${like}.`
         });
@@ -39,55 +80,18 @@ export function ravyRespond(text, reply) {
       }
     }
 
-    // Preferencias
-    if (t.startsWith("prefiero")) {
-      const pref = original.split("prefiero")[1]?.trim();
-      if (pref) {
-        profile.preferences = profile.preferences || [];
-        profile.preferences.push(pref);
-        save("user_profile", profile);
-
-        reply({
-          text: `Perfecto. Tendré en cuenta que prefieres ${pref}.`
-        });
-        return;
-      }
-    }
-
-    // Hábitos
-    if (t.startsWith("suelo")) {
-      const habit = original.split("suelo")[1]?.trim();
-      if (habit) {
-        profile.habits = profile.habits || [];
-        profile.habits.push(habit);
-        save("user_profile", profile);
-
-        reply({
-          text: `Ok. Recordaré que sueles ${habit}.`
-        });
-        return;
-      }
-    }
-
     /* =========================
-       SALUDO CON CONTEXTO
+       SALUDOS CON CONTEXTO
     ========================= */
 
     if (t.includes("hola") || t.includes("buenas")) {
-      if (profile.likes && profile.likes.length > 0) {
+      if (userName) {
         reply({
-          text: pick([
-            `Hola${userName ? " " + userName : ""}. Recuerdo que te gusta ${profile.likes[0]}. ¿Cómo vas con eso?`,
-            `Hola. ¿Sigues disfrutando de ${profile.likes[0]}?`
-          ])
-        });
-      } else if (lastEmotion) {
-        reply({
-          text: `Hola. La última vez estabas ${lastEmotion}. ¿Cómo estás ahora?`
+          text: `Hola ${userName}. ¿Cómo estás ahora?`
         });
       } else {
         reply({
-          text: "Hola. Estoy aquí contigo."
+          text: "Hola. Si quieres, dime tu nombre."
         });
       }
       return;
@@ -108,7 +112,7 @@ export function ravyRespond(text, reply) {
     if (t.includes("triste")) {
       save("last_emotion", "triste");
       reply({
-        text: "Entiendo. Estoy aquí contigo."
+        text: "Siento que te sientas así. Estoy aquí contigo."
       });
       return;
     }
