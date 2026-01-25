@@ -1,37 +1,33 @@
-import { ravyRespond } from './ravy-core.js';
-import { saveMessage } from './memory.js';
+import { ravyRespond } from "./ravy-core.js";
 
-const chatBox = document.getElementById("ravy-chat");
-const input = document.getElementById("ravy-input");
-const sendBtn = document.getElementById("ravy-send");
+const chat = document.getElementById("chat");
+const input = document.getElementById("userInput");
+const button = document.getElementById("sendBtn");
 
-export function addMessage(content, sender="user") {
+function addMessage(text, sender) {
   const div = document.createElement("div");
-  div.className = sender;
-
-  if(sender === "ravy" && content.color){
-    div.style.backgroundColor = content.color;
-    div.textContent = content.text;
-  } else {
-    div.textContent = content;
-  }
-
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  div.className = `message ${sender}`;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function sendMessage() {
   const text = input.value.trim();
-  if(!text) return;
+  if (!text) return;
 
   addMessage(text, "user");
-  saveMessage({ text });
-
-  ravyRespond(text, res => addMessage(res, "ravy"));
   input.value = "";
+
+  ravyRespond(text, response => {
+    addMessage(response.text, "ravy");
+  });
 }
 
-sendBtn.addEventListener("click", sendMessage);
-input.addEventListener("keypress", e => {
-  if(e.key === "Enter") sendMessage();
+button.addEventListener("click", sendMessage);
+
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    sendMessage();
+  }
 });
