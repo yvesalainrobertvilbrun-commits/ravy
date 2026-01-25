@@ -2,32 +2,29 @@ import { ravyRespond } from "./ravy-core.js";
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("userInput");
-const button = document.getElementById("sendBtn");
+const btn = document.getElementById("sendBtn");
 
-function addMessage(text, sender) {
+function addMessage(text, who) {
   const div = document.createElement("div");
-  div.className = `message ${sender}`;
+  div.className = `message ${who}`;
   div.textContent = text;
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
 
-function sendMessage() {
+function send() {
   const text = input.value.trim();
   if (!text) return;
 
   addMessage(text, "user");
   input.value = "";
 
-  ravyRespond(text, response => {
-    addMessage(response.text, "ravy");
+  ravyRespond(text, res => {
+    addMessage(res.text, "ravy");
   });
 }
 
-button.addEventListener("click", sendMessage);
-
+btn.onclick = send;
 input.addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    sendMessage();
-  }
+  if (e.key === "Enter") send();
 });
