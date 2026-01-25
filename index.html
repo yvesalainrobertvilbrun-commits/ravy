@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RAVY</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -11,8 +12,13 @@
     <div id="chat"></div>
 
     <div class="input-area">
-      <input id="userInput" type="text" placeholder="Escribe aquí..." />
-      <button onclick="sendMessage()">Enviar</button>
+      <input
+        id="userInput"
+        type="text"
+        placeholder="Escribe aquí..."
+        autocomplete="off"
+      />
+      <button id="sendBtn">Enviar</button>
     </div>
   </div>
 
