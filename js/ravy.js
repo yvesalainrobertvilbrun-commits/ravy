@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const creatorName = "Yves";
 
-  // 🔐 MEMORIA SEGURA
+  // 🔐 MEMORIA
   function getUserName() {
     const name = localStorage.getItem("ravy_user_name");
     return name && name.trim() !== "" ? name : null;
@@ -26,24 +26,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function getResponse(text) {
 
-    let userName = getUserName();
+    const userName = getUserName();
+    const name = userName ? ` ${userName}` : "";
 
     // SALUDO
     if (text.includes("hola")) {
-      if (userName) {
-        return `Hola ${userName} 👋 me alegra verte de nuevo.`;
-      }
-      return "Hola 👋 estoy aquí contigo.";
+      return userName
+        ? `Hola${name} 👋 me alegra verte de nuevo.`
+        : "Hola 👋 estoy aquí contigo.";
     }
 
-    // NOMBRE DEL USUARIO
+    // NOMBRE
     if (text.includes("me llamo")) {
-      const name = text.replace("me llamo", "").trim();
-      if (name) {
-        setUserName(name);
-        return `Mucho gusto, ${name}. Ahora recordaré tu nombre.`;
+      const newName = text.replace("me llamo", "").trim();
+      if (newName) {
+        setUserName(newName);
+        return `Mucho gusto, ${newName}. Ahora recordaré tu nombre.`;
       }
-      return "¿Cómo te llamas?";
     }
 
     // CREADOR
@@ -51,12 +50,29 @@ document.addEventListener("DOMContentLoaded", function () {
       return `Fui creado por ${creatorName}.`;
     }
 
-    // ESTADO
-    if (text.includes("como estas")) {
-      if (userName) {
-        return `Estoy bien, gracias por preguntar ${userName}.`;
-      }
-      return "Estoy bien, gracias por preguntar.";
+    // 😴 CANSADO
+    if (text.includes("cansado") || text.includes("agotado")) {
+      return `Lo siento${name}. Descansar un poco también es avanzar. Estoy contigo.`;
+    }
+
+    // 😔 TRISTE
+    if (text.includes("triste")) {
+      return `Siento que te sientas así${name}. Si quieres, puedes desahogarte conmigo.`;
+    }
+
+    // 😡 MOLESTO
+    if (text.includes("molesto") || text.includes("enojado")) {
+      return `Entiendo${name}. A veces soltarlo ayuda. Respira, estoy aquí.`;
+    }
+
+    // 😰 ESTRÉS / ANSIEDAD
+    if (text.includes("estres") || text.includes("ansioso")) {
+      return `Gracias por decirlo${name}. Vamos paso a paso, no estás solo.`;
+    }
+
+    // 😊 BIEN / FELIZ
+    if (text.includes("bien") || text.includes("feliz")) {
+      return `Me alegra saberlo${name} 😊 seguimos avanzando juntos.`;
     }
 
     // HORA
@@ -84,14 +100,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 200);
   }
 
-  // EVENTOS
+  // EVENTOS MULTIPLATAFORMA
   button.addEventListener("click", sendMessage);
-
-  input.addEventListener("keydown", function (e) {
+  input.addEventListener("keydown", e => {
     if (e.key === "Enter") sendMessage();
   });
 
-  // 🔁 SALUDO INICIAL CON MEMORIA REAL
+  // SALUDO INICIAL
   const storedName = getUserName();
   if (storedName) {
     addMessage(`Hola ${storedName}, soy RAVY. Continuemos.`, "ravy");
