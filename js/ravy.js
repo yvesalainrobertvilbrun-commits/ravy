@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
 
   const chat = document.getElementById("chat");
   const input = document.getElementById("userInput");
@@ -19,14 +19,13 @@ document.addEventListener("DOMContentLoaded", function () {
     addMessage(text, "user");
     input.value = "";
 
-    setTimeout(() => {
-      try {
-        const reply = ravyThink(text);
-        addMessage(reply, "ravy");
-      } catch {
-        addMessage("Algo falló, pero sigo contigo.", "ravy");
-      }
-    }, 150);
+    try {
+      const reply = ravyThink(text);
+      addMessage(reply, "ravy");
+    } catch (e) {
+      console.error(e);
+      addMessage("Algo falló, pero sigo contigo.", "ravy");
+    }
   }
 
   button.addEventListener("click", sendMessage);
@@ -34,11 +33,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.key === "Enter") sendMessage();
   });
 
-  const storedName = localStorage.getItem("ravy_user_name");
-  if (storedName) {
-    addMessage(`Hola ${storedName}, soy RAVY. Continuemos.`, "ravy");
-  } else {
-    addMessage("Hola, soy RAVY. ¿Cómo te llamas?", "ravy");
-  }
-
+  const name = localStorage.getItem("ravy_user_name");
+  addMessage(
+    name ? `Hola ${name}, soy RAVY.` : "Hola, soy RAVY. ¿Cómo te llamas?",
+    "ravy"
+  );
 });
