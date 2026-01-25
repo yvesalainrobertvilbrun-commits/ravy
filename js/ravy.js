@@ -19,12 +19,18 @@ function send() {
   addMessage(text, "user");
   input.value = "";
 
-  ravyRespond(text, res => {
-    addMessage(res.text, "ravy");
-  });
+  // ⛑️ Protección total
+  try {
+    ravyRespond(text, res => {
+      addMessage(res.text || "…", "ravy");
+    });
+  } catch (e) {
+    addMessage("Tuve un error interno 😵‍💫", "ravy");
+    console.error(e);
+  }
 }
 
-btn.onclick = send;
+btn.addEventListener("click", send);
 input.addEventListener("keydown", e => {
   if (e.key === "Enter") send();
 });
