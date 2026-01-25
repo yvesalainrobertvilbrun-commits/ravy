@@ -12,26 +12,26 @@ async function ravyThink(rawText) {
   const creatorName = "Yves";
 
   // 🔹 SALUDOS
-  if (/hola|buenos días|buenas tardes|buenas noches/.test(text)) {
+  if (/hola|buenos días|buenas tardes|buenas noches/i.test(text)) {
     return userName
       ? `Hola${name} 👋 me alegra verte de nuevo.`
       : "Hola 👋 estoy aquí contigo.";
   }
 
   // 🔹 NOMBRE DEL USUARIO
-  if (/me llamo|mi nombre es/.test(text)) {
-    // regex robusta: captura todo después de "me llamo" o "mi nombre es"
+  // Guardar nombre solo si NO es pregunta
+  if (/me llamo|mi nombre es/i.test(rawText) && !/cómo|cuál/i.test(rawText)) {
     const match = rawText.match(/me llamo (.+)|mi nombre es (.+)/i);
     const newName = match ? (match[1] || match[2]).trim() : null;
     if (newName) {
-      // limpia caracteres no alfabéticos al inicio y final
       const cleanName = newName.replace(/^[^a-zA-ZáéíóúÁÉÍÓÚñÑ]+|[^a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/g, "");
       localStorage.setItem("ravy_user_name", cleanName);
       return `Mucho gusto, ${cleanName}. Ahora recordaré tu nombre.`;
     }
   }
 
-  if (/cómo me llamo|recuerdas mi nombre/.test(text)) {
+  // Preguntar nombre
+  if (/cómo me llamo|cuál es mi nombre|recuerdas mi nombre/i.test(rawText)) {
     userName = localStorage.getItem("ravy_user_name");
     return userName
       ? `Tu nombre es ${userName}.`
@@ -39,46 +39,52 @@ async function ravyThink(rawText) {
   }
 
   // 🔹 CREADOR
-  if (/quien te (creo|hizo|programo)|quien es tu creador|quien es tu dueño/.test(text)) {
+  if (/quien te (creo|hizo|programo)|quien es tu creador|quien es tu dueño/i.test(text)) {
     return `Fui creado por ${creatorName}.`;
   }
 
   // 🔹 EMOCIONES
-  if (/cansad|agotad|me siento cansado/.test(text)) {
+  if (/cansad|agotad|me siento cansado/i.test(text)) {
     return `Lo siento${name}. Descansar también es parte del progreso. Estoy contigo.`;
   }
 
-  if (/trist/.test(text)) {
+  if (/trist/i.test(text)) {
     return `Siento que te sientas así${name}. Puedes hablar conmigo.`;
   }
 
-  if (/molest|enoj/.test(text)) {
+  if (/molest|enoj/i.test(text)) {
     return `Lo entiendo${name}. A veces expresarlo ayuda. Respira, estoy aquí.`;
   }
 
-  if (/estres|ansios/.test(text)) {
+  if (/estres|ansios/i.test(text)) {
     return `Gracias por decirlo${name}. Vamos paso a paso, no estás solo.`;
   }
 
-  if (/feliz|bien/.test(text)) {
+  if (/feliz|bien/i.test(text)) {
     return `Me alegra saberlo${name} 😊 seguimos avanzando juntos.`;
   }
 
   // 🔹 HORA
-  if (/hora/.test(text)) {
+  if (/hora/i.test(text)) {
     return `Son las ${new Date().toLocaleTimeString()}.`;
   }
 
-  // 🔹 FECHA
-  if (/qué día|qué fecha|día es hoy|fecha es hoy/.test(text)) {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  // 🔹 FECHA / DÍA
+  if (/qué día|qué fecha|día es hoy|fecha es hoy/i.test(text)) {
     const now = new Date();
-    const dateStr = now.toLocaleDateString('es-ES', options);
-    return `Hoy es ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}.`;
+    const weekdays = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+    const dayName = weekdays[now.getDay()];
+    const dayNumber = now.getDate();
+    const monthName = months[now.getMonth()];
+    const year = now.getFullYear();
+
+    return `Hoy es ${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${dayNumber} de ${monthName} de ${year}.`;
   }
 
   // 🔹 CLIMA
-  if (/clima|tiempo/.test(text)) {
+  if (/clima|tiempo/i.test(text)) {
     try {
       const city = "Santo Domingo";
       const apiKey = "9527074793829c2e506eb3c16faf4b93";
@@ -98,7 +104,7 @@ async function ravyThink(rawText) {
   }
 
   // 🔹 CONFIRMACION GENERAL
-  if (/estas|me escuchas|sigues conmigo/.test(text)) {
+  if (/estas|me escuchas|sigues conmigo/i.test(text)) {
     return "Sí, estoy contigo.";
   }
 
