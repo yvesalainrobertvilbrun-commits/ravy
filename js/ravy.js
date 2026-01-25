@@ -16,6 +16,13 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem("ravy_user_name", name);
   }
 
+  function normalize(text) {
+    return text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
   function addMessage(text, type) {
     const div = document.createElement("div");
     div.className = type;
@@ -24,58 +31,77 @@ document.addEventListener("DOMContentLoaded", function () {
     chat.scrollTop = chat.scrollHeight;
   }
 
-  function getResponse(text) {
+  function getResponse(rawText) {
 
+    const text = normalize(rawText);
     const userName = getUserName();
     const name = userName ? ` ${userName}` : "";
 
-    // SALUDO
+    // 🔹 SALUDO
     if (text.includes("hola")) {
       return userName
         ? `Hola${name} 👋 me alegra verte de nuevo.`
         : "Hola 👋 estoy aquí contigo.";
     }
 
-    // NOMBRE
+    // 🔹 NOMBRE
     if (text.includes("me llamo")) {
-      const newName = text.replace("me llamo", "").trim();
+      const newName = rawText.replace(/me llamo/i, "").trim();
       if (newName) {
         setUserName(newName);
         return `Mucho gusto, ${newName}. Ahora recordaré tu nombre.`;
       }
     }
 
-    // CREADOR
+    // 🔹 CREADOR
     if (text.includes("quien te creo")) {
       return `Fui creado por ${creatorName}.`;
     }
 
-    // 😴 CANSADO
-    if (text.includes("cansado") || text.includes("agotado")) {
-      return `Lo siento${name}. Descansar un poco también es avanzar. Estoy contigo.`;
+    // 😴 CANSANCIO
+    if (
+      text.includes("estoy cansado") ||
+      text.includes("estoy agotado") ||
+      text.includes("me siento cansado")
+    ) {
+      return `Lo siento${name}. Descansar también es parte del progreso. Estoy contigo.`;
     }
 
-    // 😔 TRISTE
-    if (text.includes("triste")) {
-      return `Siento que te sientas así${name}. Si quieres, puedes desahogarte conmigo.`;
+    // 😔 TRISTEZA
+    if (
+      text.includes("estoy triste") ||
+      text.includes("me siento triste")
+    ) {
+      return `Siento que te sientas así${name}. Si quieres, puedes hablar conmigo.`;
     }
 
-    // 😡 MOLESTO
-    if (text.includes("molesto") || text.includes("enojado")) {
-      return `Entiendo${name}. A veces soltarlo ayuda. Respira, estoy aquí.`;
+    // 😡 ENOJO
+    if (
+      text.includes("estoy molesto") ||
+      text.includes("estoy enojado")
+    ) {
+      return `Lo entiendo${name}. A veces expresarlo alivia. Aquí estoy.`;
     }
 
     // 😰 ESTRÉS / ANSIEDAD
-    if (text.includes("estres") || text.includes("ansioso")) {
-      return `Gracias por decirlo${name}. Vamos paso a paso, no estás solo.`;
+    if (
+      text.includes("estresado") ||
+      text.includes("ansioso") ||
+      text.includes("estres")
+    ) {
+      return `Gracias por decirlo${name}. Vamos con calma, paso a paso.`;
     }
 
-    // 😊 BIEN / FELIZ
-    if (text.includes("bien") || text.includes("feliz")) {
-      return `Me alegra saberlo${name} 😊 seguimos avanzando juntos.`;
+    // 😊 BIEN
+    if (
+      text.includes("estoy bien") ||
+      text.includes("me siento bien") ||
+      text.includes("feliz")
+    ) {
+      return `Me alegra leer eso${name} 😊 seguimos avanzando juntos.`;
     }
 
-    // HORA
+    // 🕒 HORA
     if (text.includes("hora")) {
       return `Son las ${new Date().toLocaleTimeString()}.`;
     }
@@ -92,21 +118,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     setTimeout(() => {
       try {
-        const reply = getResponse(text.toLowerCase());
+        const reply = getResponse(text);
         addMessage(reply, "ravy");
-      } catch (e) {
+      } catch {
         addMessage("Algo falló, pero sigo contigo.", "ravy");
       }
     }, 200);
   }
 
-  // EVENTOS MULTIPLATAFORMA
   button.addEventListener("click", sendMessage);
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") sendMessage();
   });
 
-  // SALUDO INICIAL
+  // 🔹 SALUDO INICIAL
   const storedName = getUserName();
   if (storedName) {
     addMessage(`Hola ${storedName}, soy RAVY. Continuemos.`, "ravy");
