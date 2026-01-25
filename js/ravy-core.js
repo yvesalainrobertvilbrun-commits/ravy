@@ -3,14 +3,15 @@ import { getWeather } from "./weather.js";
 
 export function ravyRespond(text, reply) {
   try {
-    const t = text.toLowerCase().trim();
+    const original = text.trim();
+    const t = original.toLowerCase();
 
     /* =========================
        MEMORIA: NOMBRE
     ========================= */
 
     if (t.startsWith("mi nombre es")) {
-      const name = text.split("mi nombre es")[1]?.trim();
+      const name = original.split("mi nombre es")[1]?.trim();
       if (name) {
         save("user_name", name);
         reply({ text: `Mucho gusto, ${name} 😊` });
@@ -25,10 +26,7 @@ export function ravyRespond(text, reply) {
     ========================= */
 
     if (t.startsWith("vivo en") || t.startsWith("soy de")) {
-      const city = text
-        .replace(/vivo en|soy de/i, "")
-        .trim();
-
+      const city = original.replace(/vivo en|soy de/i, "").trim();
       if (city) {
         save("user_city", city);
         reply({ text: `Perfecto 👍 Recordaré que vives en ${city}.` });
@@ -80,6 +78,13 @@ export function ravyRespond(text, reply) {
       return;
     }
 
+    if (t.includes("bien")) {
+      reply({
+        text: "Me alegra saberlo 😊. Sigamos avanzando juntos."
+      });
+      return;
+    }
+
     /* =========================
        HORA Y FECHA
     ========================= */
@@ -91,7 +96,7 @@ export function ravyRespond(text, reply) {
       return;
     }
 
-    if (t.includes("dia") || t.includes("fecha")) {
+    if (t.includes("día") || t.includes("dia") || t.includes("fecha")) {
       reply({
         text: `Hoy es ${new Date().toLocaleDateString()} 📅`
       });
@@ -99,7 +104,7 @@ export function ravyRespond(text, reply) {
     }
 
     /* =========================
-       CLIMA (INTELIGENTE)
+       CLIMA (PRIORIDAD ALTA)
     ========================= */
 
     if (t.includes("clima")) {
@@ -119,8 +124,8 @@ export function ravyRespond(text, reply) {
        CIUDAD SOLA (AUTO CLIMA)
     ========================= */
 
-    if (t.split(" ").length <= 2) {
-      getWeather(text).then(res => {
+    if (original.split(" ").length <= 2 && !t.includes("hola")) {
+      getWeather(original).then(res => {
         reply({ text: res });
       });
       return;
@@ -131,7 +136,9 @@ export function ravyRespond(text, reply) {
     ========================= */
 
     reply({
-      text: "Te escucho 👂. Puedes decirme cómo te sientes o qué necesitas."
+      text: userCity
+        ? `Te escucho 👂. Si quieres, puedo decirte el clima en ${userCity}.`
+        : "Te escucho 👂. Puedes decirme cómo te sientes o preguntarme algo."
     });
 
   } catch (error) {
