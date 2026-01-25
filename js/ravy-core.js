@@ -21,7 +21,7 @@ function setRavyState(state) {
 }
 
 /* =========================
-   🔹 MEMORIA LARGA (E + F)
+   🔹 MEMORIA LARGA (E + F + G)
 ========================= */
 function getLongMemory() {
   return JSON.parse(localStorage.getItem("ravy_long_memory")) || {
@@ -29,7 +29,12 @@ function getLongMemory() {
     userName: localStorage.getItem("ravy_user_name") || null,
     baselineMood: null,
     personality: "amigable",
-    facts: []
+    facts: [],
+    learning: {
+      moodCount: {},
+      personalityUsage: {},
+      interactions: 0
+    }
   };
 }
 
@@ -43,15 +48,36 @@ function setLongMemory(memory) {
 function applyPersonality(text, personality) {
   switch (personality) {
     case "directa":
-      return text.replace(/😊|👋|✨/g, "").split(".")[0] + ".";
+      return text.split(".")[0] + ".";
     case "calma":
       return "Con calma: " + text;
     case "motivadora":
-      return text + " 💪 Tú puedes.";
-    case "amigable":
+      return text + " 💪";
     default:
       return text;
   }
+}
+
+/* =========================
+   📈 APRENDIZAJE
+========================= */
+function learn(memory, mood = null) {
+  memory.learning.interactions++;
+
+  if (mood) {
+    memory.learning.moodCount[mood] =
+      (memory.learning.moodCount[mood] || 0) + 1;
+
+    // Ajustar baseline si se repite
+    if (memory.learning.moodCount[mood] >= 3) {
+      memory.baselineMood = mood;
+    }
+  }
+
+  memory.learning.personalityUsage[memory.personality] =
+    (memory.learning.personalityUsage[memory.personality] || 0) + 1;
+
+  return memory;
 }
 
 /* =========================
@@ -70,31 +96,31 @@ async function ravyThink(rawText) {
   ========================= */
   if (/se mas directo/.test(text)) {
     longMemory.personality = "directa";
+    longMemory = learn(longMemory);
     setLongMemory(longMemory);
     return "Entendido. Seré más directo.";
   }
 
   if (/hablame con calma/.test(text)) {
     longMemory.personality = "calma";
+    longMemory = learn(longMemory);
     setLongMemory(longMemory);
     return "De acuerdo. Te hablaré con calma.";
   }
 
   if (/se mas motivador/.test(text)) {
     longMemory.personality = "motivadora";
+    longMemory = learn(longMemory);
     setLongMemory(longMemory);
     return "Perfecto. Seré más motivador.";
-  }
-
-  if (/cambia tu personalidad/.test(text)) {
-    return "Puedo ser: calmada, amigable, directa o motivadora. ¿Cuál prefieres?";
   }
 
   /* =========================
      🔹 IDENTIDAD
   ========================= */
   if (/quien eres|que eres/.test(text)) {
-    let reply = "Soy RAVY, un asistente creado por Yves para acompañarte y evolucionar contigo.";
+    let reply =
+      "Soy RAVY, un asistente creado por Yves que aprende contigo con el tiempo.";
     reply = applyPersonality(reply, longMemory.personality);
     state.lastRavyMessage = reply;
     setRavyState(state);
@@ -105,7 +131,7 @@ async function ravyThink(rawText) {
      🔹 EMOCIONES
   ========================= */
   if (/cansad|agotad/.test(text)) {
-    longMemory.baselineMood = "cansado";
+    longMemory = learn(longMemory, "cansado");
     setLongMemory(longMemory);
 
     let reply = `Lo noto${name}. Estás cansado.`;
@@ -116,10 +142,10 @@ async function ravyThink(rawText) {
   }
 
   if (/bien|contento|feliz/.test(text)) {
-    longMemory.baselineMood = "bien";
+    longMemory = learn(longMemory, "bien");
     setLongMemory(longMemory);
 
-    let reply = `Me alegra saberlo${name} 😊`;
+    let reply = `Me alegra saberlo${name}.`;
     reply = applyPersonality(reply, longMemory.personality);
     state.lastRavyMessage = reply;
     setRavyState(state);
@@ -127,12 +153,26 @@ async function ravyThink(rawText) {
   }
 
   /* =========================
-     🔹 FALLBACK ADAPTADO
+     🔹 QUÉ HA APRENDIDO
+  ========================= */
+  if (/que has aprendido|que sabes ahora/.test(text)) {
+    let reply = "He aprendido esto de ti:";
+    if (longMemory.baselineMood)
+      reply += `\n• Sueles sentirte ${longMemory.baselineMood}`;
+    reply += `\n• Hemos interactuado ${longMemory.learning.interactions} veces`;
+    reply = applyPersonality(reply, longMemory.personality);
+    state.lastRavyMessage = reply;
+    setRavyState(state);
+    return reply;
+  }
+
+  /* =========================
+     🔹 FALLBACK INTELIGENTE
   ========================= */
   let reply = "Te escucho 👂";
 
   if (longMemory.baselineMood) {
-    reply = `Te escucho${name}. Recuerdo que te has sentido ${longMemory.baselineMood}.`;
+    reply = `Te escucho${name}. Recuerdo que sueles sentirte ${longMemory.baselineMood}.`;
   }
 
   reply = applyPersonality(reply, longMemory.personality);
