@@ -1,21 +1,18 @@
 const API_KEY = "9527074793829c2e506eb3c16faf4b93";
-const DEFAULT_COUNTRY = "DO";
 
 export async function getWeather(city) {
   try {
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city},${DEFAULT_COUNTRY}&units=metric&lang=es&appid=${API_KEY}`;
-    const res = await fetch(url);
+    const res = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=es&appid=${API_KEY}`
+    );
     const data = await res.json();
 
-    if (data.cod !== 200) {
-      return "No pude encontrar el clima de esa ciudad 😕";
-    }
+    if (data.cod !== 200) return "No encontré esa ciudad 😕";
 
-    const temp = Math.round(data.main.temp);
-    const desc = data.weather[0].description;
-
-    return `En ${city} está ${desc} con ${temp}°C 🌤️`;
-  } catch (e) {
-    return "Error al consultar el clima 🌧️";
+    return `En ${city} hay ${data.weather[0].description} y ${Math.round(
+      data.main.temp
+    )}°C`;
+  } catch {
+    return "Error consultando el clima";
   }
 }
