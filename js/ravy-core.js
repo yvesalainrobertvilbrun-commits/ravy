@@ -24,18 +24,18 @@ function setRavyState(state) {
    🔹 MEMORIA LARGA (E + F + G)
 ========================= */
 function getLongMemory() {
-  return JSON.parse(localStorage.getItem("ravy_long_memory")) || {
-    creator: "Yves",
-    userName: localStorage.getItem("ravy_user_name") || null,
-    baselineMood: null,
-    personality: "amigable",
-    facts: [],
-    learning: {
-      moodCount: {},
-      personalityUsage: {},
-      interactions: 0
-    }
-  };
+  let memory = JSON.parse(localStorage.getItem("ravy_long_memory")) || {};
+  
+  memory.creator = memory.creator || "Yves";
+  memory.userName = memory.userName || localStorage.getItem("ravy_user_name") || null;
+  memory.baselineMood = memory.baselineMood || null;
+  memory.personality = memory.personality || "amigable";
+  memory.facts = memory.facts || [];
+  
+  // 🔹 Asegura que learning siempre exista
+  memory.learning = memory.learning || { moodCount: {}, personalityUsage: {}, interactions: 0 };
+
+  return memory;
 }
 
 function setLongMemory(memory) {
@@ -68,7 +68,7 @@ function learn(memory, mood = null) {
     memory.learning.moodCount[mood] =
       (memory.learning.moodCount[mood] || 0) + 1;
 
-    // Ajustar baseline si se repite
+    // Ajustar baseline si se repite 3 veces
     if (memory.learning.moodCount[mood] >= 3) {
       memory.baselineMood = mood;
     }
@@ -115,6 +115,10 @@ async function ravyThink(rawText) {
     return "Perfecto. Seré más motivador.";
   }
 
+  if (/cambia tu personalidad/.test(text)) {
+    return "Puedo ser: calmada, amigable, directa o motivadora. ¿Cuál prefieres?";
+  }
+
   /* =========================
      🔹 IDENTIDAD
   ========================= */
@@ -122,6 +126,35 @@ async function ravyThink(rawText) {
     let reply =
       "Soy RAVY, un asistente creado por Yves que aprende contigo con el tiempo.";
     reply = applyPersonality(reply, longMemory.personality);
+    state.lastRavyMessage = reply;
+    setRavyState(state);
+    return reply;
+  }
+
+  /* =========================
+     🔹 NOMBRE
+  ========================= */
+  if ((/me llamo|mi nombre es/.test(text)) && !(/como|cual/.test(text))) {
+    const match = rawText.match(/me llamo (.+)|mi nombre es (.+)/i);
+    const newName = match ? (match[1] || match[2]).trim() : null;
+
+    if (newName) {
+      localStorage.setItem("ravy_user_name", newName);
+      longMemory.userName = newName;
+      longMemory = learn(longMemory);
+      setLongMemory(longMemory);
+
+      const reply = `Mucho gusto, ${newName}. Ahora lo recordaré siempre.`;
+      state.lastRavyMessage = reply;
+      setRavyState(state);
+      return reply;
+    }
+  }
+
+  if (/recuerdas mi nombre|cual es mi nombre|como me llamo/.test(text)) {
+    const reply = longMemory.userName
+      ? `Tu nombre es ${longMemory.userName}.`
+      : "Aún no me has dicho tu nombre.";
     state.lastRavyMessage = reply;
     setRavyState(state);
     return reply;
@@ -146,6 +179,17 @@ async function ravyThink(rawText) {
     setLongMemory(longMemory);
 
     let reply = `Me alegra saberlo${name}.`;
+    reply = applyPersonality(reply, longMemory.personality);
+    state.lastRavyMessage = reply;
+    setRavyState(state);
+    return reply;
+  }
+
+  if (/trist/.test(text)) {
+    longMemory = learn(longMemory, "triste");
+    setLongMemory(longMemory);
+
+    let reply = `Siento que te sientas así${name}. Estoy contigo.`;
     reply = applyPersonality(reply, longMemory.personality);
     state.lastRavyMessage = reply;
     setRavyState(state);
