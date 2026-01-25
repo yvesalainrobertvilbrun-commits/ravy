@@ -6,7 +6,7 @@ export function ravyRespond(text, reply) {
     const t = text.toLowerCase().trim();
 
     /* =========================
-       MEMORIA BÁSICA
+       MEMORIA: NOMBRE
     ========================= */
 
     if (t.startsWith("mi nombre es")) {
@@ -19,6 +19,24 @@ export function ravyRespond(text, reply) {
     }
 
     const userName = load("user_name");
+
+    /* =========================
+       MEMORIA: CIUDAD
+    ========================= */
+
+    if (t.startsWith("vivo en") || t.startsWith("soy de")) {
+      const city = text
+        .replace(/vivo en|soy de/i, "")
+        .trim();
+
+      if (city) {
+        save("user_city", city);
+        reply({ text: `Perfecto 👍 Recordaré que vives en ${city}.` });
+        return;
+      }
+    }
+
+    const userCity = load("user_city");
 
     /* =========================
        SALUDOS
@@ -39,7 +57,7 @@ export function ravyRespond(text, reply) {
 
     if (t.includes("quien te creo") || t.includes("tu creador")) {
       reply({
-        text: "Mi creador y dueño se llama Yves. Eso lo tengo muy claro 💎"
+        text: "Mi creador y dueño se llama Yves. Eso lo recuerdo siempre 💎"
       });
       return;
     }
@@ -48,23 +66,16 @@ export function ravyRespond(text, reply) {
        EMOCIONES
     ========================= */
 
-    if (t.includes("estoy cansado") || t.includes("cansado")) {
+    if (t.includes("cansado")) {
       reply({
-        text: "Tiene sentido que estés cansado 😌. Respira un momento, aquí estoy contigo."
+        text: "Tiene sentido que estés cansado 😌. Aquí estoy contigo."
       });
       return;
     }
 
-    if (t.includes("estoy triste") || t.includes("triste")) {
+    if (t.includes("triste")) {
       reply({
-        text: "Siento que te sientas así 💙. No tienes que cargarlo solo, cuéntame."
-      });
-      return;
-    }
-
-    if (t.includes("estoy bien") || t.includes("bien")) {
-      reply({
-        text: "Me alegra saberlo 😊. Sigamos construyendo juntos."
+        text: "Siento que te sientas así 💙. Puedes hablar conmigo."
       });
       return;
     }
@@ -74,29 +85,40 @@ export function ravyRespond(text, reply) {
     ========================= */
 
     if (t.includes("hora")) {
-      const hora = new Date().toLocaleTimeString();
-      reply({ text: `Ahora mismo son las ${hora} ⏰` });
-      return;
-    }
-
-    if (t.includes("dia") || t.includes("fecha")) {
-      const fecha = new Date().toLocaleDateString();
-      reply({ text: `Hoy es ${fecha} 📅` });
-      return;
-    }
-
-    /* =========================
-       CLIMA (BÁSICO)
-    ========================= */
-
-    if (t.includes("clima")) {
       reply({
-        text: "Dime el nombre de una ciudad 🌍"
+        text: `Ahora mismo son las ${new Date().toLocaleTimeString()} ⏰`
       });
       return;
     }
 
-    // Si el usuario escribe solo una ciudad
+    if (t.includes("dia") || t.includes("fecha")) {
+      reply({
+        text: `Hoy es ${new Date().toLocaleDateString()} 📅`
+      });
+      return;
+    }
+
+    /* =========================
+       CLIMA (INTELIGENTE)
+    ========================= */
+
+    if (t.includes("clima")) {
+      if (userCity) {
+        getWeather(userCity).then(res => {
+          reply({ text: res });
+        });
+      } else {
+        reply({
+          text: "¿De qué ciudad quieres saber el clima? 🌍"
+        });
+      }
+      return;
+    }
+
+    /* =========================
+       CIUDAD SOLA (AUTO CLIMA)
+    ========================= */
+
     if (t.split(" ").length <= 2) {
       getWeather(text).then(res => {
         reply({ text: res });
@@ -109,7 +131,7 @@ export function ravyRespond(text, reply) {
     ========================= */
 
     reply({
-      text: "Te escucho 👂. Puedes hablarme con confianza."
+      text: "Te escucho 👂. Puedes decirme cómo te sientes o qué necesitas."
     });
 
   } catch (error) {
