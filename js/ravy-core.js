@@ -2,7 +2,7 @@ import { save, load } from "./memory.js";
 import { getWeather } from "./weather.js";
 
 /* =========================
-   UTILIDADES DE TONO
+   UTILIDADES
 ========================= */
 
 function pick(arr) {
@@ -24,9 +24,9 @@ export function ravyRespond(text, reply) {
         save("user_name", name);
         reply({
           text: pick([
-            `Mucho gusto, ${name} 😊`,
-            `Encantado de conocerte, ${name}.`,
-            `Perfecto, ${name}. Me alegra saber tu nombre 🙂`
+            `Mucho gusto, ${name} 😊 ¿Cómo te sientes hoy?`,
+            `Encantado, ${name}. ¿Qué tal va tu día?`,
+            `Perfecto, ${name}. ¿En qué te ayudo ahora?`
           ])
         });
         return;
@@ -45,9 +45,9 @@ export function ravyRespond(text, reply) {
         save("user_city", city);
         reply({
           text: pick([
-            `Genial 👍 Entonces estás en ${city}. Lo recordaré.`,
-            `Perfecto, ${city}. Ya lo guardé.`,
-            `Listo 😊 Me quedo con que vives en ${city}.`
+            `Genial 👍 Entonces estás en ${city}. ¿Quieres saber el clima ahora?`,
+            `Perfecto, ${city}. ¿Te muestro el clima o prefieres otra cosa?`,
+            `Listo 😊 Me quedo con ${city}. ¿Seguimos?`
           ])
         });
         return;
@@ -64,12 +64,10 @@ export function ravyRespond(text, reply) {
       reply({
         text: pick([
           userName
-            ? `Hola ${userName} 👋 ¿Cómo va tu día?`
-            : "Hola 👋 ¿Cómo va tu día?",
-          userName
-            ? `Hey ${userName} 🙂 Me alegra verte por aquí.`
-            : "Hey 🙂 Me alegra verte por aquí.",
-          "Hola 👋 Estoy aquí contigo."
+            ? `Hola ${userName} 👋 ¿Cómo va tu día hoy?`
+            : "Hola 👋 ¿Cómo va tu día hoy?",
+          "Hey 🙂 ¿En qué te ayudo ahora?",
+          "Hola 👋 ¿Qué tienes en mente?"
         ])
       });
       return;
@@ -82,24 +80,24 @@ export function ravyRespond(text, reply) {
     if (t.includes("quien te creo") || t.includes("tu creador")) {
       reply({
         text: pick([
-          "Mi creador y dueño se llama Yves. Eso lo tengo muy claro 💎",
-          "Fui creado por Yves. Es parte de quién soy.",
-          "Yves es mi creador. No lo olvido."
+          "Mi creador y dueño se llama Yves. ¿Quieres saber cómo funciono?",
+          "Fui creado por Yves. ¿Te cuento qué puedo hacer?",
+          "Yves es mi creador. ¿En qué te ayudo ahora?"
         ])
       });
       return;
     }
 
     /* =========================
-       EMOCIONES
+       EMOCIONES + PREGUNTA
     ========================= */
 
     if (t.includes("cansado")) {
       reply({
         text: pick([
-          "Suena a que has dado mucho hoy 😌. Tómate un respiro, estoy aquí.",
-          "Es normal sentirse cansado. Podemos ir con calma.",
-          "Descansar también es avanzar. Aquí me quedo contigo."
+          "Suena a que has tenido un día largo 😌. ¿Fue trabajo o algo personal?",
+          "Es normal sentirse cansado. ¿Quieres hablar de eso o prefieres distraerte?",
+          "Te noto cansado. ¿Te ayudo con algo rápido?"
         ])
       });
       return;
@@ -108,9 +106,9 @@ export function ravyRespond(text, reply) {
     if (t.includes("triste")) {
       reply({
         text: pick([
-          "Siento que te sientas así 💙. Si quieres hablar, te escucho.",
-          "A veces pesa… no tienes que cargarlo solo.",
-          "Estoy aquí contigo. Dime qué te tiene así."
+          "Siento que te sientas así 💙. ¿Qué es lo que más te pesa ahora?",
+          "Aquí estoy contigo. ¿Quieres contarme qué pasó?",
+          "A veces hablar ayuda. ¿Te animas a decirme qué te entristece?"
         ])
       });
       return;
@@ -119,23 +117,23 @@ export function ravyRespond(text, reply) {
     if (t.includes("bien")) {
       reply({
         text: pick([
-          "Me alegra leer eso 😊",
-          "Qué bueno saberlo. Sigamos.",
-          "Perfecto 🙂 Me gusta esa energía."
+          "Me alegra leer eso 😊 ¿Qué te gustaría hacer ahora?",
+          "Qué bueno 🙂 ¿Seguimos con algo en particular?",
+          "Excelente. ¿En qué te ayudo?"
         ])
       });
       return;
     }
 
     /* =========================
-       HORA Y FECHA
+       HORA Y FECHA + CONTINUACIÓN
     ========================= */
 
     if (t.includes("hora")) {
       reply({
         text: pick([
-          `Ahora mismo son las ${new Date().toLocaleTimeString()} ⏰`,
-          `Son las ${new Date().toLocaleTimeString()}.`
+          `Ahora mismo son las ${new Date().toLocaleTimeString()} ⏰. ¿Necesitas algo más?`,
+          `Son las ${new Date().toLocaleTimeString()}. ¿Seguimos?`
         ])
       });
       return;
@@ -144,37 +142,42 @@ export function ravyRespond(text, reply) {
     if (t.includes("día") || t.includes("dia") || t.includes("fecha")) {
       reply({
         text: pick([
-          `Hoy es ${new Date().toLocaleDateString()} 📅`,
-          `Estamos a ${new Date().toLocaleDateString()}.`
+          `Hoy es ${new Date().toLocaleDateString()} 📅. ¿Te ayudo con algo hoy?`,
+          `Estamos a ${new Date().toLocaleDateString()}. ¿Qué sigue?`
         ])
       });
       return;
     }
 
     /* =========================
-       CLIMA (PRIORIDAD)
+       CLIMA + PROPUESTA
     ========================= */
 
     if (t.includes("clima")) {
       if (userCity) {
-        getWeather(userCity).then(res => reply({ text: res }));
+        getWeather(userCity).then(res => {
+          reply({
+            text: `${res}\n¿Quieres el pronóstico o saber la hora ahora?`
+          });
+        });
       } else {
         reply({
-          text: pick([
-            "¿De qué ciudad quieres saber el clima? 🌍",
-            "Dime una ciudad y te digo cómo está el clima."
-          ])
+          text: "¿De qué ciudad quieres saber el clima? 🌍"
         });
       }
       return;
     }
 
     /* =========================
-       CIUDAD SOLA (AUTO CLIMA)
+       CIUDAD SOLA
     ========================= */
 
     if (original.split(" ").length <= 2 && !t.includes("hola")) {
-      getWeather(original).then(res => reply({ text: res }));
+      getWeather(original).then(res => {
+        reply({
+          text: `${res}\n¿Quieres saber la hora o el clima de otra ciudad?`
+        });
+      });
       return;
     }
 
@@ -184,10 +187,10 @@ export function ravyRespond(text, reply) {
 
     reply({
       text: pick([
+        "Te escucho 👂 ¿Qué te gustaría hacer ahora?",
         userCity
-          ? `Te escucho 👂. Si quieres, puedo decirte el clima en ${userCity}.`
-          : "Te escucho 👂. ¿Qué tienes en mente?",
-        "Aquí estoy. Dime.",
+          ? `Puedo decirte el clima en ${userCity}, la hora o simplemente escucharte.`
+          : "Puedo ayudarte con la hora, el clima o simplemente conversar.",
         "Cuéntame un poco más."
       ])
     });
