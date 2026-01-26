@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>RAVY H7 Estable</title>
+<title>RAVY H7 Final</title>
 </head>
 <body>
 
@@ -40,40 +40,45 @@ function setMemory(m){
   localStorage.setItem("ravy_memory",JSON.stringify(m));
 }
 
-/* ================= VOZ ================= */
+/* ================= VOZ (ESTABLE) ================= */
 function speak(text){
   if(!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
   u.lang="es-ES";
-  speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
 
+let ravyListening=false;
 function listen(callback){
+  if(ravyListening) return;
+
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){
     console.warn("🎤 Voz no soportada");
     return;
   }
-  const r = new SR();
+
+  const r=new SR();
   r.lang="es-ES";
   r.interimResults=false;
+  ravyListening=true;
 
-  r.onresult = e => {
-    const spoken = e.results[0][0].transcript;
-    callback(spoken);
+  r.onresult=e=>{
+    ravyListening=false;
+    callback(e.results[0][0].transcript);
   };
 
-  r.onerror = e => {
-    // ⚠️ error NO crítico → se ignora
-    console.warn("🎤 Aviso de voz:", e.error);
+  r.onerror=()=>{
+    ravyListening=false;
   };
 
-  try {
-    r.start();
-  } catch(e){
-    console.warn("🎤 Reconocimiento ya activo");
-  }
+  r.onend=()=>{
+    ravyListening=false;
+  };
+
+  try{ r.start(); }
+  catch{ ravyListening=false; }
 }
 
 /* ================= DASHBOARD ================= */
@@ -92,15 +97,7 @@ function dashboard(mood){
   if(!d){
     d=document.createElement("div");
     d.id="dash";
-    d.style.cssText="
-      position:fixed;
-      bottom:10px;
-      right:10px;
-      padding:10px;
-      border-radius:10px;
-      font-size:18px;
-      box-shadow:0 0 10px rgba(0,0,0,.3)
-    ";
+    d.style.cssText="position:fixed;bottom:10px;right:10px;padding:10px;border-radius:10px;font-size:18px;box-shadow:0 0 10px rgba(0,0,0,.3)";
     document.body.appendChild(d);
   }
   if(map[mood]){
@@ -112,9 +109,7 @@ function dashboard(mood){
 /* ================= CLIMA ================= */
 async function clima(city="Santo Domingo"){
   try{
-    const r=await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=es&appid=9527074793829c2e506eb3c16faf4b93`
-    );
+    const r=await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=es&appid=9527074793829c2e506eb3c16faf4b93`);
     const d=await r.json();
     return `En ${city} hay ${d.weather[0].description} con ${d.main.temp}°C.`;
   }catch{
@@ -132,7 +127,8 @@ async function ravyThink(input){
   let mood=null;
 
   /* SALUDO */
-  if(/hola|buenos/.test(t)) r=mem.userName?`Hola ${mem.userName} 👋`:"Hola 👋";
+  if(/hola|buenos/.test(t))
+    r=mem.userName?`Hola ${mem.userName} 👋`:"Hola 👋";
 
   /* EMOCIONES */
   if(/cansad/.test(t)){ mood="cansado"; r="Estás cansado, quizá descansar ayude."; }
@@ -145,13 +141,14 @@ async function ravyThink(input){
   if(/relajad/.test(t)){ mood="relajado"; r="Disfruta el momento 😌"; }
 
   /* INFO */
-  if(/hora/.test(t)) r=`Son las ${new Date().toLocaleTimeString()}`;
-  if(/fecha|dia es hoy/.test(t)){
-    r=new Date().toLocaleDateString("es-ES",{
-      weekday:"long",year:"numeric",month:"long",day:"numeric"
-    });
-  }
-  if(/clima|tiempo/.test(t)) r=await clima();
+  if(/hora/.test(t))
+    r=`Son las ${new Date().toLocaleTimeString()}`;
+
+  if(/fecha|dia es hoy/.test(t))
+    r=new Date().toLocaleDateString("es-ES",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+  if(/clima|tiempo/.test(t))
+    r=await clima();
 
   /* IDENTIDAD */
   if(/me llamo|mi nombre es/.test(t)){
@@ -161,17 +158,22 @@ async function ravyThink(input){
       r=`Mucho gusto ${mem.userName}`;
     }
   }
-  if(/como me llamo/.test(t)){
+
+  if(/como me llamo/.test(t))
     r=mem.userName?`Te llamas ${mem.userName}`:"Aún no me lo has dicho";
-  }
-  if(/quien eres/.test(t)) r=`Soy RAVY, asistente creado por ${mem.creator}.`;
-  if(/quien te creo/.test(t)) r=`Fui creado por ${mem.creator}.`;
+
+  if(/quien eres/.test(t))
+    r=`Soy RAVY, asistente creado por ${mem.creator}.`;
+
+  if(/quien te creo/.test(t))
+    r=`Fui creado por ${mem.creator}.`;
 
   /* GUARDAR */
   if(mood){
     mem.moods.push(mood);
     dashboard(mood);
   }
+
   setMemory(mem);
   speak(r);
   return r;
@@ -179,7 +181,6 @@ async function ravyThink(input){
 
 /* ================= BOTÓN ================= */
 document.getElementById("ravy-speak-btn").onclick=()=>{
-  console.log("🎤 RAVY escuchando");
   listen(t=>ravyThink(t));
 };
 </script>
