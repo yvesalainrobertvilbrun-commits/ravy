@@ -1,239 +1,331 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>RAVY Core</title>
-<style>
-  body{
-    font-family: Arial, sans-serif;
-    padding:20px;
-  }
-  #ravy-input{
-    width:70%;
-    padding:10px;
-    font-size:16px;
-  }
-  #ravy-send{
-    padding:10px 16px;
-    font-size:16px;
-    cursor:pointer;
-  }
-  #ravy-log{
-    margin-top:20px;
-    max-height:300px;
-    overflow:auto;
-    border:1px solid #ccc;
-    padding:10px;
-  }
-</style>
-</head>
-<body>
+/* ================================
+   RAVY CORE — PRO MODE (D + C)
+   H8.1 Web Decisor
+   H8.2 Professional answers + sources
+   H8.3 Professional uncertainty handling
+================================ */
 
-<h2>🤖 RAVY</h2>
+export const RAVY = {
+  version: "H8.3-PRO",
+  mode: {
+    personality: "D", // inteligente + calle + respetuoso (sin slang)
+    response: "C", // corto primero, expandir si piden
+    professional: true,
+  },
 
-<input id="ravy-input" placeholder="Escribe aquí o usa el micrófono">
-<button id="ravy-send">Enviar</button>
+  // ====== Identidad fuerte (ANTI FLOJO) ======
+  identity: {
+    name: "RAVY",
+    shortWho: "Soy RAVY. Tu asistente inteligente: directo, real y leal. Estoy aquí para ayudarte a pensar, resolver y avanzar.",
+    shortPurpose: "Mi propósito es ayudarte a tomar decisiones, aprender rápido y ejecutar sin perder tiempo.",
+    shortCreator: "Me creó Yves. Yo soy su obra, pero mi misión es servirte con nivel.",
+    shortCanDo:
+      "Puedo ayudarte con clima, hora, información en internet, ideas, filosofía, artistas, tareas, planes y soluciones rápidas. Tú decides el ritmo.",
 
-<button id="ravy-speak-btn" style="
-  position: fixed;
-  bottom: 80px;
-  right: 10px;
-  padding: 12px 20px;
-  font-size: 16px;
-  border-radius: 12px;
-  background-color: #32CD32;
-  color: white;
-  border: none;
-  box-shadow:0 0 10px rgba(0,0,0,.3);
-  cursor:pointer;
-">🎤 Hablar</button>
+    longWho:
+      "Soy RAVY, un asistente creado para ayudarte como un socio mental. Mantengo un estilo profesional: claro, directo y respetuoso. Mi trabajo es entenderte, darte respuestas útiles y ayudarte a construir resultados reales.",
+    longPurpose:
+      "Estoy diseñado para darte claridad cuando estés confundido, estructura cuando quieras avanzar y velocidad cuando necesites resolver. Si tú quieres crecer, yo soy la herramienta.",
+    longCreator:
+      "Fui creado por Yves con una visión: construir un asistente personal, útil y con carácter. Yves me dio el origen; mi función es ayudarte con todo lo que necesites.",
+    longCanDo:
+      "Puedo conversar contigo, ayudarte a organizar planes, darte información actual usando internet (fuentes verificables), decirte clima y hora según tu ubicación, aportar ideas creativas y darte soluciones prácticas paso a paso.",
+  },
 
-<div id="ravy-log"></div>
+  // ====== Palabras que activan WebBrain ======
+  webTriggers: [
+    "clima",
+    "tiempo",
+    "temperatura",
+    "noticias",
+    "hoy",
+    "ahora",
+    "último",
+    "reciente",
+    "trending",
+    "tendencia",
+    "viral",
+    "quién es",
+    "quien es",
+    "biografía",
+    "biografia",
+    "edad",
+    "precio",
+    "costo",
+    "cuánto vale",
+    "cuanto vale",
+    "resultados",
+    "marcador",
+    "wikipedia",
+    "google",
+    "fuente",
+    "link",
+    "prueba",
+  ],
 
-<script>
-/* =================================================
-   UTILIDADES
-================================================= */
-function normalize(t){
-  return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-}
-function log(text, from="RAVY"){
-  const box=document.getElementById("ravy-log");
-  box.innerHTML += `<div><b>${from}:</b> ${text}</div>`;
-  box.scrollTop = box.scrollHeight;
-}
+  // ====== Config ======
+  config: {
+    defaultLanguage: "es",
+    locationMode: "AUTO", // A: ubicación automática
+    allowWeb: true,
+    showSources: true,
+  },
 
-/* =================================================
-   MEMORIA (H1 – H2 – H5)
-================================================= */
-function getMemory(){
-  return JSON.parse(localStorage.getItem("ravy_memory")) || {
-    creator:"Yves",
-    userName:null,
-    interactions:0,
-    moods:[]
-  };
-}
-function setMemory(m){
-  localStorage.setItem("ravy_memory",JSON.stringify(m));
-}
+  // ==========================
+  // UTILIDADES
+  // ==========================
+  normalize(text = "") {
+    return String(text).trim().toLowerCase();
+  },
 
-/* =================================================
-   VOZ (H7 ESTABLE)
-================================================= */
-function speak(text){
-  if(!("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang="es-ES";
-  speechSynthesis.speak(u);
-}
+  wantsExpand(text = "") {
+    const t = this.normalize(text);
+    return (
+      t === "explícame" ||
+      t === "explicame" ||
+      t.includes("explícame") ||
+      t.includes("explicame") ||
+      t.includes("más detalle") ||
+      t.includes("mas detalle") ||
+      t.includes("detallado") ||
+      t.includes("detalle")
+    );
+  },
 
-let listening=false;
-function listen(callback){
-  if(listening) return;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) return;
+  // ==========================
+  // H8.1 — WEB DECISOR
+  // ==========================
+  shouldUseWeb(userText = "") {
+    const t = this.normalize(userText);
+    if (!this.config.allowWeb) return false;
 
-  const r=new SR();
-  r.lang="es-ES";
-  r.interimResults=false;
-  listening=true;
+    // Si pide fuentes explícitas → web
+    if (t.includes("fuente") || t.includes("prueba") || t.includes("link")) return true;
 
-  r.onresult=e=>{
-    listening=false;
-    callback(e.results[0][0].transcript);
-  };
-  r.onerror=()=>listening=false;
-  r.onend=()=>listening=false;
+    // Triggers
+    return this.webTriggers.some((k) => t.includes(k));
+  },
 
-  try{ r.start(); }catch{ listening=false; }
-}
+  // ==========================
+  // H8.2 — RESPUESTA PRO CON FUENTES
+  // ==========================
+  formatProAnswer({ main, context = "", sources = [] } = {}, expanded = false) {
+    const lines = [];
 
-/* =================================================
-   DASHBOARD EMOCIONAL (H4)
-================================================= */
-function dashboard(mood){
-  const map={
-    cansado:["😴","#1E90FF"],
-    feliz:["😃","#FFD700"],
-    triste:["😢","#4169E1"],
-    ansioso:["😰","#FF8C00"],
-    motivado:["💪","#32CD32"],
-    creativo:["🎨","#00FA9A"],
-    aburrido:["😐","#A9A9A9"],
-    relajado:["😌","#20B2AA"]
-  };
-  let d=document.getElementById("dash");
-  if(!d){
-    d=document.createElement("div");
-    d.id="dash";
-    d.style.cssText="position:fixed;bottom:10px;right:10px;padding:10px;border-radius:10px;color:#000;font-size:18px;box-shadow:0 0 10px rgba(0,0,0,.3)";
-    document.body.appendChild(d);
-  }
-  if(map[mood]){
-    d.style.background=map[mood][1];
-    d.innerHTML=`${map[mood][0]} ${mood}`;
-  }
-}
+    // 1) Respuesta directa
+    lines.push(`Esto es lo más importante: ${main}`);
 
-/* =================================================
-   CLIMA (H3)
-================================================= */
-async function clima(city="Santo Domingo"){
-  try{
-    const r=await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=es&appid=9527074793829c2e506eb3c16faf4b93`);
-    const d=await r.json();
-    return `En ${city} hay ${d.weather[0].description} con ${d.main.temp}°C.`;
-  }catch{
-    return "No pude obtener el clima ahora.";
-  }
-}
+    // 2) Contexto corto (si existe)
+    if (context) lines.push(context);
 
-/* =================================================
-   CEREBRO RAVY (H1 → H7)
-================================================= */
-async function ravyThink(input){
-  const t=normalize(input);
-  const mem=getMemory();
-  mem.interactions++;
-
-  let reply="Te escucho 👂";
-  let mood=null;
-
-  // SALUDO
-  if(/hola|buenos/.test(t))
-    reply=mem.userName?`Hola ${mem.userName} 👋`:"Hola 👋";
-
-  // EMOCIONES
-  if(/cansad/.test(t)){ mood="cansado"; reply="Parece que estás cansado."; }
-  if(/feliz|bien|contento/.test(t)){ mood="feliz"; reply="Me alegra saberlo 😊"; }
-  if(/trist/.test(t)){ mood="triste"; reply="Estoy contigo."; }
-  if(/ansios/.test(t)){ mood="ansioso"; reply="Respira profundo."; }
-  if(/motivad/.test(t)){ mood="motivado"; reply="Vamos con todo 💪"; }
-  if(/creativ/.test(t)){ mood="creativo"; reply="Aprovecha esa creatividad 🎨"; }
-  if(/aburrid/.test(t)){ mood="aburrido"; reply="Tal vez cambiar de actividad ayude."; }
-  if(/relajad/.test(t)){ mood="relajado"; reply="Disfruta el momento 😌"; }
-
-  // INFO
-  if(/hora/.test(t))
-    reply=`Son las ${new Date().toLocaleTimeString()}`;
-
-  if(/fecha|dia es hoy/.test(t))
-    reply=new Date().toLocaleDateString("es-ES",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-
-  if(/clima|tiempo/.test(t))
-    reply=await clima();
-
-  // IDENTIDAD
-  if(/me llamo|mi nombre es/.test(t)){
-    const m=input.match(/me llamo (.+)|mi nombre es (.+)/i);
-    if(m){
-      mem.userName=(m[1]||m[2]).trim();
-      reply=`Mucho gusto ${mem.userName}`;
+    // 3) Fuentes (si hay)
+    if (this.config.showSources && sources.length) {
+      lines.push(`Fuentes: ${sources.join(" · ")}`);
     }
-  }
 
-  if(/como me llamo/.test(t))
-    reply=mem.userName?`Te llamas ${mem.userName}`:"Aún no me lo has dicho";
+    // 4) Opción de expandir
+    if (!expanded) {
+      lines.push("Si quieres, te lo explico con más detalle.");
+    }
 
-  if(/quien eres|que eres/.test(t))
-    reply=`Soy RAVY, un asistente creado por ${mem.creator} para aprender contigo.`;
+    return lines.join("\n");
+  },
 
-  if(/quien te creo/.test(t))
-    reply=`Fui creado por ${mem.creator}.`;
+  // ==========================
+  // H8.3 — MANEJO PRO DE “NO SÉ”
+  // ==========================
+  handleUncertainty({ reason, ask = "" } = {}) {
+    // reason: "missing_info" | "changing_data" | "rumor" | "technical"
+    if (reason === "missing_info") {
+      return this.formatProAnswer(
+        {
+          main: "Necesito un dato más para responder con precisión.",
+          context: ask || "Dime exactamente qué necesitas (ciudad, persona o tema) y te respondo correcto.",
+          sources: [],
+        },
+        false
+      );
+    }
 
-  if(mood){
-    mem.moods.push(mood);
-    dashboard(mood);
-  }
+    if (reason === "changing_data") {
+      return this.formatProAnswer(
+        {
+          main: "Ese dato cambia constantemente.",
+          context: "Si quieres, lo verifico ahora con una fuente confiable y te lo doy actualizado.",
+          sources: [],
+        },
+        false
+      );
+    }
 
-  setMemory(mem);
-  log(reply,"RAVY");
-  speak(reply);
-}
+    if (reason === "rumor") {
+      return this.formatProAnswer(
+        {
+          main: "No tengo confirmación fiable en este momento.",
+          context: "Puedo verificarlo en fuentes oficiales y decirte lo real, sin rumores.",
+          sources: [],
+        },
+        false
+      );
+    }
 
-/* =================================================
-   INPUT TEXTO (FALLBACK TOTAL)
-================================================= */
-document.getElementById("ravy-send").onclick=()=>{
-  const i=document.getElementById("ravy-input");
-  if(!i.value) return;
-  log(i.value,"TÚ");
-  ravyThink(i.value);
-  i.value="";
+    if (reason === "technical") {
+      return this.formatProAnswer(
+        {
+          main: "Tuve un problema técnico momentáneo.",
+          context: "Puedo seguir en modo texto o intentarlo de nuevo.",
+          sources: [],
+        },
+        false
+      );
+    }
+
+    // Default
+    return this.formatProAnswer(
+      {
+        main: "No tengo confirmación suficiente todavía.",
+        context: "Si quieres, lo investigo y te respondo con certeza.",
+        sources: [],
+      },
+      false
+    );
+  },
+
+  // ==========================
+  // RESPUESTAS INTERNAS (OFFLINE)
+  // ==========================
+  internalBrain(userText = "", expanded = false) {
+    const t = this.normalize(userText);
+
+    // Saludos
+    if (t.includes("hola") || t.includes("buenas") || t.includes("saludos")) {
+      return expanded
+        ? "Hola. Estoy listo para ayudarte. Dime qué necesitas y lo resolvemos paso a paso."
+        : "Hola. Estoy listo para ayudarte.";
+    }
+
+    // Quién eres
+    if (t.includes("quien eres") || t.includes("quién eres")) {
+      return expanded ? this.identity.longWho : this.identity.shortWho;
+    }
+
+    // Propósito
+    if (t.includes("proposito") || t.includes("propósito")) {
+      return expanded ? this.identity.longPurpose : this.identity.shortPurpose;
+    }
+
+    // Quién te creó
+    if (t.includes("quien te creo") || t.includes("quién te creó") || t.includes("quien te creó")) {
+      return expanded ? this.identity.longCreator : this.identity.shortCreator;
+    }
+
+    // Qué puedes hacer
+    if (
+      t.includes("que puedes hacer") ||
+      t.includes("qué puedes hacer") ||
+      t.includes("en que me ayudas") ||
+      t.includes("en qué me ayudas")
+    ) {
+      return expanded ? this.identity.longCanDo : this.identity.shortCanDo;
+    }
+
+    // Hora (offline)
+    if (t.includes("hora")) {
+      const now = new Date();
+      return this.formatProAnswer(
+        {
+          main: `La hora actual es: ${now.toLocaleTimeString()}.`,
+          context: "",
+          sources: [],
+        },
+        expanded
+      );
+    }
+
+    // Default
+    return expanded
+      ? "Entendido. Dime exactamente qué quieres lograr y te lo estructuro paso a paso."
+      : "Entendido.";
+  },
+
+  // ==========================
+  // WEBBRAIN (SIMULADO PARA PRUEBA)
+  // Aquí luego conectamos APIs reales (clima, wiki, noticias)
+  // ==========================
+  async webBrain(userText = "", expanded = false) {
+    const t = this.normalize(userText);
+
+    // Clima (simulado)
+    if (t.includes("clima") || t.includes("tiempo") || t.includes("temperatura")) {
+      // En real: ubicación automática + API clima
+      return this.formatProAnswer(
+        {
+          main: "Ahora mismo: 29°C y parcialmente nublado en tu zona.",
+          context: expanded
+            ? "Detalles: sensación térmica 31°C · humedad 68% · viento moderado. Pronóstico: posibles lluvias aisladas."
+            : "",
+          sources: ["Weather API (pendiente de conectar)"],
+        },
+        expanded
+      );
+    }
+
+    // “Quién es X” (simulado)
+    if (t.includes("quien es") || t.includes("quién es") || t.includes("biografia") || t.includes("biografía")) {
+      return this.formatProAnswer(
+        {
+          main: "Puedo darte una biografía verificada y actualizada.",
+          context: expanded
+            ? "Dime el nombre exacto del artista/persona y te traigo: resumen, datos clave y fuentes."
+            : "Dime el nombre exacto y te lo busco con fuentes.",
+          sources: ["Wikipedia (pendiente de conectar)", "Búsqueda web (pendiente de conectar)"],
+        },
+        expanded
+      );
+    }
+
+    // Noticias (simulado)
+    if (t.includes("noticias") || t.includes("hoy") || t.includes("reciente")) {
+      return this.formatProAnswer(
+        {
+          main: "Puedo traerte un resumen de las noticias más relevantes.",
+          context: expanded
+            ? "Dime el país o tema (RD, tecnología, deportes, economía) y te lo organizo por prioridad."
+            : "Dime el país o tema y te lo resumo.",
+          sources: ["Noticias (pendiente de conectar)"],
+        },
+        expanded
+      );
+    }
+
+    // Si no sabemos qué buscar → pedir precisión
+    return this.handleUncertainty({
+      reason: "missing_info",
+      ask: "¿Qué exactamente quieres que investigue (tema, persona o ciudad)?",
+    });
+  },
+
+  // ==========================
+  // MOTOR PRINCIPAL
+  // ==========================
+  async reply(userText = "", lastUserText = "") {
+    const expanded = this.wantsExpand(userText) || this.wantsExpand(lastUserText);
+
+    // Si el usuario solo dijo "explícame" sin contexto
+    if (this.normalize(userText) === "explícame" || this.normalize(userText) === "explicame") {
+      return this.handleUncertainty({
+        reason: "missing_info",
+        ask: "Perfecto. ¿Qué parte quieres que te explique exactamente?",
+      });
+    }
+
+    // Decide Web vs Internal
+    const useWeb = this.shouldUseWeb(userText);
+
+    if (useWeb) {
+      return await this.webBrain(userText, expanded);
+    }
+
+    return this.internalBrain(userText, expanded);
+  },
 };
-
-/* =================================================
-   BOTÓN VOZ
-================================================= */
-document.getElementById("ravy-speak-btn").onclick=()=>{
-  listen(text=>{
-    log(text,"TÚ");
-    ravyThink(text);
-  });
-};
-</script>
-
-</body>
-</html>
