@@ -1,84 +1,43 @@
 /* ================================
    RAVY CORE — PRO MODE (D + C)
-   H8.1 Web Decisor
-   H8.2 Professional answers + sources
-   H8.3 Professional uncertainty handling
+   Compatible: Browser (no modules)
 ================================ */
 
-export const RAVY = {
+window.RAVY = {
   version: "H8.3-PRO",
-  mode: {
-    personality: "D", // inteligente + calle + respetuoso (sin slang)
-    response: "C", // corto primero, expandir si piden
-    professional: true,
-  },
+  mode: { personality: "D", response: "C", professional: true },
 
-  // ====== Identidad fuerte (ANTI FLOJO) ======
   identity: {
     name: "RAVY",
     shortWho: "Soy RAVY. Tu asistente inteligente: directo, real y leal. Estoy aquí para ayudarte a pensar, resolver y avanzar.",
     shortPurpose: "Mi propósito es ayudarte a tomar decisiones, aprender rápido y ejecutar sin perder tiempo.",
     shortCreator: "Me creó Yves. Yo soy su obra, pero mi misión es servirte con nivel.",
-    shortCanDo:
-      "Puedo ayudarte con clima, hora, información en internet, ideas, filosofía, artistas, tareas, planes y soluciones rápidas. Tú decides el ritmo.",
-
-    longWho:
-      "Soy RAVY, un asistente creado para ayudarte como un socio mental. Mantengo un estilo profesional: claro, directo y respetuoso. Mi trabajo es entenderte, darte respuestas útiles y ayudarte a construir resultados reales.",
-    longPurpose:
-      "Estoy diseñado para darte claridad cuando estés confundido, estructura cuando quieras avanzar y velocidad cuando necesites resolver. Si tú quieres crecer, yo soy la herramienta.",
-    longCreator:
-      "Fui creado por Yves con una visión: construir un asistente personal, útil y con carácter. Yves me dio el origen; mi función es ayudarte con todo lo que necesites.",
-    longCanDo:
-      "Puedo conversar contigo, ayudarte a organizar planes, darte información actual usando internet (fuentes verificables), decirte clima y hora según tu ubicación, aportar ideas creativas y darte soluciones prácticas paso a paso.",
+    shortCanDo: "Puedo ayudarte con clima, hora, información en internet, ideas, filosofía, artistas, tareas, planes y soluciones rápidas. Tú decides el ritmo.",
+    longWho: "Soy RAVY, un asistente creado para ayudarte como un socio mental. Mantengo un estilo profesional: claro, directo y respetuoso. Mi trabajo es entenderte, darte respuestas útiles y ayudarte a construir resultados reales.",
+    longPurpose: "Estoy diseñado para darte claridad cuando estés confundido, estructura cuando quieras avanzar y velocidad cuando necesites resolver. Si tú quieres crecer, yo soy la herramienta.",
+    longCreator: "Fui creado por Yves con una visión: construir un asistente personal, útil y con carácter. Yves me dio el origen; mi función es ayudarte con todo lo que necesites.",
+    longCanDo: "Puedo conversar contigo, ayudarte a organizar planes, darte información actual usando internet (fuentes verificables), decirte clima y hora según tu ubicación, aportar ideas creativas y darte soluciones prácticas paso a paso.",
   },
 
-  // ====== Palabras que activan WebBrain ======
   webTriggers: [
-    "clima",
-    "tiempo",
-    "temperatura",
-    "noticias",
-    "hoy",
-    "ahora",
-    "último",
-    "reciente",
-    "trending",
-    "tendencia",
-    "viral",
-    "quién es",
-    "quien es",
-    "biografía",
-    "biografia",
-    "edad",
-    "precio",
-    "costo",
-    "cuánto vale",
-    "cuanto vale",
-    "resultados",
-    "marcador",
-    "wikipedia",
-    "google",
-    "fuente",
-    "link",
-    "prueba",
+    "clima","tiempo","temperatura","noticias","hoy","ahora","último","ultimo","reciente",
+    "trending","tendencia","viral","quién es","quien es","biografía","biografia","edad",
+    "precio","costo","cuánto vale","cuanto vale","resultados","marcador","wikipedia",
+    "google","fuente","link","prueba"
   ],
 
-  // ====== Config ======
   config: {
     defaultLanguage: "es",
-    locationMode: "AUTO", // A: ubicación automática
+    locationMode: "AUTO",
     allowWeb: true,
     showSources: true,
   },
 
-  // ==========================
-  // UTILIDADES
-  // ==========================
-  normalize(text = "") {
-    return String(text).trim().toLowerCase();
+  normalize(text) {
+    return String(text || "").trim().toLowerCase();
   },
 
-  wantsExpand(text = "") {
+  wantsExpand(text) {
     const t = this.normalize(text);
     return (
       t === "explícame" ||
@@ -92,50 +51,27 @@ export const RAVY = {
     );
   },
 
-  // ==========================
-  // H8.1 — WEB DECISOR
-  // ==========================
-  shouldUseWeb(userText = "") {
+  shouldUseWeb(userText) {
     const t = this.normalize(userText);
     if (!this.config.allowWeb) return false;
-
-    // Si pide fuentes explícitas → web
     if (t.includes("fuente") || t.includes("prueba") || t.includes("link")) return true;
-
-    // Triggers
     return this.webTriggers.some((k) => t.includes(k));
   },
 
-  // ==========================
-  // H8.2 — RESPUESTA PRO CON FUENTES
-  // ==========================
-  formatProAnswer({ main, context = "", sources = [] } = {}, expanded = false) {
+  formatProAnswer(payload, expanded) {
+    const { main, context = "", sources = [] } = payload || {};
     const lines = [];
-
-    // 1) Respuesta directa
     lines.push(`Esto es lo más importante: ${main}`);
-
-    // 2) Contexto corto (si existe)
     if (context) lines.push(context);
-
-    // 3) Fuentes (si hay)
     if (this.config.showSources && sources.length) {
       lines.push(`Fuentes: ${sources.join(" · ")}`);
     }
-
-    // 4) Opción de expandir
-    if (!expanded) {
-      lines.push("Si quieres, te lo explico con más detalle.");
-    }
-
+    if (!expanded) lines.push("Si quieres, te lo explico con más detalle.");
     return lines.join("\n");
   },
 
-  // ==========================
-  // H8.3 — MANEJO PRO DE “NO SÉ”
-  // ==========================
-  handleUncertainty({ reason, ask = "" } = {}) {
-    // reason: "missing_info" | "changing_data" | "rumor" | "technical"
+  handleUncertainty(payload) {
+    const { reason, ask = "" } = payload || {};
     if (reason === "missing_info") {
       return this.formatProAnswer(
         {
@@ -146,7 +82,6 @@ export const RAVY = {
         false
       );
     }
-
     if (reason === "changing_data") {
       return this.formatProAnswer(
         {
@@ -157,7 +92,6 @@ export const RAVY = {
         false
       );
     }
-
     if (reason === "rumor") {
       return this.formatProAnswer(
         {
@@ -168,7 +102,6 @@ export const RAVY = {
         false
       );
     }
-
     if (reason === "technical") {
       return this.formatProAnswer(
         {
@@ -179,8 +112,6 @@ export const RAVY = {
         false
       );
     }
-
-    // Default
     return this.formatProAnswer(
       {
         main: "No tengo confirmación suficiente todavía.",
@@ -191,35 +122,27 @@ export const RAVY = {
     );
   },
 
-  // ==========================
-  // RESPUESTAS INTERNAS (OFFLINE)
-  // ==========================
-  internalBrain(userText = "", expanded = false) {
+  internalBrain(userText, expanded) {
     const t = this.normalize(userText);
 
-    // Saludos
     if (t.includes("hola") || t.includes("buenas") || t.includes("saludos")) {
       return expanded
         ? "Hola. Estoy listo para ayudarte. Dime qué necesitas y lo resolvemos paso a paso."
         : "Hola. Estoy listo para ayudarte.";
     }
 
-    // Quién eres
     if (t.includes("quien eres") || t.includes("quién eres")) {
       return expanded ? this.identity.longWho : this.identity.shortWho;
     }
 
-    // Propósito
     if (t.includes("proposito") || t.includes("propósito")) {
       return expanded ? this.identity.longPurpose : this.identity.shortPurpose;
     }
 
-    // Quién te creó
     if (t.includes("quien te creo") || t.includes("quién te creó") || t.includes("quien te creó")) {
       return expanded ? this.identity.longCreator : this.identity.shortCreator;
     }
 
-    // Qué puedes hacer
     if (
       t.includes("que puedes hacer") ||
       t.includes("qué puedes hacer") ||
@@ -229,35 +152,23 @@ export const RAVY = {
       return expanded ? this.identity.longCanDo : this.identity.shortCanDo;
     }
 
-    // Hora (offline)
     if (t.includes("hora")) {
       const now = new Date();
       return this.formatProAnswer(
-        {
-          main: `La hora actual es: ${now.toLocaleTimeString()}.`,
-          context: "",
-          sources: [],
-        },
+        { main: `La hora actual es: ${now.toLocaleTimeString()}.`, context: "", sources: [] },
         expanded
       );
     }
 
-    // Default
     return expanded
       ? "Entendido. Dime exactamente qué quieres lograr y te lo estructuro paso a paso."
       : "Entendido.";
   },
 
-  // ==========================
-  // WEBBRAIN (SIMULADO PARA PRUEBA)
-  // Aquí luego conectamos APIs reales (clima, wiki, noticias)
-  // ==========================
-  async webBrain(userText = "", expanded = false) {
+  async webBrain(userText, expanded) {
     const t = this.normalize(userText);
 
-    // Clima (simulado)
     if (t.includes("clima") || t.includes("tiempo") || t.includes("temperatura")) {
-      // En real: ubicación automática + API clima
       return this.formatProAnswer(
         {
           main: "Ahora mismo: 29°C y parcialmente nublado en tu zona.",
@@ -270,13 +181,12 @@ export const RAVY = {
       );
     }
 
-    // “Quién es X” (simulado)
     if (t.includes("quien es") || t.includes("quién es") || t.includes("biografia") || t.includes("biografía")) {
       return this.formatProAnswer(
         {
           main: "Puedo darte una biografía verificada y actualizada.",
           context: expanded
-            ? "Dime el nombre exacto del artista/persona y te traigo: resumen, datos clave y fuentes."
+            ? "Dime el nombre exacto de la persona y te traigo: resumen, datos clave y fuentes."
             : "Dime el nombre exacto y te lo busco con fuentes.",
           sources: ["Wikipedia (pendiente de conectar)", "Búsqueda web (pendiente de conectar)"],
         },
@@ -284,7 +194,6 @@ export const RAVY = {
       );
     }
 
-    // Noticias (simulado)
     if (t.includes("noticias") || t.includes("hoy") || t.includes("reciente")) {
       return this.formatProAnswer(
         {
@@ -298,20 +207,15 @@ export const RAVY = {
       );
     }
 
-    // Si no sabemos qué buscar → pedir precisión
     return this.handleUncertainty({
       reason: "missing_info",
       ask: "¿Qué exactamente quieres que investigue (tema, persona o ciudad)?",
     });
   },
 
-  // ==========================
-  // MOTOR PRINCIPAL
-  // ==========================
-  async reply(userText = "", lastUserText = "") {
+  async reply(userText, lastUserText) {
     const expanded = this.wantsExpand(userText) || this.wantsExpand(lastUserText);
 
-    // Si el usuario solo dijo "explícame" sin contexto
     if (this.normalize(userText) === "explícame" || this.normalize(userText) === "explicame") {
       return this.handleUncertainty({
         reason: "missing_info",
@@ -319,13 +223,8 @@ export const RAVY = {
       });
     }
 
-    // Decide Web vs Internal
     const useWeb = this.shouldUseWeb(userText);
-
-    if (useWeb) {
-      return await this.webBrain(userText, expanded);
-    }
-
+    if (useWeb) return await this.webBrain(userText, expanded);
     return this.internalBrain(userText, expanded);
   },
 };
